@@ -44,31 +44,31 @@ def stop_qa_db(event, context):
 
 
 def start_db(db, trigger):
-    print(f"enter start_db {db} {trigger}")
+    log.debug(f"enter start_db {db} {trigger}")
     cluster_identifiers = describe_db_clusters("start")
-    print(f"ran describe_db_clusters {cluster_identifiers}")
+    log.debug(f"ran describe_db_clusters {cluster_identifiers}")
     started = False
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == db:
-            print(f"going to start cluster {db}")
+            log.debug(f"going to start cluster {db}")
             start_db_cluster(db)
             started = True
-            print(f"going to enable trigger {trigger}")
+            log.debug(f"going to enable trigger {trigger}")
             enable_trigger(trigger)
     return started
 
 
 def stop_db(db, trigger):
-    print("enter stop_db")
+    log.debug("enter stop_db")
     cluster_identifiers = describe_db_clusters("stop")
-    print(f"ran describe_db_clusters {cluster_identifiers}")
+    log.debug(f"ran describe_db_clusters {cluster_identifiers}")
 
     stopped = False
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == db:
-            print(f"going to disable trigger {trigger}")
+            log.debug(f"going to disable trigger {trigger}")
             result = disable_trigger(trigger)
-            print(f"going to stop cluster {db}")
+            log.debug(f"going to stop cluster {db}")
             stop_db_cluster(db)
             stopped = True
     return stopped
