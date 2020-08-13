@@ -53,7 +53,7 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: cron(5 23 ? * MON-FRI *)
+          rate: cron(20 23 ? * MON-FRI *)
           #rate: rate(5 minutes)
           enabled: true
           input:

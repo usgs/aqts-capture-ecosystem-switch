@@ -28,21 +28,21 @@ def describe_db_clusters(action):
 
 def start_db_cluster(cluster_identifier):
     my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
-    logging.info(f"would start cluster here for cluster {cluster_identifier}")
+    print(f"starting cluster here for cluster {cluster_identifier}")
     response = my_rds.start_db_cluster(
         DBClusterIdentifier=cluster_identifier
     )
-    log.debug(f"start db cluster response {response}")
+    print(f"start db cluster response {response}")
     return True
 
 
 def stop_db_cluster(cluster_identifier):
     my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
-    #log.debug(f"would stop cluster here for cluster {cluster_identifier}")
+    print(f"stopping cluster here for cluster {cluster_identifier}")
     response = my_rds.stop_db_cluster(
         DBClusterIdentifier=cluster_identifier
     )
-    #log.debug(f"stop db cluster response {response}")
+    print(f"stop db cluster response {response}")
     return True
 
 
@@ -52,9 +52,9 @@ def disable_trigger(function_name):
         FunctionName=function_name
     )
     for item in response['EventSourceMappings']:
-        log.debug(f"would disable trigger here for item {item}")
+        print(f"disabling trigger here for item {item}")
         mapping = my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=False)
-        log.debug(f"should be disabled {mapping}")
+        print(f"should be disabled {mapping}")
         return True
 
 
@@ -64,7 +64,8 @@ def enable_trigger(function_name):
         FunctionName=function_name
     )
     for item in response['EventSourceMappings']:
-        log.debug(f"would enable trigger here for item {item}")
+        print(f"enabling trigger here for item {item}")
         mapping = my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
-        log.debug(f"should be enabled {mapping}")
+        print(f"should be enabled {mapping}")
     return True
+
