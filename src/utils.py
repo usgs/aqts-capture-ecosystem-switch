@@ -14,6 +14,7 @@ def describe_db_clusters(action):
 
     # Get all the instances
     response = my_rds.describe_db_clusters()
+    print(f"response from my_rds.describe_db_clusters {response}")
     all_dbs = response['DBClusters']
     if action == "start":
         # Filter on the one that are not running yet

@@ -9,13 +9,13 @@ QA_TRIGGER = 'aqts-capture-trigger-QA-aqtsCaptureTrigger'
 
 
 def start_test_db(event, context):
-    logging.info("enter start_test_db")
+    print("enter start_test_db")
     clusters = describe_db_clusters("start")
-    logging.info(f"ran describe_db_clusters {clusters}")
+    print(f"ran describe_db_clusters {clusters}")
     started = False
     for cluster in clusters['DBClusters']:
         if cluster['DBClusterIdentifier'] == TEST_DB:
-            logging.info(f"going to start cluster {TEST_DB}")
+            print(f"going to start cluster {TEST_DB}")
             #start_db_cluster(TEST_DB)
             started = True
             enable_trigger(TEST_TRIGGER)
@@ -27,16 +27,16 @@ def start_test_db(event, context):
 
 
 def stop_test_db(event, context):
-    logging.info("enter stop_test_db")
+    logging.error("enter stop_test_db")
     clusters = describe_db_clusters("stop")
-    logging.info(f"ran describe_db_clusters {clusters}")
+    print(f"ran describe_db_clusters {clusters}")
 
     stopped = False
     for cluster in clusters['DBClusters']:
         if cluster['DBClusterIdentifier'] == TEST_DB:
             result = disable_trigger(TEST_TRIGGER)
-            logging.info(f"ran disable_trigger {result}")
-            logging.info(f"going to stop cluster {TEST_DB}")
+            print(f"ran disable_trigger {result}")
+            print(f"going to stop cluster {TEST_DB}")
             #stop_db_cluster(TEST_DB)
             stopped = True
     return {
