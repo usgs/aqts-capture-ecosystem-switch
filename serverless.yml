@@ -54,7 +54,7 @@ functions:
     events:
       - schedule:
           #rate: cron(0 8 * * ? *)
-          rate: rate(15 minutes)
+          rate: rate(5 minutes)
           enabled: true
           input:
             key: 'min5'
@@ -69,7 +69,7 @@ functions:
     events:
       - schedule:
           #rate: cron(0 17 * * ? *)
-          rate: rate(15 minutes)
+          rate: rate(5 minutes)
           enabled: true
           input:
             key: 'min5'
@@ -84,7 +84,7 @@ functions:
     events:
       - schedule:
           #rate: cron(0 8 * * ? *)
-          rate: rate(15 minutes)
+          rate: rate(12 hours)
           enabled: true
           input:
             key: 'min5'
@@ -99,7 +99,7 @@ functions:
     events:
       - schedule:
           #rate: cron(0 17 * * ? *)
-          rate: rate(15 minutes)
+          rate: rate(12 hours)
           enabled: true
           input:
             key: 'min5'
