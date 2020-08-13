@@ -7,6 +7,9 @@ QA_DB = 'nwcapture-qa'
 TEST_TRIGGER = 'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
 QA_TRIGGER = 'aqts-capture-trigger-QA-aqtsCaptureTrigger'
 
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+
 
 def start_test_db(event, context):
     print("enter start_test_db")
@@ -15,8 +18,8 @@ def start_test_db(event, context):
     started = False
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == TEST_DB:
-            print(f"going to start cluster {TEST_DB}")
-            #start_db_cluster(TEST_DB)
+            log.debug(f"going to start cluster {TEST_DB}")
+            start_db_cluster(TEST_DB)
             started = True
             enable_trigger(TEST_TRIGGER)
 
@@ -27,17 +30,18 @@ def start_test_db(event, context):
 
 
 def stop_test_db(event, context):
-    logging.error("enter stop_test_db")
+    print("enter stop_test_db")
     cluster_identifiers = describe_db_clusters("stop")
     print(f"ran describe_db_clusters {cluster_identifiers}")
 
     stopped = False
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == TEST_DB:
+
             result = disable_trigger(TEST_TRIGGER)
             print(f"ran disable_trigger {result}")
             print(f"going to stop cluster {TEST_DB}")
-            #stop_db_cluster(TEST_DB)
+            stop_db_cluster(TEST_DB)
             stopped = True
     return {
         'statusCode': 200,
@@ -51,7 +55,7 @@ def start_qa_db(event, context):
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == QA_DB:
             pass
-            #start_db_cluster(clusters[i])
+            # start_db_cluster(clusters[i])
 
 
 def stop_qa_db(event, context):
@@ -60,4 +64,4 @@ def stop_qa_db(event, context):
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == QA_DB:
             pass
-            #stop_db_cluster(clusters[i])
+            # stop_db_cluster(clusters[i])

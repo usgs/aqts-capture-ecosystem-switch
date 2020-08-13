@@ -1,5 +1,4 @@
 from unittest import TestCase, mock
-
 from src import handler
 
 
@@ -167,20 +166,20 @@ class TestHandlerHandler(TestCase):
         mock_et.return_value['DBClusters'][0]['DBClusterIdentifier'] = 'string'
         mock_ddc.return_value = False
         result = handler.start_test_db(self.initial_event, self.context)
-        #mock_ddc.assert_called_with(
-        #    'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
-        #)
         assert result['statusCode'] == 200
         assert result['message'] == 'Started the test db: False'
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.enable_trigger')
     @mock.patch('src.handler.describe_db_clusters')
-    def test_start_test_db_something_to_start(self, mock_et, mock_ddc):
-        mock_et.return_value = self.mock_db_cluster_identifiers
+    @mock.patch('src.handler.enable_trigger')
+    @mock.patch('src.handler.start_db_cluster')
+    def test_start_test_db_something_to_start(self, mock_ddc, mock_et, mock_sdc):
         mock_ddc.return_value = True
+        mock_et.return_value = True
+        mock_sdc.return_value = self.mock_db_cluster_identifiers
+
         result = handler.start_test_db(self.initial_event, self.context)
-        mock_ddc.assert_called_with(
+        mock_et.assert_called_with(
             'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
         )
         assert result['statusCode'] == 200
@@ -193,20 +192,19 @@ class TestHandlerHandler(TestCase):
         mock_dt.return_value = {}
         mock_ddc.return_value = False
         result = handler.stop_test_db(self.initial_event, self.context)
-        # mock_ddc.assert_called_with(
-        #    'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
-        # )
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the test db: False'
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.disable_trigger')
     @mock.patch('src.handler.describe_db_clusters')
-    def test_stop_test_db_something_to_stop(self, mock_dt, mock_ddc):
-        mock_dt.return_value = self.mock_db_cluster_identifiers
+    @mock.patch('src.handler.disable_trigger')
+    @mock.patch('src.handler.stop_db_cluster')
+    def test_stop_test_db_something_to_stop(self, mock_ddc, mock_dt, mock_sdc):
         mock_ddc.return_value = True
+        mock_dt.return_value = True
+        mock_sdc.return_value = self.mock_db_cluster_identifiers
         result = handler.stop_test_db(self.initial_event, self.context)
-        mock_ddc.assert_called_with(
+        mock_dt.assert_called_with(
             'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
         )
         assert result['statusCode'] == 200
