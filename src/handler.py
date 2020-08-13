@@ -10,14 +10,16 @@ QA_TRIGGER = 'aqts-capture-trigger-QA-aqtsCaptureTrigger'
 
 def start_test_db(event, context):
     logging.info("enter start_test_db")
-    enable_trigger(TEST_TRIGGER)
     clusters = describe_db_clusters("start")
+    logging.info(f"ran describe_db_clusters {clusters}")
     started = False
     for cluster in clusters['DBClusters']:
         if cluster['DBClusterIdentifier'] == TEST_DB:
             logging.info(f"going to start cluster {TEST_DB}")
-            start_db_cluster(TEST_DB)
+            #start_db_cluster(TEST_DB)
             started = True
+            enable_trigger(TEST_TRIGGER)
+
     return {
         'statusCode': 200,
         'message': f"Started the test db: {started}"
@@ -26,16 +28,16 @@ def start_test_db(event, context):
 
 def stop_test_db(event, context):
     logging.info("enter stop_test_db")
-    result = disable_trigger(TEST_TRIGGER)
-    logging.info(f"ran disable_trigger {result}")
     clusters = describe_db_clusters("stop")
-    logging.info(f"ran describe_db_clusters {len(clusters['DBClusters'])}")
+    logging.info(f"ran describe_db_clusters {clusters}")
 
     stopped = False
     for cluster in clusters['DBClusters']:
         if cluster['DBClusterIdentifier'] == TEST_DB:
+            result = disable_trigger(TEST_TRIGGER)
+            logging.info(f"ran disable_trigger {result}")
             logging.info(f"going to stop cluster {TEST_DB}")
-            stop_db_cluster(TEST_DB)
+            #stop_db_cluster(TEST_DB)
             stopped = True
     return {
         'statusCode': 200,
@@ -48,7 +50,8 @@ def start_qa_db(event, context):
     clusters = describe_db_clusters("start")
     for i in range(0, len(clusters)):
         if clusters[i] == TEST_DB:
-            start_db_cluster(clusters[i])
+            pass
+            #start_db_cluster(clusters[i])
 
 
 def stop_qa_db(event, context):
@@ -56,4 +59,5 @@ def stop_qa_db(event, context):
     clusters = describe_db_clusters("stop")
     for i in range(0, len(clusters)):
         if clusters[i] == TEST_DB:
-            stop_db_cluster(clusters[i])
+            pass
+            #stop_db_cluster(clusters[i])

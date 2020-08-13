@@ -167,9 +167,9 @@ class TestHandlerHandler(TestCase):
         mock_et.return_value['DBClusters'][0]['DBClusterIdentifier'] = 'string'
         mock_ddc.return_value = False
         result = handler.start_test_db(self.initial_event, self.context)
-        mock_ddc.assert_called_with(
-            'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
-        )
+        #mock_ddc.assert_called_with(
+        #    'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
+        #)
         assert result['statusCode'] == 200
         assert result['message'] == 'Started the test db: False'
 
@@ -195,9 +195,9 @@ class TestHandlerHandler(TestCase):
         mock_dt.return_value['DBClusters'][0]['DBClusterIdentifier'] = 'string'
         mock_ddc.return_value = False
         result = handler.stop_test_db(self.initial_event, self.context)
-        mock_ddc.assert_called_with(
-            'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
-        )
+        # mock_ddc.assert_called_with(
+        #    'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
+        # )
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the test db: False'
 
