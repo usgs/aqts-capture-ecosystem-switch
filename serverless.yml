@@ -51,13 +51,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       MAX_RETRIES: 6
-    events:
-      - schedule:
-          rate: cron(0 12 ? * MON-FRI *)
-          #rate: rate(5 minutes)
-          enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
 
   StopTestDb:
@@ -81,12 +74,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       MAX_RETRIES: 6
-    events:
-      - schedule:
-          rate: cron(0 12 ? * MON *)
-          enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
 
   StopQaDb:
