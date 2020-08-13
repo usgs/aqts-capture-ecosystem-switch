@@ -12,7 +12,7 @@ class TestHandlerHandler(TestCase):
         'AWS_DEPLOYMENT_REGION': region,
         'MAX_RETRIES': str(max_retries)
     }
-
+    mock_db_cluster_identifiers = {'nwcapture-test', 'nwcapture-qa'}
     mock_db_clusters = {
         'Marker': 'string',
         'DBClusters': [
@@ -177,8 +177,7 @@ class TestHandlerHandler(TestCase):
     @mock.patch('src.handler.enable_trigger')
     @mock.patch('src.handler.describe_db_clusters')
     def test_start_test_db_something_to_start(self, mock_et, mock_ddc):
-        mock_et.return_value = self.mock_db_clusters
-        mock_et.return_value['DBClusters'][0]['DBClusterIdentifier'] = handler.TEST_DB
+        mock_et.return_value = self.mock_db_cluster_identifiers
         mock_ddc.return_value = True
         result = handler.start_test_db(self.initial_event, self.context)
         mock_ddc.assert_called_with(
@@ -191,8 +190,7 @@ class TestHandlerHandler(TestCase):
     @mock.patch('src.handler.disable_trigger')
     @mock.patch('src.handler.describe_db_clusters')
     def test_stop_test_db_nothing_to_stop(self, mock_dt, mock_ddc):
-        mock_dt.return_value = self.mock_db_clusters
-        mock_dt.return_value['DBClusters'][0]['DBClusterIdentifier'] = 'string'
+        mock_dt.return_value = {}
         mock_ddc.return_value = False
         result = handler.stop_test_db(self.initial_event, self.context)
         # mock_ddc.assert_called_with(
@@ -205,8 +203,7 @@ class TestHandlerHandler(TestCase):
     @mock.patch('src.handler.disable_trigger')
     @mock.patch('src.handler.describe_db_clusters')
     def test_stop_test_db_something_to_stop(self, mock_dt, mock_ddc):
-        mock_dt.return_value = self.mock_db_clusters
-        mock_dt.return_value['DBClusters'][0]['DBClusterIdentifier'] = handler.TEST_DB
+        mock_dt.return_value = self.mock_db_cluster_identifiers
         mock_ddc.return_value = True
         result = handler.stop_test_db(self.initial_event, self.context)
         mock_ddc.assert_called_with(
