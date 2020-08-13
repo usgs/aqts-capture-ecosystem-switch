@@ -53,8 +53,8 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          #rate: cron(0 8 * * ? *)
-          rate: rate(5 minutes)
+          rate: cron(5 13 ? * MON-FRI *)
+          #rate: rate(5 minutes)
           enabled: true
           input:
             key: 'min5'
@@ -68,8 +68,8 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          #rate: cron(0 17 * * ? *)
-          rate: rate(5 minutes)
+          rate: cron(10 13 ? * MON-FRI *)
+          #rate: rate(5 minutes)
           enabled: true
           input:
             key: 'min5'
