@@ -3,7 +3,7 @@ from unittest import TestCase, mock
 from src import handler
 
 
-class TestHandlerHandler(TestCase):
+class TestHandler(TestCase):
     queue_url = 'https://sqs.us-south-10.amazonaws.com/887501/some-queue-name'
     sns_arn = 'arn:aws:sns:us-south-23:5746521541:fake-notification'
     region = 'us-south-10'
