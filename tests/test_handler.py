@@ -1,4 +1,5 @@
 from unittest import TestCase, mock
+
 from src import handler
 
 
@@ -16,104 +17,8 @@ class TestHandlerHandler(TestCase):
         'Marker': 'string',
         'DBClusters': [
             {
-                'AllocatedStorage': 123,
-                'AvailabilityZones': [
-                    'string',
-                ],
-                'BackupRetentionPeriod': 123,
-                'CharacterSetName': 'string',
-                'DatabaseName': 'string',
                 'DBClusterIdentifier': 'string',
-                'DBClusterParameterGroup': 'string',
-                'DBSubnetGroup': 'string',
                 'Status': 'string',
-                'PercentProgress': 'string',
-                'EarliestRestorableTime': '',
-                'Endpoint': 'string',
-                'ReaderEndpoint': 'string',
-                'CustomEndpoints': [
-                    'string',
-                ],
-                'MultiAZ': True,
-                'Engine': 'string',
-                'EngineVersion': 'string',
-                'LatestRestorableTime': '',
-                'Port': 123,
-                'MasterUsername': 'string',
-                'DBClusterOptionGroupMemberships': [
-                    {
-                        'DBClusterOptionGroupName': 'string',
-                        'Status': 'string'
-                    },
-                ],
-                'PreferredBackupWindow': 'string',
-                'PreferredMaintenanceWindow': 'string',
-                'ReplicationSourceIdentifier': 'string',
-                'ReadReplicaIdentifiers': [
-                    'string',
-                ],
-                'DBClusterMembers': [
-                    {
-                        'DBInstanceIdentifier': 'string',
-                        'IsClusterWriter': True,
-                        'DBClusterParameterGroupStatus': 'string',
-                        'PromotionTier': 123
-                    },
-                ],
-                'VpcSecurityGroups': [
-                    {
-                        'VpcSecurityGroupId': 'string',
-                        'Status': 'string'
-                    },
-                ],
-                'HostedZoneId': 'string',
-                'StorageEncrypted': True,
-                'KmsKeyId': 'string',
-                'DbClusterResourceId': 'string',
-                'DBClusterArn': 'string',
-                'AssociatedRoles': [
-                    {
-                        'RoleArn': 'string',
-                        'Status': 'string',
-                        'FeatureName': 'string'
-                    },
-                ],
-                'IAMDatabaseAuthenticationEnabled': True,
-                'CloneGroupId': 'string',
-                'ClusterCreateTime': '',
-                'EarliestBacktrackTime': '',
-                'BacktrackWindow': 123,
-                'BacktrackConsumedChangeRecords': 123,
-                'EnabledCloudwatchLogsExports': [
-                    'string',
-                ],
-                'Capacity': 123,
-                'EngineMode': 'string',
-                'ScalingConfigurationInfo': {
-                    'MinCapacity': 123,
-                    'MaxCapacity': 123,
-                    'AutoPause': True,
-                    'SecondsUntilAutoPause': 123,
-                    'TimeoutAction': 'string'
-                },
-                'DeletionProtection': True,
-                'HttpEndpointEnabled': True,
-                'ActivityStreamMode': 'sync',
-                'ActivityStreamStatus': 'stopped',
-                'ActivityStreamKmsKeyId': 'string',
-                'ActivityStreamKinesisStreamName': 'string',
-                'CopyTagsToSnapshot': True,
-                'CrossAccountClone': True,
-                'DomainMemberships': [
-                    {
-                        'Domain': 'string',
-                        'Status': 'string',
-                        'FQDN': 'string',
-                        'IAMRoleName': 'string'
-                    },
-                ],
-                'GlobalWriteForwardingStatus': 'enabled',
-                'GlobalWriteForwardingRequested': True
             },
         ]
     }
@@ -123,29 +28,6 @@ class TestHandlerHandler(TestCase):
         'EventSourceMappings': [
             {
                 'UUID': 'string',
-                'BatchSize': 123,
-                'MaximumBatchingWindowInSeconds': 123,
-                'ParallelizationFactor': 123,
-                'EventSourceArn': 'string',
-                'FunctionArn': 'string',
-                'LastModified': '',
-                'LastProcessingResult': 'string',
-                'State': 'string',
-                'StateTransitionReason': 'string',
-                'DestinationConfig': {
-                    'OnSuccess': {
-                        'Destination': 'string'
-                    },
-                    'OnFailure': {
-                        'Destination': 'string'
-                    }
-                },
-                'Topics': [
-                    'string',
-                ],
-                'MaximumRecordAgeInSeconds': 123,
-                'BisectBatchOnFunctionError': True,
-                'MaximumRetryAttempts': 123
             },
         ]
     }
@@ -159,53 +41,84 @@ class TestHandlerHandler(TestCase):
         self.context = {'element': 'lithium'}
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.enable_trigger')
-    @mock.patch('src.handler.describe_db_clusters')
-    def test_start_test_db_nothing_to_start(self, mock_et, mock_ddc):
-        mock_et.return_value = self.mock_db_clusters
-        mock_et.return_value['DBClusters'][0]['DBClusterIdentifier'] = 'string'
-        mock_ddc.return_value = False
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_start_test_db_nothing_to_start(self, mock_boto):
         result = handler.start_test_db(self.initial_event, self.context)
         assert result['statusCode'] == 200
         assert result['message'] == 'Started the test db: False'
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.enable_trigger')
-    @mock.patch('src.handler.start_db_cluster')
-    def test_start_test_db_something_to_start(self, mock_ddc, mock_et, mock_sdc):
-        mock_ddc.return_value = True
-        mock_et.return_value = True
-        mock_sdc.return_value = self.mock_db_cluster_identifiers
-
-        result = handler.start_test_db(self.initial_event, self.context)
-        mock_et.assert_called_with(
-            'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
-        )
-        assert result['statusCode'] == 200
-        assert result['message'] == 'Started the test db: True'
-
-    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.disable_trigger')
-    @mock.patch('src.handler.describe_db_clusters')
-    def test_stop_test_db_nothing_to_stop(self, mock_dt, mock_ddc):
-        mock_dt.return_value = {}
-        mock_ddc.return_value = False
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_stop_test_db_nothing_to_stop(self, mock_boto):
         result = handler.stop_test_db(self.initial_event, self.context)
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the test db: False'
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.disable_trigger')
-    @mock.patch('src.handler.stop_db_cluster')
-    def test_stop_test_db_something_to_stop(self, mock_ddc, mock_dt, mock_sdc):
-        mock_ddc.return_value = True
-        mock_dt.return_value = True
-        mock_sdc.return_value = self.mock_db_cluster_identifiers
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_start_qa_db_nothing_to_start(self, mock_boto):
+        result = handler.start_qa_db(self.initial_event, self.context)
+        assert result['statusCode'] == 200
+        assert result['message'] == 'Started the qa db: False'
+
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_stop_qa_db_nothing_to_stop(self, mock_boto):
+        result = handler.stop_qa_db(self.initial_event, self.context)
+        assert result['statusCode'] == 200
+        assert result['message'] == 'Stopped the qa db: False'
+
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_start_test_db_something_to_start(self, mock_boto):
+        mock_rds = mock.Mock()
+        my_mock_db_clusters = self.mock_db_clusters
+        my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-test'
+        mock_rds.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_rds.start_db_cluster.return_value = {'nwcapture-test'}
+        mock_boto.return_value = mock_rds
+        mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        result = handler.start_test_db(self.initial_event, self.context)
+        assert result['statusCode'] == 200
+        assert result['message'] == 'Started the test db: True'
+
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_start_qa_db_something_to_start(self, mock_boto):
+        mock_rds = mock.Mock()
+        my_mock_db_clusters = self.mock_db_clusters
+        my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-qa'
+        mock_rds.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_boto.return_value = mock_rds
+        mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        result = handler.start_qa_db(self.initial_event, self.context)
+        assert result['statusCode'] == 200
+        assert result['message'] == 'Started the qa db: True'
+
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_stop_test_db_something_to_stop(self, mock_boto):
+        mock_rds = mock.Mock()
+        mock_boto.return_value = mock_rds
+        my_mock_db_clusters = self.mock_db_clusters
+        my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-test'
+        my_mock_db_clusters['DBClusters'][0]['Status'] = 'available'
+        mock_rds.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.stop_test_db(self.initial_event, self.context)
-        mock_dt.assert_called_with(
-            'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
-        )
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the test db: True'
+
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_stop_qa_db_something_to_stop(self, mock_boto):
+        mock_rds = mock.Mock()
+        mock_boto.return_value = mock_rds
+        my_mock_db_clusters = self.mock_db_clusters
+        my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-qa'
+        my_mock_db_clusters['DBClusters'][0]['Status'] = 'available'
+        mock_rds.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        result = handler.stop_qa_db(self.initial_event, self.context)
+        assert result['statusCode'] == 200
+        assert result['message'] == 'Stopped the qa db: True'

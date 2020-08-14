@@ -10,7 +10,7 @@ The test database for AQTS will be turned on at 7 am central time and turned off
 The QA database will be turned off automatically every Friday at 6 pm.
 
 ### What if I need to start a database manually?
-To start the test database manually, go to the lambda function you need and invoke it with any payload:
+In the AWS console, find the lambda function you need and invoke it with any payload:
 
 '''
 AWS Console->Lambda->Functions->aqts-capture-ecosystem-switch-TEST-startTestDb
