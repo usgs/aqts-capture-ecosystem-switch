@@ -17,25 +17,6 @@ provider:
     "wma:taggingVersion": 0.0.1
     "wma:costCenter": TBD
     commitIdentifier: ${git:sha1}
-  #iamRoleStatements:
-    # Allow the lambda function permission to create EINs, which is part of the
-    # AWSLambdaVPCAccessExecutionRole
-  #  - Effect: "Allow"
-  #    Action:
-  #      - "ec2:CreateNetworkInterface"
-  #      - "ec2:DescribeNetworkInterfaces"
-  #      - "ec2:DeleteNetworkInterface"
-  #      - "rds:StopDBInstance"
-  #      - "rds:StartDBInstance"
-  #      - "rds:DescribeDBInstances"
-  #      - "lambda:GetFunctionConfiguration"
-  #      - "logs:CreateLogGroup"
-  #      - "logs:CreateLogStream"
-  #      - "logs:PutLogEvents"
-  #      - "ec2:DescribeSecurityGroups"
-  #      - "ec2:DescribeSubnets"
-  #      - "ec2:DescribeVpcs"
-  #    Resource: "*"
 
 custom:
   exportGitVariables: false

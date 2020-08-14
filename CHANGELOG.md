@@ -7,3 +7,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 - New repository
+- Add initial version of the stop and start lambdas for test and QA db clusters
