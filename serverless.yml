@@ -12,30 +12,11 @@ provider:
     name: iow-cloud-applications
   stackTags:
     "wma:applicationId": "Aquarius TS Capture Ecosystem Switch"
-    "wma:contact": "Andrew Yan ayan@usgs.gov"
+    "wma:contact": "Kenneth Kehl kkehl@contractor.usgs.gov"
     "wma:environment": ${self:provider.stage}
     "wma:taggingVersion": 0.0.1
     "wma:costCenter": TBD
     commitIdentifier: ${git:sha1}
-  iamRoleStatements:
-    # Allow the lambda function permission to create EINs, which is part of the
-    # AWSLambdaVPCAccessExecutionRole
-    - Effect: "Allow"
-      Action:
-        - "ec2:CreateNetworkInterface"
-        - "ec2:DescribeNetworkInterfaces"
-        - "ec2:DeleteNetworkInterface"
-        - "rds:StopDBInstance"
-        - "rds:StartDBInstance"
-        - "rds:DescribeDBInstances"
-        - "lambda:GetFunctionConfiguration"
-        - "logs:CreateLogGroup"
-        - "logs:CreateLogStream"
-        - "logs:PutLogEvents"
-        - "ec2:DescribeSecurityGroups"
-        - "ec2:DescribeSubnets"
-        - "ec2:DescribeVpcs"
-      Resource: "*"
 
 custom:
   exportGitVariables: false
@@ -43,54 +24,6 @@ custom:
   vpc:
     securityGroupIds: ${ssm:/iow/retriever-capture/${self:provider.stage}/securityGroupIds~split}
     subnetIds: ${ssm:/iow/aws/vpc/${self:provider.stage}/subnetIds~split}
-
-
-resources:
-  Resources:
-   # ServerlessSecurityGroup:
-   #   Type: AWS::EC2::SecurityGroup
-   #   Properties:
-   #     GroupDescription: SecurityGroup for Serverless Functions
-   #     VpcId: ${env:VPC_ID}
-   # RDSSecurityGroup:
-   #   Type: AWS::EC2::SecurityGroup
-   #   Properties:
-   #     GroupDescription: Ingress for RDS Instance
-    #    VpcId: ${env:VPC_ID}
-   #     SecurityGroupIngress:
-   #     - IpProtocol: tcp
-   #       FromPort: '5432'
-   #       ToPort: '5432'
-   #       SourceSecurityGroupId:
-   #         Ref: ServerlessSecurityGroup
-    #RDSSubnetGroup:
-    #  Type: AWS::RDS::DBSubnetGroup
-    #  Properties:
-    #    DBSubnetGroupDescription: RDS Subnet Group
-    #    SubnetIds:
-    #      - ${env:SUBNET_ID_A}
-    #      - ${env:SUBNET_ID_B}
-    #      - ${env:SUBNET_ID_C}
-    RDSPostgresInstance:
-      Type: AWS::RDS::DBInstance
-      Properties:
-        AllocatedStorage: 100
-        AutoMinorVersionUpgrade: true
-        AvailabilityZone: ${self:provider.region}a
-        DBInstanceClass: db.t2.micro
-        DBName: ${env:DB_NAME}
-    #    DBSubnetGroupName:
-    #      Ref: RDSSubnetGroup
-        Engine: postgres
-        EngineVersion: 9.6.2
-        MasterUsername: ${env:DB_USERNAME}
-        MasterUserPassword: ${env:DB_PASSWORD}
-        PubliclyAccessible: false
-    #    VPCSecurityGroups:
-    #      - Fn::GetAtt: RDSSecurityGroup.GroupId
-
-
-
 
 functions:
   startTestDb:
@@ -101,11 +34,8 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          #rate: cron(0 8 * * ? *)
-          rate: rate(5 minutes)
+          rate: cron(0 12 ? * MON-FRI *)
           enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
 
   StopTestDb:
@@ -116,11 +46,8 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          #rate: cron(0 17 * * ? *)
-          rate: rate(5 minutes)
+          rate: cron(0 23 ? * MON-FRI *)
           enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
 
   StartQaDb:
@@ -129,13 +56,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       MAX_RETRIES: 6
-    events:
-      - schedule:
-          #rate: cron(0 8 * * ? *)
-          rate: rate(5 minutes)
-          enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
 
   StopQaDb:
@@ -146,9 +66,20 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          #rate: cron(0 17 * * ? *)
-          rate: rate(5 minutes)
+          rate: cron(0 23 ? * FRI *)
           enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
+
+
+plugins:
+  - serverless-plugin-git-variables
+  - serverless-python-requirements
+
+package:
+  exclude:
+    - node_modules/**
+    - Dockerfile
+    - .dockerignore
+    - Jenkinsfile
+    - package.json
+    - package-lock.json

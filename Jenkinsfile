@@ -7,7 +7,7 @@ pipeline {
         }
     }
     parameters {
-        choice(choices: ['TEST', 'QA', 'PROD-EXTERNAL'], description: 'Deploy Stage (i.e. tier)', name: 'DEPLOY_STAGE')
+        choice(choices: ['TEST'], description: 'Deploy Stage (i.e. tier)', name: 'DEPLOY_STAGE')
     }
     triggers {
         pollSCM('H/5 * * * *')
