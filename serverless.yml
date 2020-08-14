@@ -12,30 +12,30 @@ provider:
     name: iow-cloud-applications
   stackTags:
     "wma:applicationId": "Aquarius TS Capture Ecosystem Switch"
-    "wma:contact": "Andrew Yan ayan@usgs.gov"
+    "wma:contact": "Kenneth Kehl kkehl@contractor.usgs.gov"
     "wma:environment": ${self:provider.stage}
     "wma:taggingVersion": 0.0.1
     "wma:costCenter": TBD
     commitIdentifier: ${git:sha1}
-  iamRoleStatements:
+  #iamRoleStatements:
     # Allow the lambda function permission to create EINs, which is part of the
     # AWSLambdaVPCAccessExecutionRole
-    - Effect: "Allow"
-      Action:
-        - "ec2:CreateNetworkInterface"
-        - "ec2:DescribeNetworkInterfaces"
-        - "ec2:DeleteNetworkInterface"
-        - "rds:StopDBInstance"
-        - "rds:StartDBInstance"
-        - "rds:DescribeDBInstances"
-        - "lambda:GetFunctionConfiguration"
-        - "logs:CreateLogGroup"
-        - "logs:CreateLogStream"
-        - "logs:PutLogEvents"
-        - "ec2:DescribeSecurityGroups"
-        - "ec2:DescribeSubnets"
-        - "ec2:DescribeVpcs"
-      Resource: "*"
+  #  - Effect: "Allow"
+  #    Action:
+  #      - "ec2:CreateNetworkInterface"
+  #      - "ec2:DescribeNetworkInterfaces"
+  #      - "ec2:DeleteNetworkInterface"
+  #      - "rds:StopDBInstance"
+  #      - "rds:StartDBInstance"
+  #      - "rds:DescribeDBInstances"
+  #      - "lambda:GetFunctionConfiguration"
+  #      - "logs:CreateLogGroup"
+  #      - "logs:CreateLogStream"
+  #      - "logs:PutLogEvents"
+  #      - "ec2:DescribeSecurityGroups"
+  #      - "ec2:DescribeSubnets"
+  #      - "ec2:DescribeVpcs"
+  #    Resource: "*"
 
 custom:
   exportGitVariables: false
@@ -55,8 +55,6 @@ functions:
       - schedule:
           rate: cron(0 12 ? * MON-FRI *)
           enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
 
   StopTestDb:
@@ -68,10 +66,7 @@ functions:
     events:
       - schedule:
           rate: cron(0 23 ? * MON-FRI *)
-          #rate: rate(5 minutes)
           enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
 
   StartQaDb:
@@ -92,8 +87,6 @@ functions:
       - schedule:
           rate: cron(0 23 ? * FRI *)
           enabled: true
-          input:
-            key: 'min5'
     vpc: ${self:custom.vpc}
 
 

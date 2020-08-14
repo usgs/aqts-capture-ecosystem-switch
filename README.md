@@ -14,14 +14,12 @@ To start the test database manually, go to the lambda function you need and invo
 
 '''
 AWS Console->Lambda->Functions->aqts-capture-ecosystem-switch-TEST-startTestDb
-AWS Console->Lambda->Functions->aqts-capture-ecosystem-switch-TEST-stopTestDb
 AWS Console->Lambda->Functions->aqts-capture-ecosystem-switch-TEST-startQaDb
-AWS Console->Lambda->Functions->aqts-capture-ecosystem-switch-TEST-stopQaDb
 '''
 
 ### What if I need to prevent automatic shutdown of the database for a long running test?
 
 '''
-1. In the AWS console, delete the lambda function that stops the database you are interested
-2. When you have finished testing, deploy aqts-capture-ecosystem-switch again to restore the lambda.
+1. AWS Console->Event Bridge->Events->Rules->aqts-capture-ecosystem-switch-sw-stop<test or qa>->Disable
+2. Remember to enable again when your test is concluded.
 '''
