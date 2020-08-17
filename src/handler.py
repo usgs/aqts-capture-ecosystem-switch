@@ -6,8 +6,8 @@ QA_DB = 'nwcapture-qa'
 SQS_TEST = 'aqts-capture-trigger-queue-TEST'
 SQS_QA = 'aqts-capture-trigger-queue-QA'
 
-TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger', 'aqts-capture-raw-load-TEST-iowCapture']
-QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger', 'aqts-capture-raw-load-QA-iowCapture']
+TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger']
+QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
 
 
 def start_test_db(event, context):
