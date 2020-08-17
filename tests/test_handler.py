@@ -44,7 +44,6 @@ class TestHandler(TestCase):
     @mock.patch('src.utils.boto3', autospec=True)
     def test_start_test_db_nothing_to_start(self, mock_boto):
         result = handler.start_test_db(self.initial_event, self.context)
-        mock_boto.resource.assert_called_once_with('sqs', 'us-south-10')
         assert result['statusCode'] == 200
         assert result['message'] == 'Started the test db: False'
 
@@ -59,7 +58,6 @@ class TestHandler(TestCase):
     @mock.patch('src.utils.boto3', autospec=True)
     def test_start_qa_db_nothing_to_start(self, mock_boto):
         result = handler.start_qa_db(self.initial_event, self.context)
-        mock_boto.resource.assert_called_once_with('sqs', 'us-south-10')
         assert result['statusCode'] == 200
         assert result['message'] == 'Started the qa db: False'
 
@@ -81,7 +79,6 @@ class TestHandler(TestCase):
         mock_boto.client.return_value = mock_rds
         mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.start_test_db(self.initial_event, self.context)
-        mock_boto.resource.assert_called_once_with('sqs', 'us-south-10')
 
         assert result['statusCode'] == 200
         assert result['message'] == 'Started the test db: True'
@@ -96,7 +93,6 @@ class TestHandler(TestCase):
         mock_boto.client.return_value = mock_rds
         mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.start_qa_db(self.initial_event, self.context)
-        mock_boto.resource.assert_called_once_with('sqs', 'us-south-10')
         assert result['statusCode'] == 200
         assert result['message'] == 'Started the qa db: True'
 

@@ -4,10 +4,8 @@ import boto3
 
 def describe_db_clusters(action):
     my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
-    print(f"my_rds {my_rds}")
     # Get all the instances
     response = my_rds.describe_db_clusters()
-    print(f"response {response}")
     all_dbs = response['DBClusters']
     if action == "start":
         # Filter on the one that are not running yet
@@ -37,8 +35,8 @@ def stop_db_cluster(cluster_identifier):
 
 def purge_queue(queue_name):
     # Get the service resource
-    sqs = boto3.resource('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
-    queue = sqs.get_queue_by_name(QueueName=queue_name)
+    sqs = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
+    queue = sqs.get_queue_url(QueueName=queue_name)
     sqs.purge_queue(queue.url)
 
 
