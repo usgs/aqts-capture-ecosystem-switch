@@ -1,12 +1,6 @@
 import os
 import boto3
 
-TEST_DB = 'nwcapture-test'
-QA_SB = 'nwcapture-qa'
-TEST_TRIGGER = 'aqts-capture-trigger-TEST-aqtsCaptureTrigger'
-QA_TRIGGER = 'aqts-capture-trigger-QA-aqtsCaptureTrigger'
-
-
 def describe_db_clusters(action):
     my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
     # Get all the instances
