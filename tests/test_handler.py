@@ -69,14 +69,14 @@ class TestHandler(TestCase):
         assert result['message'] == 'Stopped the qa db: False'
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.utils.boto3', autospec=True)
+    @mock.patch('src.utils.boto3.client', autospec=True)
     def test_start_test_db_something_to_start(self, mock_boto):
         mock_client = mock.Mock()
+        mock_boto.return_value = mock_client
         my_mock_db_clusters = self.mock_db_clusters
         my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-test'
         mock_client.describe_db_clusters.return_value = my_mock_db_clusters
         mock_client.start_db_cluster.return_value = {'nwcapture-test'}
-        mock_boto.client.return_value = mock_client
         mock_client.get_queue_url.return_value = {'QueueUrl': 'queue'}
         mock_client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.start_test_db(self.initial_event, self.context)
@@ -85,13 +85,13 @@ class TestHandler(TestCase):
         assert result['message'] == 'Started the test db: True'
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.utils.boto3', autospec=True)
+    @mock.patch('src.utils.boto3.client', autospec=True)
     def test_start_qa_db_something_to_start(self, mock_boto):
         mock_client = mock.Mock()
+        mock_boto.return_value = mock_client
         my_mock_db_clusters = self.mock_db_clusters
         my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-qa'
         mock_client.describe_db_clusters.return_value = my_mock_db_clusters
-        mock_boto.client.return_value = mock_client
         mock_client.get_queue_url.return_value = {'QueueUrl': 'queue'}
         mock_client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.start_qa_db(self.initial_event, self.context)
