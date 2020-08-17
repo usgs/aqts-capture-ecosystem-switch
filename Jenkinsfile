@@ -1,4 +1,4 @@
-@Library(value='iow-ecs-pipeline@2.0.0', changelog=false) _
+@Library(value='iow-ecs-pipeline@2.2.0', changelog=false) _
 
 pipeline {
     agent {
@@ -36,7 +36,7 @@ pipeline {
         failure {
             script {
                 pipelineUtils.sendEmailNotification(
-                    to: 'ayan@usgs.gov',
+                    to: 'kkehl@contractor.usgs.gov',
                     attachLog: true
                 )
             }
