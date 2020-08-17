@@ -71,13 +71,14 @@ class TestHandler(TestCase):
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.utils.boto3', autospec=True)
     def test_start_test_db_something_to_start(self, mock_boto):
-        mock_rds = mock.Mock()
+        mock_client = mock.Mock()
         my_mock_db_clusters = self.mock_db_clusters
         my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-test'
-        mock_rds.describe_db_clusters.return_value = my_mock_db_clusters
-        mock_rds.start_db_cluster.return_value = {'nwcapture-test'}
-        mock_boto.client.return_value = mock_rds
-        mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        mock_client.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_client.start_db_cluster.return_value = {'nwcapture-test'}
+        mock_boto.client.return_value = mock_client
+        mock_client.get_queue_url.return_value = {'QueueUrl': 'queue'}
+        mock_client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.start_test_db(self.initial_event, self.context)
 
         assert result['statusCode'] == 200
@@ -86,12 +87,13 @@ class TestHandler(TestCase):
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.utils.boto3', autospec=True)
     def test_start_qa_db_something_to_start(self, mock_boto):
-        mock_rds = mock.Mock()
+        mock_client = mock.Mock()
         my_mock_db_clusters = self.mock_db_clusters
         my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-qa'
-        mock_rds.describe_db_clusters.return_value = my_mock_db_clusters
-        mock_boto.client.return_value = mock_rds
-        mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        mock_client.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_boto.client.return_value = mock_client
+        mock_client.get_queue_url.return_value = {'QueueUrl': 'queue'}
+        mock_client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.start_qa_db(self.initial_event, self.context)
         assert result['statusCode'] == 200
         assert result['message'] == 'Started the qa db: True'
@@ -99,13 +101,13 @@ class TestHandler(TestCase):
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.utils.boto3.client', autospec=True)
     def test_stop_test_db_something_to_stop(self, mock_boto):
-        mock_rds = mock.Mock()
-        mock_boto.return_value = mock_rds
+        mock_client = mock.Mock()
+        mock_boto.return_value = mock_client
         my_mock_db_clusters = self.mock_db_clusters
         my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-test'
         my_mock_db_clusters['DBClusters'][0]['Status'] = 'available'
-        mock_rds.describe_db_clusters.return_value = my_mock_db_clusters
-        mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        mock_client.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.stop_test_db(self.initial_event, self.context)
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the test db: True'
@@ -113,13 +115,13 @@ class TestHandler(TestCase):
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.utils.boto3.client', autospec=True)
     def test_stop_qa_db_something_to_stop(self, mock_boto):
-        mock_rds = mock.Mock()
-        mock_boto.return_value = mock_rds
+        mock_client = mock.Mock()
+        mock_boto.return_value = mock_client
         my_mock_db_clusters = self.mock_db_clusters
         my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = 'nwcapture-qa'
         my_mock_db_clusters['DBClusters'][0]['Status'] = 'available'
-        mock_rds.describe_db_clusters.return_value = my_mock_db_clusters
-        mock_rds.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        mock_client.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         result = handler.stop_qa_db(self.initial_event, self.context)
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the qa db: True'
