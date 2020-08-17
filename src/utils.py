@@ -37,7 +37,7 @@ def purge_queue(queue_name):
     # Get the service resource
     sqs = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
     queue_info = sqs.get_queue_url(QueueName=queue_name)
-    sqs.purge_queue(queue_info['QueueUrl'])
+    sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
 
 
 def disable_triggers(function_names):
