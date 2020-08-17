@@ -1,10 +1,13 @@
 import os
 import boto3
 
+
 def describe_db_clusters(action):
     my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
+    print(f"my_rds {my_rds}")
     # Get all the instances
     response = my_rds.describe_db_clusters()
+    print(f"response {response}")
     all_dbs = response['DBClusters']
     if action == "start":
         # Filter on the one that are not running yet
@@ -32,21 +35,27 @@ def stop_db_cluster(cluster_identifier):
     return True
 
 
-def disable_trigger(function_name):
-    my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
-    response = my_lambda.list_event_source_mappings(
-        FunctionName=function_name
-    )
-    for item in response['EventSourceMappings']:
-        my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=False)
-        return True
+def purge_queue(queue_name):
+    # Get the service resource
+    sqs = boto3.resource('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
+    queue = sqs.get_queue_by_name(QueueName=queue_name)
+    sqs.purge_queue(queue.url)
 
 
-def enable_trigger(function_name):
+def disable_triggers(function_names):
     my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
-    response = my_lambda.list_event_source_mappings(
-        FunctionName=function_name
-    )
-    for item in response['EventSourceMappings']:
-        my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
+
+    for function_name in function_names:
+        response = my_lambda.list_event_source_mappings(FunctionName=function_name)
+        for item in response['EventSourceMappings']:
+            my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=False)
+    return True
+
+
+def enable_triggers(function_names):
+    my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
+    for function_name in function_names:
+        response = my_lambda.list_event_source_mappings(FunctionName=function_name)
+        for item in response['EventSourceMappings']:
+            my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
     return True
