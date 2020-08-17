@@ -1,6 +1,7 @@
 import os
 import boto3
 
+
 def describe_db_clusters(action):
     my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
     # Get all the instances
@@ -32,21 +33,26 @@ def stop_db_cluster(cluster_identifier):
     return True
 
 
-def disable_trigger(function_name):
-    my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
-    response = my_lambda.list_event_source_mappings(
-        FunctionName=function_name
-    )
-    for item in response['EventSourceMappings']:
-        my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=False)
-        return True
+def purge_queue(queue_name):
+    sqs = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
+    queue_info = sqs.get_queue_url(QueueName=queue_name)
+    sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
 
 
-def enable_trigger(function_name):
+def disable_triggers(function_names):
     my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
-    response = my_lambda.list_event_source_mappings(
-        FunctionName=function_name
-    )
-    for item in response['EventSourceMappings']:
-        my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
+
+    for function_name in function_names:
+        response = my_lambda.list_event_source_mappings(FunctionName=function_name)
+        for item in response['EventSourceMappings']:
+            my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=False)
+    return True
+
+
+def enable_triggers(function_names):
+    my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
+    for function_name in function_names:
+        response = my_lambda.list_event_source_mappings(FunctionName=function_name)
+        for item in response['EventSourceMappings']:
+            my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
     return True
