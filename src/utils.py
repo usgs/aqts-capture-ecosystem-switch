@@ -1,6 +1,10 @@
+import logging
 import os
 import boto3
+import logging
 
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 def describe_db_clusters(action):
     my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
@@ -13,6 +17,7 @@ def describe_db_clusters(action):
         return rds_cluster_identifiers
     if action == "stop":
         # Filter on the one that are running
+
         rds_cluster_identifiers = [x['DBClusterIdentifier'] for x in all_dbs if x['Status'] == 'available']
         return rds_cluster_identifiers
 
@@ -46,6 +51,7 @@ def disable_triggers(function_names):
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
         for item in response['EventSourceMappings']:
             my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=False)
+            logger.debug(f"should have disabled trigger.  function name: {function_name} item: {item}")
     return True
 
 
