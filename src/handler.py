@@ -57,9 +57,9 @@ def start_db(db, triggers, queue_name):
 def stop_db(db, triggers):
     cluster_identifiers = describe_db_clusters("stop")
     stopped = False
+    disable_triggers(triggers)
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == db:
-            disable_triggers(triggers)
             stop_db_cluster(db)
             stopped = True
     return stopped
