@@ -1,5 +1,3 @@
-import logging
-
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
     purge_queue
 
@@ -10,9 +8,6 @@ SQS_QA = 'aqts-capture-trigger-queue-QA'
 
 TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger']
 QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
-
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 def start_test_db(event, context):
@@ -62,9 +57,7 @@ def start_db(db, triggers, queue_name):
 def stop_db(db, triggers):
     cluster_identifiers = describe_db_clusters("stop")
     stopped = False
-    logger.debug(f"going to disable {triggers}")
     disable_triggers(triggers)
-    logger.debug(f"should have disabled {triggers}")
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == db:
             stop_db_cluster(db)
