@@ -34,8 +34,7 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: rate(30 minutes)
-          #rate: cron(0 12 ? * MON-FRI *)
+          rate: cron(0 12 ? * MON-FRI *)
           enabled: true
     vpc: ${self:custom.vpc}
 
@@ -47,8 +46,7 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: rate(20 minutes)
-          #rate: cron(0 23 ? * MON-FRI *)
+          rate: cron(0 23 ? * MON-FRI *)
           enabled: true
     vpc: ${self:custom.vpc}
 
