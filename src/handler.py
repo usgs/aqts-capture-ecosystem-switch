@@ -6,7 +6,8 @@ QA_DB = 'nwcapture-qa'
 SQS_TEST = 'aqts-capture-trigger-queue-TEST'
 SQS_QA = 'aqts-capture-trigger-queue-QA'
 
-TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger']
+TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger',
+                        'aqts-capture-trigger-tmp-TEST-aqtsCaptureTrigger']
 QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
 
 
