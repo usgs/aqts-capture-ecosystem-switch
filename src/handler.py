@@ -6,7 +6,8 @@ QA_DB = 'nwcapture-qa'
 SQS_TEST = 'aqts-capture-trigger-queue-TEST'
 SQS_QA = 'aqts-capture-trigger-queue-QA'
 
-TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger']
+TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger',
+                        'aqts-capture-trigger-tmp-TEST-aqtsCaptureTrigger']
 QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
 
 
@@ -57,9 +58,9 @@ def start_db(db, triggers, queue_name):
 def stop_db(db, triggers):
     cluster_identifiers = describe_db_clusters("stop")
     stopped = False
+    disable_triggers(triggers)
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == db:
-            disable_triggers(triggers)
             stop_db_cluster(db)
             stopped = True
     return stopped
