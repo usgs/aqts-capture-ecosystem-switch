@@ -1,5 +1,7 @@
 import os
 
+import boto3
+
 from src.config import CONFIG
 from src.rds import RDS
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
@@ -74,20 +76,32 @@ def stop_db(db, triggers):
     return stopped
 
 
-def stop_test_observations_db(event, context):
-    logger.debug("enter stop_test_observations_db")
-    # 1. query the
-    sql = "select count(1) from batch_job_execution where status not in ('COMPLETED')"
+def stop_observations_test_db(event, context):
+    sql = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
     rds = RDS()
-
-    logger.debug(f"about to run query {sql}")
     result = rds.execute_sql(sql)
     if result[0] > 0:
-        logger.debug("something is running")
+        logger.debug(f"Cannot shutdown down observations test db because something {result[0]} processes are running")
     elif result[0] == 0:
-        logger.debug("nothing is running")
+        logger.debug("Shutting down observations test db because no processes are running")
     else:
         raise Exception(f"something wrong with db result {result}")
-    # boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-test')
+    boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-test')
 
-    logger.debug("exit stop_test_observations_db")
+def start_observations_test_db(event, context):
+    boto3.client('rds').start_db_instance(DBInstanceIdentifier='observation-test')
+
+def start_observations_test_qa(event, context):
+    boto3.client('rds').start_db_instance(DBInstanceIdentifier='observation-test')
+
+def start_observations_test_db(event, context):
+    sql = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
+    rds = RDS()
+    result = rds.execute_sql(sql)
+    if result[0] > 0:
+        logger.debug(f"Cannot shutdown down observations test db because something {result[0]} processes are running")
+    elif result[0] == 0:
+        logger.debug("Shutting down observations test db because no processes are running")
+    else:
+        raise Exception(f"something wrong with db result {result}")
+    boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-test')
