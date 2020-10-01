@@ -1,3 +1,4 @@
+from src.config import CONFIG
 from src.rds import RDS
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
     purge_queue
@@ -74,6 +75,9 @@ def stop_db(db, triggers):
 def stop_test_observations_db(event, context):
     logger.debug("enter stop_test_observations_db")
     # 1. query the
+    logger.debug(f"host {CONFIG['rds']['host']}")
+    logger.debug(f"host {CONFIG['rds']['database']}")
+    logger.debug(f"host {CONFIG['rds']['user']}")
 
     sql = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
     rds = RDS()

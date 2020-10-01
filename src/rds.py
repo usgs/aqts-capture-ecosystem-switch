@@ -38,6 +38,7 @@ class RDS:
             # keyword argument from https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS
 
         }
+
         logger.debug("created RDS instance %s" % self.connection_parameters)
         self.conn, self.cursor = self._connect()
 
