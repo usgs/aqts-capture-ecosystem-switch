@@ -69,13 +69,24 @@ def _stop_db(db, triggers):
 
 
 def stop_observations_db(event, context):
-    _run_query()
-    if os.getenv('STAGE') == 'TEST':
-        boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observations-test')
-    elif os.getenv('STAGE') == 'QA':
-        boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observations-qa')
-    else:
+    if os.getenv('STAGE') != 'TEST' and os.getenv('STAGE') != 'QA':
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
+    should_stop = _run_query()
+    if not should_stop:
+        return {
+            'statusCode': 200,
+            'message': f"Could not stop the {os.getenv('STAGE')} observations db. It was busy."
+        }
+    if os.getenv('STAGE') == 'TEST':
+        logger.debug("trying to stop test database")
+        boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observations-test')
+    else:
+        logger.debug("trying to stop qa database")
+        boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observations-qa')
+    return {
+        'statusCode': 200,
+        'message': f"Stopped the {os.getenv('STAGE')} db."
+    }
 
 
 def start_observations_db(event, context):
@@ -88,10 +99,12 @@ def start_observations_db(event, context):
 def _run_query():
     rds = RDS()
     result = rds.execute_sql(SQL)
+    print(f"RESULT {result}")
     if result[0] > 0:
         logger.debug(f"Cannot shutdown down observations test db because {result[0]} processes are running")
-        return
+        return False
     elif result[0] == 0:
         logger.debug("Shutting down observations test db because no processes are running")
+        return True
     else:
         raise Exception(f"something wrong with db result {result}")

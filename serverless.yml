@@ -6,7 +6,7 @@ provider:
   stage: ${opt:stage, 'TEST'}
   runtime: python3.8
   memorySize: 128
-  timeout: 45
+  timeout: 30
   logRetentionInDays: 90
   deploymentBucket:
     name: iow-cloud-applications
@@ -20,10 +20,10 @@ provider:
 
 custom:
   startObservationSchedules:
-    TEST: cron(0 22 ? * MON-FRI *)
-    QA: cron(0 22 ? * MON-FRI *)
+    TEST: cron(0 12 ? * MON-FRI *)
+    QA: cron(0 12 ? * MON-FRI *)
   stopObservationSchedules:
-    TEST: cron(30 21 ? * MON-FRI *)
+    TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
   startCaptureSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
