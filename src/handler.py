@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import boto3
 from src.rds import RDS
@@ -33,10 +34,16 @@ def start_capture_db(event, context):
 
 
 def stop_capture_db(event, context):
+    stopped = False
     if os.getenv('STAGE') == 'TEST':
         stopped = _stop_db(TEST_DB, TEST_LAMBDA_TRIGGERS)
     elif os.getenv('STAGE') == 'QA':
-        stopped = _stop_db(QA_DB, QA_LAMBDA_TRIGGERS)
+        # The QA db only shuts down automatically on Fridays
+        day_of_week = datetime.today().weekday()
+        if day_of_week == 4:
+            stopped = _stop_db(QA_DB, QA_LAMBDA_TRIGGERS)
+        else:
+            stopped = "Did not stop QA database because today is not Friday"
     else:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     return {

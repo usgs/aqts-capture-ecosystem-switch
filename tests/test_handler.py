@@ -1,3 +1,4 @@
+import datetime
 import os
 from unittest import TestCase, mock
 
@@ -71,7 +72,11 @@ class TestHandler(TestCase):
         os.environ['STAGE'] = 'QA'
         result = handler.stop_capture_db(self.initial_event, self.context)
         assert result['statusCode'] == 200
-        assert result['message'] == 'Stopped the QA db: False'
+        day_of_week = datetime.datetime.today().weekday()
+        if day_of_week == 4:
+            assert result['message'] == 'Stopped the QA db: True'
+        else:
+            assert result['message'] == 'Stopped the QA db: Did not stop QA database because today is not Friday'
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.utils.boto3.client', autospec=True)
@@ -133,4 +138,8 @@ class TestHandler(TestCase):
         os.environ['STAGE'] = 'QA'
         result = handler.stop_capture_db(self.initial_event, self.context)
         assert result['statusCode'] == 200
-        assert result['message'] == 'Stopped the QA db: True'
+        day_of_week = datetime.datetime.today().weekday()
+        if day_of_week == 4:
+            assert result['message'] == 'Stopped the QA db: True'
+        else:
+            assert result['message'] == 'Stopped the QA db: Did not stop QA database because today is not Friday'
