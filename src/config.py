@@ -17,10 +17,10 @@ CONFIG = {
     },
     'rds': {
         'host': env('DB_HOST'),
-        'port': env('DB_PORT', '5432'),
-        'database': env('DB_NAME', 'retriever_capture'),
+        'port': env('DB_PORT'),
+        'database': env('DB_NAME'),
         # default to postgres but could be a schema owner instead
-        'user': env('WQP_READ_ONLY_USERNAME', 'postgres'),
+        'user': env('WQP_READ_ONLY_USERNAME'),
         'password': env('WQP_READ_ONLY_PASSWORD')
     }
 }
