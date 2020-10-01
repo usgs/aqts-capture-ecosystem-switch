@@ -77,7 +77,7 @@ def stop_db(db, triggers):
 def stop_test_observations_db(event, context):
     logger.debug("enter stop_test_observations_db")
     # 1. query the
-    sql = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
+    sql = "select count(1) from batch_job_execution where status not in ('COMPLETED')"
     rds = RDS()
 
     logger.debug(f"about to run query {sql}")
