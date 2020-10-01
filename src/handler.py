@@ -82,7 +82,12 @@ def stop_test_observations_db(event, context):
 
     logger.debug(f"about to run query {sql}")
     result = rds.execute_sql(sql)
-    logger.debug(f"query ran with result {result}")
+    if result[0] > 0:
+        logger.debug("something is running")
+    elif result[0] == 0:
+        logger.debug("nothing is running")
+    else:
+        raise Exception(f"something wrong with db result {result}")
     # boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-test')
 
     logger.debug("exit stop_test_observations_db")
