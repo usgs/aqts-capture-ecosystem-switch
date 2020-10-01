@@ -8,11 +8,9 @@ TEST_DB = 'nwcapture-test'
 QA_DB = 'nwcapture-qa'
 SQS_TEST = 'aqts-capture-trigger-queue-TEST'
 SQS_QA = 'aqts-capture-trigger-queue-QA'
-
-TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger',
-                        'aqts-capture-trigger-tmp-TEST-aqtsCaptureTrigger']
+TEST_LAMBDA_TRIGGERS = [
+    'aqts-capture-trigger-TEST-aqtsCaptureTrigger', 'aqts-capture-trigger-tmp-TEST-aqtsCaptureTrigger']
 QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
-
 SQL = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
 
 logger = logging.getLogger(__name__)
@@ -76,20 +74,20 @@ def stop_db(db, triggers):
 
 def stop_observations_test_db(event, context):
     _run_query()
-    boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-test')
+    boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observations-test')
 
 
 def start_observations_test_db(event, context):
-    boto3.client('rds').start_db_instance(DBInstanceIdentifier='observation-test')
+    boto3.client('rds').start_db_instance(DBInstanceIdentifier='observations-test')
 
 
 def start_observations_qa_db(event, context):
-    boto3.client('rds').start_db_instance(DBInstanceIdentifier='observation-qa')
+    boto3.client('rds').start_db_instance(DBInstanceIdentifier='observations-qa')
 
 
 def stop_observations_qa_db(event, context):
     _run_query()
-    boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-qa')
+    boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observations-qa')
 
 
 def _run_query():

@@ -25,9 +25,7 @@ class RDS:
     def __init__(self, connect_timeout=65):
         """
         connect to the database resource.
-
         wait for 50 seconds before giving up on getting a connection
-
         """
         self.connection_parameters = {
             'host': CONFIG['rds']['host'],
@@ -36,7 +34,6 @@ class RDS:
             'password': CONFIG['rds']['password'],
             'connect_timeout': connect_timeout
             # keyword argument from https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS
-
         }
 
         logger.debug("created RDS instance %s" % self.connection_parameters)
@@ -60,12 +57,10 @@ class RDS:
             raise RuntimeError
 
     def execute_sql(self, sql):
-        # logger.debug(f'SQL: {self.cursor.mogrify(sql)}.')
         try:
             self.cursor.execute(sql)
             return self.cursor.fetchone()
         except (OperationalError, DataError, IntegrityError) as e:
             logger.debug(f'Error during SQL execution: {repr(e)}', exc_info=True)
-            logger.debug('Transaction will be rolled back.')
             self.conn.rollback()
 
