@@ -5,9 +5,6 @@ This module manages persisting data from a message into the RDS Resource.
 # the postgresql connection module
 from psycopg2 import connect
 from psycopg2 import OperationalError, DataError, IntegrityError
-# json allows us to convert between dictionaries and json.
-import json
-import datetime
 
 # project specific configuration parameters.
 from .config import CONFIG
@@ -17,7 +14,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
 
 
 class RDS:
@@ -63,4 +59,3 @@ class RDS:
         except (OperationalError, DataError, IntegrityError) as e:
             logger.debug(f'Error during SQL execution: {repr(e)}', exc_info=True)
             self.conn.rollback()
-

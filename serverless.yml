@@ -24,49 +24,34 @@ custom:
   vpc:
     securityGroupIds: ${ssm:/iow/retriever-capture/${self:provider.stage}/securityGroupIds~split}
     subnetIds: ${ssm:/iow/aws/vpc/${self:provider.stage}/subnetIds~split}
-  testObservationsDb:
-    connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-TEST~true}
-  qaObservationsDb:
-    connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-QA~true}
+  observationsDb:
+    connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-${self:provider.stage}~true}
 
 
 functions:
 
-  StopTestObservationDb:
-    handler: src.handler.stop_observations_test_db
+  StopObservationsDb:
+    handler: src.handler.stop_observations_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
-      DB_HOST: ${self:custom.testObservationsDb.connectInfo.DATABASE_ADDRESS}
-      DB_USER: ${self:custom.testObservationsDb.connectInfo.WQP_READ_ONLY_USERNAME}
-      DB_NAME: ${self:custom.testObservationsDb.connectInfo.DATABASE_NAME}
-      DB_PASSWORD: ${self:custom.testObservationsDb.connectInfo.WQP_READ_ONLY_PASSWORD}
+      DB_HOST: ${self:custom.observationsDb.connectInfo.DATABASE_ADDRESS}
+      DB_USER: ${self:custom.observationsDb.connectInfo.WQP_READ_ONLY_USERNAME}
+      DB_NAME: ${self:custom.observationsDb.connectInfo.DATABASE_NAME}
+      DB_PASSWORD: ${self:custom.observationsDb.connectInfo.WQP_READ_ONLY_PASSWORD}
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
     events:
       - schedule:
           rate: cron(0 23 ? * MON-FRI *)
           enabled: true
     vpc: ${self:custom.vpc}
 
-  StopQaObservationDb:
-    handler: src.handler.stop_observations_qa_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
-    environment:
-      DB_HOST: ${self:custom.qaObservationsDb.connectInfo.DATABASE_ADDRESS}
-      DB_USER: ${self:custom.qaObservationsDb.connectInfo.WQP_READ_ONLY_USERNAME}
-      DB_NAME: ${self:custom.qaObservationsDb.connectInfo.DATABASE_NAME}
-      DB_PASSWORD: ${self:custom.qaObservationsDb.connectInfo.WQP_READ_ONLY_PASSWORD}
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-    events:
-      - schedule:
-          rate: cron(0 23 ? * MON-FRI *)
-          enabled: true
-    vpc: ${self:custom.vpc}
-
-  StartObservationsTestDb:
-    handler: src.handler.start_observations_test_db
+  StartObservationsDb:
+    handler: src.handler.start_observations_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
       MAX_RETRIES: 6
     events:
       - schedule:
@@ -74,12 +59,12 @@ functions:
           enabled: true
     vpc: ${self:custom.vpc}
 
-
-  StartObservationsQaDb:
-    handler: src.handler.start_observations_qa_db
+  StartCaptureDb:
+    handler: src.handler.start_capture_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
       MAX_RETRIES: 6
     events:
       - schedule:
@@ -87,47 +72,16 @@ functions:
           enabled: true
     vpc: ${self:custom.vpc}
 
-  StartTestDb:
-    handler: src.handler.start_test_db
+  StopCaptureDb:
+    handler: src.handler.stop_capture_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      MAX_RETRIES: 6
-    events:
-      - schedule:
-          rate: cron(0 12 ? * MON-FRI *)
-          enabled: true
-    vpc: ${self:custom.vpc}
-
-  StopTestDb:
-    handler: src.handler.stop_test_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
       MAX_RETRIES: 6
     events:
       - schedule:
           rate: cron(0 23 ? * MON-FRI *)
-          enabled: true
-    vpc: ${self:custom.vpc}
-
-  StartQaDb:
-    handler: src.handler.start_qa_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      MAX_RETRIES: 6
-    vpc: ${self:custom.vpc}
-
-  StopQaDb:
-    handler: src.handler.stop_qa_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      MAX_RETRIES: 6
-    events:
-      - schedule:
-          rate: cron(0 23 ? * FRI *)
           enabled: true
     vpc: ${self:custom.vpc}
 
