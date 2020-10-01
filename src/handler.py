@@ -1,5 +1,7 @@
+from src.rds import RDS
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
     purge_queue
+import logging
 
 TEST_DB = 'nwcapture-test'
 QA_DB = 'nwcapture-qa'
@@ -9,6 +11,9 @@ SQS_QA = 'aqts-capture-trigger-queue-QA'
 TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger',
                         'aqts-capture-trigger-tmp-TEST-aqtsCaptureTrigger']
 QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def start_test_db(event, context):
@@ -64,3 +69,18 @@ def stop_db(db, triggers):
             stop_db_cluster(db)
             stopped = True
     return stopped
+
+
+def stop_test_observations_db(event, context):
+    logger.debug("enter stop_test_observations_db")
+    # 1. query the
+
+    sql = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
+    rds = RDS()
+
+    logger.debug(f"about to run query {sql}")
+    result = rds.execute_sql(sql)
+    logger.debug(f"query ran with result {result}")
+    # boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-test')
+
+    logger.debug("exit stop_test_observations_db")
