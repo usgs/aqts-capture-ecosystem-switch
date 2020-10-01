@@ -19,8 +19,7 @@ CONFIG = {
         'host': env('DB_HOST'),
         'port': env('DB_PORT'),
         'database': env('DB_NAME'),
-        # default to postgres but could be a schema owner instead
-        'user': env('WQP_READ_ONLY_USERNAME'),
-        'password': env('WQP_READ_ONLY_PASSWORD')
+        'user': env('DB_USER'),
+        'password': env('DB_PASSWORD')
     }
 }
