@@ -20,7 +20,7 @@ CONFIG = {
         'port': env('DB_PORT', '5432'),
         'database': env('DB_NAME', 'retriever_capture'),
         # default to postgres but could be a schema owner instead
-        'user': env('DB_USER', 'postgres'),
-        'password': env('DB_PASSWORD')
+        'user': env('WQP_READ_ONLY_USERNAME', 'postgres'),
+        'password': env('WQP_READ_ONLY_PASSWORD')
     }
 }
