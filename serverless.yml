@@ -19,6 +19,19 @@ provider:
     commitIdentifier: ${git:sha1}
 
 custom:
+  startObservationSchedules:
+    TEST: cron(0 22 ? * MON-FRI *)
+    QA: cron(0 22 ? * MON-FRI *)
+  stopObservationSchedules:
+    TEST: cron(30 21 ? * MON-FRI *)
+    QA: cron(0 23 ? * FRI *)
+  startCaptureSchedules:
+    TEST: cron(0 12 ? * MON-FRI *)
+    QA: cron(0 12 ? * MON-FRI *)
+  stopCaptureSchedules:
+    TEST: cron(0 23 ? * MON-FRI *)
+    QA: cron(0 23 ? * FRI *)
+
   exportGitVariables: false
   accountNumber: ${ssm:/iow/aws/accountNumber}
   vpc:
@@ -30,7 +43,6 @@ custom:
 
 functions:
 
-
   StartObservationsDb:
     handler: src.handler.start_observations_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
@@ -40,8 +52,7 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: cron(0 12 * * ? *)
-          #rate: cron(0 12 ? * MON-FRI *)
+          rate: ${self:custom.startObservationSchedules.${self:provider.stage}}
           enabled: true
     vpc: ${self:custom.vpc}
 
@@ -57,8 +68,7 @@ functions:
       STAGE: ${self:provider.stage}
     events:
       - schedule:
-          rate: cron(0 23 * * ? *)
-          #rate: cron(0 23 ? * MON-FRI *)
+          rate: ${self:custom.startObservationSchedules.${self:provider.stage}}
           enabled: true
     vpc: ${self:custom.vpc}
 
@@ -71,7 +81,7 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: cron(0 12 ? * MON-FRI *)
+          rate: ${self:custom.startCaptureSchedules.${self:provider.stage}}
           enabled: true
     vpc: ${self:custom.vpc}
 
@@ -84,10 +94,9 @@ functions:
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: cron(0 23 ? * MON-FRI *)
+          rate: ${self:custom.stopCaptureSchedules.${self:provider.stage}}
           enabled: true
     vpc: ${self:custom.vpc}
-
 
 plugins:
   - serverless-plugin-git-variables
