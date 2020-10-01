@@ -62,7 +62,8 @@ class RDS:
     def execute_sql(self, sql):
         # logger.debug(f'SQL: {self.cursor.mogrify(sql)}.')
         try:
-            return self.cursor.execute(sql)
+            self.cursor.execute(sql)
+            return self.cursor.fetchone()
         except (OperationalError, DataError, IntegrityError) as e:
             logger.debug(f'Error during SQL execution: {repr(e)}', exc_info=True)
             logger.debug('Transaction will be rolled back.')
