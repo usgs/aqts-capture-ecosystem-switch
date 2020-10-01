@@ -1,8 +1,4 @@
-import os
-
 import boto3
-
-from src.config import CONFIG
 from src.rds import RDS
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
     purge_queue
@@ -16,6 +12,8 @@ SQS_QA = 'aqts-capture-trigger-queue-QA'
 TEST_LAMBDA_TRIGGERS = ['aqts-capture-trigger-TEST-aqtsCaptureTrigger',
                         'aqts-capture-trigger-tmp-TEST-aqtsCaptureTrigger']
 QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
+
+SQL = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -77,31 +75,30 @@ def stop_db(db, triggers):
 
 
 def stop_observations_test_db(event, context):
-    sql = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
-    rds = RDS()
-    result = rds.execute_sql(sql)
-    if result[0] > 0:
-        logger.debug(f"Cannot shutdown down observations test db because something {result[0]} processes are running")
-    elif result[0] == 0:
-        logger.debug("Shutting down observations test db because no processes are running")
-    else:
-        raise Exception(f"something wrong with db result {result}")
+    _run_query()
     boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-test')
+
 
 def start_observations_test_db(event, context):
     boto3.client('rds').start_db_instance(DBInstanceIdentifier='observation-test')
 
-def start_observations_test_qa(event, context):
-    boto3.client('rds').start_db_instance(DBInstanceIdentifier='observation-test')
 
-def start_observations_test_db(event, context):
-    sql = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
+def start_observations_qa_db(event, context):
+    boto3.client('rds').start_db_instance(DBInstanceIdentifier='observation-qa')
+
+
+def stop_observations_qa_db(event, context):
+    _run_query()
+    boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-qa')
+
+
+def _run_query():
     rds = RDS()
-    result = rds.execute_sql(sql)
+    result = rds.execute_sql(SQL)
     if result[0] > 0:
-        logger.debug(f"Cannot shutdown down observations test db because something {result[0]} processes are running")
+        logger.debug(f"Cannot shutdown down observations test db because {result[0]} processes are running")
+        return
     elif result[0] == 0:
         logger.debug("Shutting down observations test db because no processes are running")
     else:
         raise Exception(f"something wrong with db result {result}")
-    boto3.client('rds').stop_db_instance(DBInstanceIdentifier='observation-test')
