@@ -68,7 +68,7 @@ functions:
       STAGE: ${self:provider.stage}
     events:
       - schedule:
-          rate: ${self:custom.startObservationSchedules.${self:provider.stage}}
+          rate: ${self:custom.stopObservationSchedules.${self:provider.stage}}
           enabled: true
     vpc: ${self:custom.vpc}
 
