@@ -6,7 +6,7 @@ provider:
   stage: ${opt:stage, 'TEST'}
   runtime: python3.8
   memorySize: 128
-  timeout: 45
+  timeout: 30
   logRetentionInDays: 90
   deploymentBucket:
     name: iow-cloud-applications
@@ -19,57 +19,88 @@ provider:
     commitIdentifier: ${git:sha1}
 
 custom:
+  startObservationSchedules:
+    TEST: cron(0 12 ? * MON-FRI *)
+    QA: cron(0 14 ? * MON *)
+  stopObservationSchedules:
+    TEST: cron(0 23 ? * MON-FRI *)
+    QA: cron(0 23 ? * FRI *)
+  startCaptureSchedules:
+    TEST: cron(0 12 ? * MON-FRI *)
+    QA: cron(0 14 ? * MON *)
+  stopCaptureSchedules:
+    TEST: cron(0 23 ? * MON-FRI *)
+    QA: cron(0 23 ? * FRI *)
+  startScheduleEnabled:
+    TEST: true
+    QA: false
+
+
   exportGitVariables: false
   accountNumber: ${ssm:/iow/aws/accountNumber}
   vpc:
     securityGroupIds: ${ssm:/iow/retriever-capture/${self:provider.stage}/securityGroupIds~split}
     subnetIds: ${ssm:/iow/aws/vpc/${self:provider.stage}/subnetIds~split}
+  observationsDb:
+    connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-${self:provider.stage}~true}
+
 
 functions:
-  StartTestDb:
-    handler: src.handler.start_test_db
+
+  StartObservationsDb:
+    handler: src.handler.start_observations_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: cron(0 12 ? * MON-FRI *)
+          rate: ${self:custom.startObservationSchedules.${self:provider.stage}}
+          enabled: ${self:custom.startScheduleEnabled.${self:provider.stage}}
+    vpc: ${self:custom.vpc}
+
+  StopObservationsDb:
+    handler: src.handler.stop_observations_db
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      DB_HOST: ${self:custom.observationsDb.connectInfo.DATABASE_ADDRESS}
+      DB_USER: ${self:custom.observationsDb.connectInfo.WQP_READ_ONLY_USERNAME}
+      DB_NAME: ${self:custom.observationsDb.connectInfo.DATABASE_NAME}
+      DB_PASSWORD: ${self:custom.observationsDb.connectInfo.WQP_READ_ONLY_PASSWORD}
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+    events:
+      - schedule:
+          rate: ${self:custom.stopObservationSchedules.${self:provider.stage}}
           enabled: true
     vpc: ${self:custom.vpc}
 
-  StopTestDb:
-    handler: src.handler.stop_test_db
+  StartCaptureDb:
+    handler: src.handler.start_capture_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: cron(0 23 ? * MON-FRI *)
-          enabled: true
+          rate: ${self:custom.startCaptureSchedules.${self:provider.stage}}
+          enabled: ${self:custom.startScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
-  StartQaDb:
-    handler: src.handler.start_qa_db
+  StopCaptureDb:
+    handler: src.handler.stop_capture_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      MAX_RETRIES: 6
-    vpc: ${self:custom.vpc}
-
-  StopQaDb:
-    handler: src.handler.stop_qa_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
       MAX_RETRIES: 6
     events:
       - schedule:
-          rate: cron(0 23 ? * FRI *)
+          rate: ${self:custom.stopCaptureSchedules.${self:provider.stage}}
           enabled: true
     vpc: ${self:custom.vpc}
-
 
 plugins:
   - serverless-plugin-git-variables
