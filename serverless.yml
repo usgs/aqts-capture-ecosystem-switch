@@ -21,17 +21,20 @@ provider:
 custom:
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
+    QA: cron(0 14 ? * MON *)
   stopObservationSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
   startCaptureSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
+    QA: cron(0 14 ? * MON *)
   stopCaptureSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
   startScheduleEnabled:
     TEST: true
     QA: false
+
 
   exportGitVariables: false
   accountNumber: ${ssm:/iow/aws/accountNumber}
