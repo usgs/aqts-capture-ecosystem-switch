@@ -21,16 +21,17 @@ provider:
 custom:
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
-    QA: cron(0 12 ? * MON-FRI *)
   stopObservationSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
   startCaptureSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
-    QA: cron(0 12 ? * MON-FRI *)
   stopCaptureSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
+  startScheduleEnabled:
+    TEST: true
+    QA: false
 
   exportGitVariables: false
   accountNumber: ${ssm:/iow/aws/accountNumber}
@@ -53,7 +54,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.startObservationSchedules.${self:provider.stage}}
-          enabled: true
+          enabled: ${self:custom.startScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   StopObservationsDb:
@@ -82,7 +83,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.startCaptureSchedules.${self:provider.stage}}
-          enabled: true
+          enabled: ${self:custom.startScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   StopCaptureDb:
