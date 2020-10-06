@@ -19,7 +19,7 @@ SQL = "select count(1) from batch_job_execution where status not in ('COMPLETED'
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-cloudwatch_client = boto3.client('cloudwatch')
+cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION'))
 
 def start_capture_db(event, context):
     if os.getenv('STAGE') == 'TEST':
@@ -113,16 +113,22 @@ def control_db_utilization(event, context):
                                 "Value": "nwcapture-test-instance1"
                             }]
                     },
-                    'Period': 300,
+                    'Period': 600,
                     'Stat': 'Average',
                 }
             }
         ],
-        StartTime=(datetime.now() - timedelta(seconds=300)).timestamp(),
+        StartTime=(datetime.now() - timedelta(seconds=600)).timestamp(),
         EndTime=datetime.now().timestamp()
     )
     my_result = response['MetricDataResults'][0]['Values']
     logger.info(f"my_result={my_result}")
+    if my_result[0] > 85:
+        logger.info(f"disabling trigger because db cpu is at {my_result[0]}")
+        disable_triggers(TEST_LAMBDA_TRIGGERS)
+    else:
+        logger.info(f"enabling trigger because db cpu is at {my_result[0]}")
+        enable_triggers(TEST_LAMBDA_TRIGGERS)
 
 
 def _run_query():

@@ -1,10 +1,6 @@
-import logging
 import os
 import boto3
-import logging
 
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 def describe_db_clusters(action):
     my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
