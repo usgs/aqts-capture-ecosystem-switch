@@ -118,10 +118,11 @@ def control_db_utilization(event, context):
                 }
             }
         ],
-        StartTime=(datetime.now() - timedelta(seconds=300 * 3)).timestamp(),
+        StartTime=(datetime.now() - timedelta(seconds=300)).timestamp(),
         EndTime=datetime.now().timestamp()
     )
-    logger.info(f"response={response}")
+    my_result = response['MetricDataResults'][0]['Values']
+    logger.info(f"my_result={my_result}")
 
 
 def _run_query():
