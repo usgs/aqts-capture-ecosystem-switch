@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 
 import boto3
 from src.rds import RDS
@@ -16,8 +17,9 @@ QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
 SQL = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
+cloudwatch_client = boto3.client('cloudwatch')
 
 def start_capture_db(event, context):
     if os.getenv('STAGE') == 'TEST':
@@ -96,6 +98,32 @@ def start_observations_db(event, context):
         boto3.client('rds').start_db_instance(DBInstanceIdentifier='observations-qa')
 
 
+def control_db_utilization(event, context):
+    response = cloudwatch_client.get_metric_data(
+        MetricDataQueries=[
+            {
+                'Id': 'cpu_1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/RDS',
+                        'MetricName': 'CPUUtilization',
+                        'Dimensions': [
+                            {
+                                "Name": "nwcapture-test-instance1",
+                                "Value": "DB1"
+                            }]
+                    },
+                    'Period': 300,
+                    'Stat': 'Maximum',
+                }
+            }
+        ],
+        StartTime=(datetime.now() - timedelta(seconds=300 * 3)).timestamp(),
+        EndTime=datetime.now().timestamp()
+    )
+    logger.info(f"response={response}")
+
+
 def _run_query():
     rds = RDS()
     result = rds.execute_sql(SQL)
@@ -108,3 +136,4 @@ def _run_query():
         return True
     else:
         raise Exception(f"something wrong with db result {result}")
+
