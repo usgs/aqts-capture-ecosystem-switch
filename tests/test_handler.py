@@ -131,12 +131,39 @@ class TestHandler(TestCase):
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the TEST db.'
 
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.handler.enable_triggers', autospec=True)
     @mock.patch('src.handler.cloudwatch_client')
-    def test_control_db_utilization(self, mock_boto):
-        mock_boto.get_metric_data.return_value = {"MetricDataResults":[{"Values":"75.2"}]}
-        os.environ['AWS_DEPLOYMENT_REGION'] = 'us-south-10'
-        result = handler.control_db_utilization(self.initial_event, self.context)
+    def test_control_db_utilization_enable(self, mock_cloudwatch, mock_enable_triggers):
+        mock_enable_triggers.return_value = True
+        mock_cloudwatch.get_metric_data.return_value = {
+            'MetricDataResults': [
+                {
+                    'Values': [
+                        75.2,
+                    ]
+                },
+            ]
+        }
+        handler.control_db_utilization(self.initial_event, self.context)
+        mock_enable_triggers.assert_called_once()
 
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.handler.disable_triggers', autospec=True)
+    @mock.patch('src.handler.cloudwatch_client')
+    def test_control_db_utilization_disable(self, mock_cloudwatch, mock_disable_triggers):
+        mock_disable_triggers.return_value = True
+        mock_cloudwatch.get_metric_data.return_value = {
+            'MetricDataResults': [
+                {
+                    'Values': [
+                        95.2,
+                    ]
+                },
+            ]
+        }
+        handler.control_db_utilization(self.initial_event, self.context)
+        mock_disable_triggers.assert_called_once()
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.utils.boto3.client', autospec=True)

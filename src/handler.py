@@ -101,6 +101,8 @@ def start_observations_db(event, context):
 
 
 def control_db_utilization(event, context):
+    my_stage = str(os.environ['STAGE'].lower())
+    my_db_instance = f"nwcapture-{my_stage}-instance1"
     response = cloudwatch_client.get_metric_data(
         MetricDataQueries=[
             {
@@ -112,7 +114,7 @@ def control_db_utilization(event, context):
                         'Dimensions': [
                             {
                                 "Name": "DBInstanceIdentifier",
-                                "Value": "nwcapture-test-instance1"
+                                "Value": my_db_instance
                             }]
                     },
                     'Period': 600,
@@ -145,4 +147,3 @@ def _run_query():
         return True
     else:
         raise Exception(f"something wrong with db result {result}")
-

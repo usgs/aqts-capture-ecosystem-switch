@@ -1,5 +1,12 @@
 import os
 import boto3
+import logging
+
+log_level = os.getenv('LOG_LEVEL', logging.ERROR)
+logger = logging.getLogger(__name__)
+logger.setLevel(log_level)
+
+my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-south-10'))
 
 
 def describe_db_clusters(action):
@@ -41,7 +48,6 @@ def purge_queue(queue_name):
 
 
 def disable_triggers(function_names):
-    my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
     logger.debug("trying to disable triggers")
     for function_name in function_names:
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
@@ -53,11 +59,12 @@ def disable_triggers(function_names):
 
 
 def enable_triggers(function_names):
-    my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
     logger.debug("trying to enable triggers")
     for function_name in function_names:
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
+        print(response)
         for item in response['EventSourceMappings']:
+            print(f"ITEM {item}")
             my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
             returned = my_lambda.get_event_source_mapping(UUID=item['UUID'])
             logger.debug(f"Trigger should be enabled.  function name: {function_name} item: {returned}")
