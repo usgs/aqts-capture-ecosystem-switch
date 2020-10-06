@@ -62,9 +62,7 @@ def enable_triggers(function_names):
     logger.debug("trying to enable triggers")
     for function_name in function_names:
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
-        print(response)
         for item in response['EventSourceMappings']:
-            print(f"ITEM {item}")
             my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
             returned = my_lambda.get_event_source_mapping(UUID=item['UUID'])
             logger.debug(f"Trigger should be enabled.  function name: {function_name} item: {returned}")
