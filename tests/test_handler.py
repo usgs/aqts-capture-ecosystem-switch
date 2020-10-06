@@ -131,6 +131,13 @@ class TestHandler(TestCase):
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the TEST db.'
 
+    @mock.patch('src.handler.cloudwatch_client')
+    def test_control_db_utilization(self, mock_boto):
+        mock_boto.get_metric_data.return_value = {"MetricDataResults":[{"Values":"75.2"}]}
+        os.environ['AWS_DEPLOYMENT_REGION'] = 'us-south-10'
+        result = handler.control_db_utilization(self.initial_event, self.context)
+
+
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.utils.boto3.client', autospec=True)
     def test_start_test_db_something_to_start(self, mock_boto):

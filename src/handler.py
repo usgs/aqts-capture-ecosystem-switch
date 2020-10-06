@@ -16,10 +16,12 @@ TEST_LAMBDA_TRIGGERS = [
 QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
 SQL = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
 
+log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(log_level)
 
-cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION'))
+cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-south-10'))
+
 
 def start_capture_db(event, context):
     if os.getenv('STAGE') == 'TEST':

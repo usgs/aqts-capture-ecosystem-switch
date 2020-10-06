@@ -3,6 +3,8 @@ This module manages persisting data from a message into the RDS Resource.
 """
 
 # the postgresql connection module
+import os
+
 from psycopg2 import connect
 from psycopg2 import OperationalError, DataError, IntegrityError
 
@@ -12,8 +14,9 @@ from .config import CONFIG
 # allows for logging information
 import logging
 
+log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(log_level)
 
 
 class RDS:
