@@ -99,18 +99,28 @@ def start_observations_db(event, context):
 
 
 def control_db_utilization(event, context):
-    start_time = (datetime.now() - timedelta(seconds=300 * 3)).timestamp()
-    end_time = datetime.now().timestamp()
-
-    response = cloudwatch_client.get_metric_statistics(
-        period=60,
-        start_time=start_time,
-        end_time=end_time,
-        namespace="AWS/RDS",
-        metric_name='CPUUtilization',
-        statistics=["Average"],
-        dimensions={'DBInstanceIdentifier': ['nwcapture-test-instance1']})
-
+    response = cloudwatch_client.get_metric_data(
+        MetricDataQueries=[
+            {
+                'Id': 'cpu_1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/RDS',
+                        'MetricName': 'CPUUtilization',
+                        'Dimensions': [
+                            {
+                                "Name": "DBInstanceIdentifier",
+                                "Value": "nwcapture-test-instance1"
+                            }]
+                    },
+                    'Period': 300,
+                    'Stat': 'Average',
+                }
+            }
+        ],
+        StartTime=(datetime.now() - timedelta(seconds=300 * 3)).timestamp(),
+        EndTime=datetime.now().timestamp()
+    )
     logger.info(f"response={response}")
 
 
