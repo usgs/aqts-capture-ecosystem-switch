@@ -138,7 +138,6 @@ def control_db_utilization(event, context):
 def _run_query():
     rds = RDS()
     result = rds.execute_sql(SQL)
-    print(f"RESULT {result}")
     if result[0] > 0:
         logger.debug(f"Cannot shutdown down observations test db because {result[0]} processes are running")
         return False
