@@ -110,10 +110,10 @@ def control_db_utilization(event, context):
     """
     logger.info(event)
     alarm_state = event["detail"]["state"]["value"]
-    if alarm_state == "ALARM":
-        disable_triggers(TEST_LAMBDA_TRIGGERS)
-    else:
-        enable_triggers(TEST_LAMBDA_TRIGGERS)
+    #if alarm_state == "ALARM":
+    #    disable_triggers(TEST_LAMBDA_TRIGGERS)
+    #else:
+    #    enable_triggers(TEST_LAMBDA_TRIGGERS)
 
 
 def _run_query():
