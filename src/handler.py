@@ -102,38 +102,11 @@ def start_observations_db(event, context):
 
 def control_db_utilization(event, context):
     logger.info(event)
-    # my_stage = str(os.environ['STAGE'].lower())
-    # my_db_instance = f"nwcapture-{my_stage}-instance1"
-    # response = cloudwatch_client.get_metric_data(
-    #     MetricDataQueries=[
-    #         {
-    #             'Id': 'cpu_1',
-    #             'MetricStat': {
-    #                 'Metric': {
-    #                     'Namespace': 'AWS/RDS',
-    #                     'MetricName': 'CPUUtilization',
-    #                     'Dimensions': [
-    #                         {
-    #                             "Name": "DBInstanceIdentifier",
-    #                             "Value": my_db_instance
-    #                         }]
-    #                 },
-    #                 'Period': 600,
-    #                 'Stat': 'Average',
-    #             }
-    #         }
-    #     ],
-    #     StartTime=(datetime.now() - timedelta(seconds=600)).timestamp(),
-    #     EndTime=datetime.now().timestamp()
-    # )
-    # my_result = response['MetricDataResults'][0]['Values']
-    # logger.info(f"my_result={my_result}")
-    # if my_result[0] > 85:
-    #     logger.info(f"disabling trigger because db cpu is at {my_result[0]}")
-    #     disable_triggers(TEST_LAMBDA_TRIGGERS)
-    # else:
-    #     logger.info(f"enabling trigger because db cpu is at {my_result[0]}")
-    #     enable_triggers(TEST_LAMBDA_TRIGGERS)
+    alarm_state = event["detail"]["state"]["value"]
+    if alarm_state == "ALARM":
+        disable_triggers(TEST_LAMBDA_TRIGGERS)
+    else:
+        enable_triggers(TEST_LAMBDA_TRIGGERS)
 
 
 def _run_query():

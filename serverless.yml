@@ -113,7 +113,7 @@ functions:
     events:
       - cloudwatchEvent:
           event:
-            name: ["aqts-capture-trigger-${self:provider.stage}-error-alarm", "aqts-capture-field-visit-transform-${self:provider.stage}-error-alarm", "aqts-capture-trigger-${self:provider.stage}-concurrency-alarm"]
+            name: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
 
     vpc: ${self:custom.vpc}
 
