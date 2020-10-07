@@ -110,10 +110,16 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
       MAX_RETRIES: 6
+
     events:
-      - cloudwatchEvent:
-          event:
-            name: ["*"]
+      - eventBridge:
+          pattern:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              state:
+                - alarm
+                - ok
 
     vpc: ${self:custom.vpc}
 
