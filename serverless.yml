@@ -113,7 +113,7 @@ functions:
     events:
       - cloudwatchEvent:
           event:
-            name: ["aqts-capture-*-alarm"]
+            name: ["*"]
 
     vpc: ${self:custom.vpc}
 
