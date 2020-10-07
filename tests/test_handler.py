@@ -145,16 +145,14 @@ class TestHandler(TestCase):
     def test_control_db_utilization_enable(self, mock_cloudwatch, mock_enable_triggers):
         mock_enable_triggers.return_value = True
         os.environ['STAGE'] = 'TEST'
-        mock_cloudwatch.get_metric_data.return_value = {
-            'MetricDataResults': [
-                {
-                    'Values': [
-                        75.2,
-                    ]
-                },
-            ]
+        my_alarm = {
+            "detail": {
+                "state": {
+                    "value": "OK",
+                }
+            }
         }
-        handler.control_db_utilization(self.initial_event, self.context)
+        handler.control_db_utilization(my_alarm, self.context)
         mock_enable_triggers.assert_called_once()
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
@@ -163,16 +161,14 @@ class TestHandler(TestCase):
     def test_control_db_utilization_disable(self, mock_cloudwatch, mock_disable_triggers):
         mock_disable_triggers.return_value = True
         os.environ['STAGE'] = 'TEST'
-        mock_cloudwatch.get_metric_data.return_value = {
-            'MetricDataResults': [
-                {
-                    'Values': [
-                        95.2,
-                    ]
-                },
-            ]
+        my_alarm = {
+            "detail": {
+                "state": {
+                    "value": "ALARM",
+                }
+            }
         }
-        handler.control_db_utilization(self.initial_event, self.context)
+        handler.control_db_utilization(my_alarm, self.context)
         mock_disable_triggers.assert_called_once()
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
@@ -198,7 +194,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.enable_triggers', autospec=True)
     @mock.patch('src.utils.boto3.client', autospec=True)
     def test_start_qa_db_something_to_start(self, mock_boto, mock_enable_triggers):
-        mock_enable_triggers.return_value=True
+        mock_enable_triggers.return_value = True
         mock_client = mock.Mock()
         mock_boto.return_value = mock_client
         my_mock_db_clusters = self.mock_db_clusters

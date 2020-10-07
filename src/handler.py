@@ -101,6 +101,13 @@ def start_observations_db(event, context):
 
 
 def control_db_utilization(event, context):
+    """
+    Right now we are only listening for the error handler alarm, because it
+    is the last alarm to get triggered when we are going into a death spiral.
+    :param event:
+    :param context:
+    :return:
+    """
     logger.info(event)
     alarm_state = event["detail"]["state"]["value"]
     if alarm_state == "ALARM":
