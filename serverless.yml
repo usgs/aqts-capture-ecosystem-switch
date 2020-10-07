@@ -115,6 +115,8 @@ functions:
           event:
             source:
               - 'aws.cloudwatch'
+            detail:
+              name: ["AQ-SCASG-TEST-203S5-AQTSTEST-A-SDA"]
     vpc: ${self:custom.vpc}
 
 plugins:
