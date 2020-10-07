@@ -1,6 +1,4 @@
 import os
-from datetime import datetime, timedelta
-
 import boto3
 from src.rds import RDS
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
@@ -20,7 +18,9 @@ log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
 
-cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-south-10'))
+STAGE = os.getenv('STAGE')
+
+cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
 
 def start_capture_db(event, context):
@@ -110,10 +110,14 @@ def control_db_utilization(event, context):
     """
     logger.info(event)
     alarm_state = event["detail"]["state"]["value"]
-    #if alarm_state == "ALARM":
-    #    disable_triggers(TEST_LAMBDA_TRIGGERS)
-    #else:
-    #    enable_triggers(TEST_LAMBDA_TRIGGERS)
+    if (STAGE == "QA"):
+        triggers = QA_LAMBDA_TRIGGERS
+    else:
+        triggers = QA_LAMBDA_TRIGGERS
+    if alarm_state == "ALARM":
+        disable_triggers(triggers)
+    else:
+        enable_triggers(triggers)
 
 
 def _run_query():

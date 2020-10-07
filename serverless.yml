@@ -116,7 +116,7 @@ functions:
             source:
               - 'aws.cloudwatch'
             detail:
-              alarmName: ["AQ-SCASG-TEST-203S5-AQTSTEST-A-SDA"]
+              alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
     vpc: ${self:custom.vpc}
 
 plugins:

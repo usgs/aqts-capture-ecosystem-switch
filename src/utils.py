@@ -6,7 +6,7 @@ log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
 
-my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-south-10'))
+my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
 
 def describe_db_clusters(action):
