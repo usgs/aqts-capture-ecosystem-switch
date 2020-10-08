@@ -102,6 +102,23 @@ functions:
           enabled: true
     vpc: ${self:custom.vpc}
 
+  ControlDbUtilization:
+    handler: src.handler.control_db_utilization
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+      MAX_RETRIES: 6
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
+    vpc: ${self:custom.vpc}
+
 plugins:
   - serverless-plugin-git-variables
   - serverless-python-requirements

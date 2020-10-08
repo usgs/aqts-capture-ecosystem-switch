@@ -1,5 +1,4 @@
 import os
-
 import boto3
 from src.rds import RDS
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
@@ -15,8 +14,13 @@ TEST_LAMBDA_TRIGGERS = [
 QA_LAMBDA_TRIGGERS = ['aqts-capture-trigger-QA-aqtsCaptureTrigger']
 SQL = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
 
+log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(log_level)
+
+STAGE = os.getenv('STAGE')
+
+cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
 
 def start_capture_db(event, context):
@@ -96,10 +100,29 @@ def start_observations_db(event, context):
         boto3.client('rds').start_db_instance(DBInstanceIdentifier='observations-qa')
 
 
+def control_db_utilization(event, context):
+    """
+    Right now we are only listening for the error handler alarm, because it
+    is the last alarm to get triggered when we are going into a death spiral.
+    :param event:
+    :param context:
+    :return:
+    """
+    logger.info(event)
+    alarm_state = event["detail"]["state"]["value"]
+    if (STAGE == "QA"):
+        triggers = QA_LAMBDA_TRIGGERS
+    else:
+        triggers = QA_LAMBDA_TRIGGERS
+    if alarm_state == "ALARM":
+        disable_triggers(triggers)
+    else:
+        enable_triggers(triggers)
+
+
 def _run_query():
     rds = RDS()
     result = rds.execute_sql(SQL)
-    print(f"RESULT {result}")
     if result[0] > 0:
         logger.debug(f"Cannot shutdown down observations test db because {result[0]} processes are running")
         return False
