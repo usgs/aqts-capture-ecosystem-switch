@@ -9,4 +9,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - New repository
 - Add initial version of the stop and start lambdas for nwcapture test and QA db clusters
 - Add initial version of the stop and start lambdas for observations test and QA db instances
-- Add lambda to enable/disable triggers based on db cpu utilization
+- Add lambda to enable/disable triggers based on errorHandler alarm
+- Add (disabled) on/off schedule for PROD so ecosystem switch can be deployed to PROD
