@@ -21,20 +21,28 @@ provider:
 custom:
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
-    QA: cron(0 14 ? * MON *)
+    QA: cron(0 12 ? * MON *)
+    PROD: cron(0 12 ? * MON *)
   stopObservationSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
+    PROD: cron(0 23 ? * FRI *)
   startCaptureSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
-    QA: cron(0 14 ? * MON *)
+    QA: cron(0 12 ? * MON *)
+    PROD: cron(0 12 ? * MON *)
   stopCaptureSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
+    PROD: cron(0 23 ? * FRI *)
   startScheduleEnabled:
     TEST: true
     QA: false
-
+    PROD: false
+  stopScheduleEnabled:
+    TEST: true
+    QA: true
+    PROD: false
 
   exportGitVariables: false
   accountNumber: ${ssm:/iow/aws/accountNumber}
@@ -44,9 +52,7 @@ custom:
   observationsDb:
     connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-${self:provider.stage}~true}
 
-
 functions:
-
   StartObservationsDb:
     handler: src.handler.start_observations_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
@@ -73,7 +79,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.stopObservationSchedules.${self:provider.stage}}
-          enabled: true
+          enabled: ${self:custom.stopScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   StartCaptureDb:
@@ -99,7 +105,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.stopCaptureSchedules.${self:provider.stage}}
-          enabled: true
+          enabled: ${self:custom.stopScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   ControlDbUtilization:
