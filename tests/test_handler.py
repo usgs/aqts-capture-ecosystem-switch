@@ -2,7 +2,7 @@ import os
 from unittest import TestCase, mock
 
 from src import handler
-from src.handler import TRIGGER, STAGES, DB
+from src.handler import TRIGGER, STAGES, DB, run_etl_query
 
 
 class TestHandler(TestCase):
@@ -72,7 +72,7 @@ class TestHandler(TestCase):
             handler.stop_capture_db(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler._run_query')
+    @mock.patch('src.handler.run_etl_query')
     def test_stop_observations_db_dont_stop_busy(self, mock_rds):
         mock_rds.return_value = False
 
@@ -87,9 +87,27 @@ class TestHandler(TestCase):
             handler.stop_observations_db(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.handler.run_etl_query')
+    @mock.patch('src.handler.boto3.client', autospec=True)
+    def test_start_observations_db(self, mock_boto, mock_rds):
+        client = mock.Mock()
+        mock_boto.return_value = client
+        mock_rds.return_value = False
+        client.start_db_instance.return_value = True
+        for stage in STAGES:
+            os.environ['STAGE'] = stage
+            result = handler.start_observations_db(self.initial_event, self.context)
+            assert result['statusCode'] == 200
+            assert result['message'] == f"Started the {stage} observations db."
+
+        os.environ['STAGE'] = 'UNKNOWN'
+        with self.assertRaises(Exception) as context:
+            handler.start_observations_db(self.initial_event, self.context)
+
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.stop_observations_db_instance')
     @mock.patch('src.handler.disable_triggers', autospec=True)
-    @mock.patch('src.handler._run_query')
+    @mock.patch('src.handler.run_etl_query')
     @mock.patch('src.utils.boto3.client', autospec=True)
     def test_stop_observations_db_stop_quiet(self, mock_boto, mock_rds, mock_disable_triggers, mock_utils_stop_ob):
         mock_disable_triggers.return_value = True
@@ -127,7 +145,6 @@ class TestHandler(TestCase):
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
 
-
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.disable_triggers', autospec=True)
     def test_control_db_utilization_disable(self, mock_disable_triggers):
@@ -147,7 +164,6 @@ class TestHandler(TestCase):
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
-
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.enable_triggers', autospec=True)
@@ -172,6 +188,22 @@ class TestHandler(TestCase):
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.start_capture_db(self.initial_event, self.context)
+
+    @mock.patch('src.rds.RDS', autospec=True)
+    def testrun_etl_query(self, mock_rds):
+        """
+        So there are 4 ETLs running
+        """
+        mock_rds.execute_sql.return_value = [4]
+        result = run_etl_query(mock_rds)
+        assert result is False
+
+        """
+        No ETLs running so we can turn off the db
+        """
+        mock_rds.execute_sql.return_value = [0]
+        result = run_etl_query(mock_rds)
+        assert result is True
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.disable_triggers', autospec=True)

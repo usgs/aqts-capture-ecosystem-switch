@@ -39,7 +39,6 @@ logger.setLevel(log_level)
 STAGE = os.getenv('STAGE')
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
 
 def start_capture_db(event, context):
@@ -70,7 +69,7 @@ def stop_observations_db(event, context):
     stage = os.getenv('STAGE')
     if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
-    should_stop = _run_query()
+    should_stop = run_etl_query()
     if not should_stop:
         return {
             'statusCode': 200,
@@ -87,7 +86,7 @@ def start_observations_db(event, context):
     stage = os.getenv('STAGE')
     if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
-
+    rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
     rds_client.start_db_instance(DBInstanceIdentifier=OBSERVATIONS_DB[stage])
     return {
         'statusCode': 200,
@@ -116,12 +115,13 @@ def control_db_utilization(event, context):
         enable_triggers(TRIGGER[stage])
 
 
-def _run_query():
+def run_etl_query(rds=None):
     """
     If we look in the batch_job_executions table and something is in a state other than COMPLETED or FAILED,
     assume an ETL is in progress and don't shut the db down.
     """
-    rds = RDS()
+    if rds is None:
+        rds = RDS()
     result = rds.execute_sql(OBSERVATIONS_ETL_IN_PROGRESS_SQL)
     if result[0] > 0:
         logger.debug(f"Cannot shutdown down observations db because {result[0]} processes are running")

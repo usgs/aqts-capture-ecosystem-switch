@@ -52,7 +52,6 @@ def purge_queue(queue_name):
 
 def disable_triggers(function_names):
     my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-    logger.debug("trying to disable triggers")
     return_value = False
     for function_name in function_names:
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
@@ -66,7 +65,6 @@ def disable_triggers(function_names):
 
 def enable_triggers(function_names):
     my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-    logger.debug(f"trying to enable triggers for function names= {function_names}")
     return_value = False
     for function_name in function_names:
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
