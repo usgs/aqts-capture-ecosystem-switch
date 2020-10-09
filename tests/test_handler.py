@@ -73,10 +73,7 @@ class TestHandler(TestCase):
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler._run_query')
-    @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_stop_observations_db_dont_stop_busy(self, mock_boto, mock_rds):
-        mock_client = mock.Mock()
-        mock_boto.return_value = mock_client
+    def test_stop_observations_db_dont_stop_busy(self, mock_rds):
         mock_rds.return_value = False
 
         for stage in STAGES:
