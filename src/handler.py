@@ -5,6 +5,7 @@ from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, d
     purge_queue, stop_observations_db_instance
 import logging
 
+STAGES = ['TEST', 'QA', 'PROD']
 DB = {
     "TEST": 'nwcapture-test',
     "QA": 'nwcapture-qa',
@@ -43,7 +44,7 @@ rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2')
 
 def start_capture_db(event, context):
     stage = os.getenv('STAGE')
-    if stage in ["TEST", "QA", "PROD"]:
+    if stage in STAGES:
         started = _start_db(DB[stage], TRIGGER[stage], SQS[stage])
     else:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
@@ -55,7 +56,7 @@ def start_capture_db(event, context):
 
 def stop_capture_db(event, context):
     stage = os.getenv('STAGE')
-    if stage in ["TEST", "QA", "PROD"]:
+    if stage in STAGES:
         stopped = _stop_db(DB[stage], TRIGGER[stage])
     else:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
@@ -67,7 +68,7 @@ def stop_capture_db(event, context):
 
 def stop_observations_db(event, context):
     stage = os.getenv('STAGE')
-    if stage not in ('TEST', 'QA', 'PROD'):
+    if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     should_stop = _run_query()
     if not should_stop:
@@ -84,7 +85,7 @@ def stop_observations_db(event, context):
 
 def start_observations_db(event, context):
     stage = os.getenv('STAGE')
-    if stage not in ('TEST', 'QA', 'PROD'):
+    if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
 
     rds_client.start_db_instance(DBInstanceIdentifier=OBSERVATIONS_DB[stage])
@@ -105,7 +106,7 @@ def control_db_utilization(event, context):
     logger.info(event)
     alarm_state = event["detail"]["state"]["value"]
     stage = os.getenv('STAGE')
-    if stage not in ('TEST', 'QA', 'PROD'):
+    if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     if alarm_state == "ALARM":
         logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
