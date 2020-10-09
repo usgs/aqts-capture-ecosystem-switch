@@ -113,7 +113,7 @@ def control_db_utilization(event, context):
     if (STAGE == "QA"):
         triggers = QA_LAMBDA_TRIGGERS
     else:
-        triggers = QA_LAMBDA_TRIGGERS
+        triggers = TEST_LAMBDA_TRIGGERS
     if alarm_state == "ALARM":
         disable_triggers(triggers)
     else:
