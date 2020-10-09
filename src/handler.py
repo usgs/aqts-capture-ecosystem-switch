@@ -107,7 +107,6 @@ def control_db_utilization(event, context):
     stage = os.getenv('STAGE')
     if stage not in ('TEST', 'QA', 'PROD'):
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
-
     if alarm_state == "ALARM":
         logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
         disable_triggers(TRIGGER[stage])
