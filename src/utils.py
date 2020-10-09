@@ -10,8 +10,8 @@ my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2
 
 
 def describe_db_clusters(action):
-    my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
     # Get all the instances
+    my_rds = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
     response = my_rds.describe_db_clusters()
     all_dbs = response['DBClusters']
     if action == "start":
@@ -26,7 +26,7 @@ def describe_db_clusters(action):
 
 
 def start_db_cluster(cluster_identifier):
-    my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
+    my_rds = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
     my_rds.start_db_cluster(
         DBClusterIdentifier=cluster_identifier
     )
@@ -34,11 +34,16 @@ def start_db_cluster(cluster_identifier):
 
 
 def stop_db_cluster(cluster_identifier):
-    my_rds = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
+    my_rds = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
     my_rds.stop_db_cluster(
         DBClusterIdentifier=cluster_identifier
     )
     return True
+
+
+def stop_observations_db_instance(instance_identifier):
+    my_rds = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+    my_rds.stop_db_instance(DBClusterIdentifier=instance_identifier)
 
 
 def purge_queue(queue_name):
