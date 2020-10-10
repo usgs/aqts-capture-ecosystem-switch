@@ -126,8 +126,9 @@ class TestHandler(TestCase):
             handler.stop_observations_db(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.enable_triggers', autospec=True)
-    def test_control_db_utilization_enable(self, mock_enable_triggers):
+    def test_control_db_utilization_enable_triggers_when_db_on(self, mock_enable_triggers, mock_describe_db_clusters):
         mock_enable_triggers.return_value = True
         my_alarm = {
             "detail": {
@@ -138,8 +139,32 @@ class TestHandler(TestCase):
         }
         for stage in STAGES:
             os.environ['STAGE'] = stage
+            mock_describe_db_clusters.return_value = DB[stage]
             handler.control_db_utilization(my_alarm, self.context)
             mock_enable_triggers.assert_called_with(TRIGGER[stage])
+
+        os.environ['STAGE'] = 'UNKNOWN'
+        with self.assertRaises(Exception) as context:
+            handler.control_db_utilization(self.initial_event, self.context)
+
+    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.handler.describe_db_clusters')
+    @mock.patch('src.handler.enable_triggers', autospec=True)
+    def test_control_db_utilization_dont_enable_triggers_when_db_off(self, mock_enable_triggers,
+                                                                     mock_describe_db_clusters):
+        mock_enable_triggers.return_value = True
+        my_alarm = {
+            "detail": {
+                "state": {
+                    "value": "OK",
+                }
+            }
+        }
+        for stage in STAGES:
+            os.environ['STAGE'] = stage
+            mock_describe_db_clusters.return_value = "SomebodyElsesDb"
+            handler.control_db_utilization(my_alarm, self.context)
+            mock_enable_triggers.assert_not_called()
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:

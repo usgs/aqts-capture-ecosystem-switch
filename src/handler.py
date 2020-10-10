@@ -111,8 +111,13 @@ def control_db_utilization(event, context):
         logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
         disable_triggers(TRIGGER[stage])
     elif alarm_state == "OK":
-        logger.info(f"Enabling trigger {TRIGGER[stage]} because error handler is okay")
-        enable_triggers(TRIGGER[stage])
+        """
+        We do NOT want to enable the trigger if the db is not up and running.
+        """
+        active_dbs = describe_db_clusters('stop')
+        if DB[stage] in active_dbs:
+            logger.info(f"Enabling trigger {TRIGGER[stage]} for {DB[stage]} because error handler is okay")
+            enable_triggers(TRIGGER[stage])
 
 
 def run_etl_query(rds=None):
