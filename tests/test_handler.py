@@ -190,6 +190,19 @@ class TestHandler(TestCase):
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
 
+    @mock.patch('src.handler.disable_triggers', autospec=True)
+    @mock.patch('src.handler.run_etl_query')
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_stop_observations_test_db_stop_quiet(self, mock_boto, mock_rds, mock_disable_triggers):
+        mock_disable_triggers.return_value = True
+        mock_client = mock.Mock()
+        mock_boto.return_value = mock_client
+        mock_rds.return_value = True
+        os.environ['STAGE'] = 'TEST'
+        result = handler.stop_observations_db(self.initial_event, self.context)
+        assert result['statusCode'] == 200
+        assert result['message'] == 'Stopped the TEST observations db.'
+
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.enable_triggers', autospec=True)
     @mock.patch('src.utils.boto3.client', autospec=True)
