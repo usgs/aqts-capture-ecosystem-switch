@@ -138,38 +138,38 @@ class TestHandler(TestCase):
         result = handler.stop_observations_db(self.initial_event, self.context)
         assert result['statusCode'] == 200
         assert result['message'] == 'Stopped the TEST db.'
-
-    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.enable_triggers', autospec=True)
-    @mock.patch('src.handler.cloudwatch_client')
-    def test_control_db_utilization_enable(self, mock_cloudwatch, mock_enable_triggers):
-        mock_enable_triggers.return_value = True
-        os.environ['STAGE'] = 'TEST'
-        my_alarm = {
-            "detail": {
-                "state": {
-                    "value": "OK",
-                }
-            }
-        }
-        handler.control_db_utilization(my_alarm, self.context)
-        mock_enable_triggers.assert_called_once()
-
-    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.disable_triggers', autospec=True)
-    @mock.patch('src.handler.cloudwatch_client')
-    def test_control_db_utilization_disable(self, mock_cloudwatch, mock_disable_triggers):
-        mock_disable_triggers.return_value = True
-        os.environ['STAGE'] = 'TEST'
-        my_alarm = {
-            "detail": {
-                "state": {
-                    "value": "ALARM",
-                }
-            }
-        }
-        handler.control_db_utilization(my_alarm, self.context)
-        mock_disable_triggers.assert_called_once()
+    #
+    # @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    # @mock.patch('src.handler.enable_triggers', autospec=True)
+    # @mock.patch('src.handler.cloudwatch_client')
+    # def test_control_db_utilization_enable(self, mock_cloudwatch, mock_enable_triggers):
+    #     mock_enable_triggers.return_value = True
+    #     os.environ['STAGE'] = 'TEST'
+    #     my_alarm = {
+    #         "detail": {
+    #             "state": {
+    #                 "value": "OK",
+    #             }
+    #         }
+    #     }
+    #     handler.control_db_utilization(my_alarm, self.context)
+    #     mock_enable_triggers.assert_called_once()
+    #
+    # @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    # @mock.patch('src.handler.disable_triggers', autospec=True)
+    # @mock.patch('src.handler.cloudwatch_client')
+    # def test_control_db_utilization_disable(self, mock_cloudwatch, mock_disable_triggers):
+    #     mock_disable_triggers.return_value = True
+    #     os.environ['STAGE'] = 'TEST'
+    #     my_alarm = {
+    #         "detail": {
+    #             "state": {
+    #                 "value": "ALARM",
+    #             }
+    #         }
+    #     }
+    #     handler.control_db_utilization(my_alarm, self.context)
+    #     mock_disable_triggers.assert_called_once()
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.enable_triggers', autospec=True)
