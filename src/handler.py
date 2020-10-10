@@ -108,16 +108,16 @@ def control_db_utilization(event, context):
     :param context:
     :return:
     """
-    logger.info(event)
-    alarm_state = event["detail"]["state"]["value"]
-    if (STAGE == "QA"):
-        triggers = QA_LAMBDA_TRIGGERS
-    else:
-        triggers = TEST_LAMBDA_TRIGGERS
-    if alarm_state == "ALARM":
-        disable_triggers(triggers)
-    else:
-        enable_triggers(triggers)
+    # logger.info(event)
+    # alarm_state = event["detail"]["state"]["value"]
+    # if (STAGE == "QA"):
+    #     triggers = QA_LAMBDA_TRIGGERS
+    # else:
+    #     triggers = TEST_LAMBDA_TRIGGERS
+    # if alarm_state == "ALARM":
+    #     disable_triggers(triggers)
+    # else:
+    #     enable_triggers(triggers)
 
 
 def _run_query():
