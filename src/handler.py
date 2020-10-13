@@ -1,4 +1,6 @@
+import datetime
 import os
+
 import boto3
 from src.rds import RDS
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
@@ -30,7 +32,12 @@ TRIGGER = {
     "PROD": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
 }
 
-OBSERVATIONS_ETL_IN_PROGRESS_SQL = "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED')"
+
+four_days_ago = datetime.datetime.now() - datetime.timedelta(4)
+
+etl_start = f"{four_days_ago.year}-{four_days_ago.month}-{four_days_ago.day}"
+OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
+    "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED') and start_time > %s"
 
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -124,10 +131,14 @@ def run_etl_query(rds=None):
     """
     If we look in the batch_job_executions table and something is in a state other than COMPLETED or FAILED,
     assume an ETL is in progress and don't shut the db down.
+
+    Also, if someone aborts an ETL job in Jenkins, we can get in a messed up state where a job execution has
+    STARTED but never fails or completes, so check the start time and if it's more than 4 days ignore those and
+    shut the db down anyway.
     """
     if rds is None:
         rds = RDS()
-    result = rds.execute_sql(OBSERVATIONS_ETL_IN_PROGRESS_SQL)
+    result = rds.execute_sql(OBSERVATIONS_ETL_IN_PROGRESS_SQL, (etl_start,))
     if result[0] > 0:
         logger.debug(f"Cannot shutdown down observations db because {result[0]} processes are running")
         return False

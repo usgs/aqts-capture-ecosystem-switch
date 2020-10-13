@@ -228,7 +228,7 @@ class TestHandler(TestCase):
             handler.start_capture_db(self.initial_event, self.context)
 
     @mock.patch('src.rds.RDS', autospec=True)
-    def testrun_etl_query(self, mock_rds):
+    def test_run_etl_query(self, mock_rds):
         """
         So there are 4 ETLs running
         """
