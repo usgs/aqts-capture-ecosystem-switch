@@ -19,6 +19,10 @@ provider:
     commitIdentifier: ${git:sha1}
 
 custom:
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#CronExpressions
+  # The test database starts at 7 am central and stops at 6 pm central time, Monday through Friday.
+  # The qa database stops at 6 pm central on Fridays
+  # The production database never stops or starts according to a schedule, the lambdas exist only for manual use.
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
@@ -35,6 +39,8 @@ custom:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
     PROD: cron(0 23 ? * FRI *)
+  # No scheduling enabled for prod.  For qa, only Friday stops are scheduled.  For test, both stop and
+  # starts are scheduled.
   startScheduleEnabled:
     TEST: true
     QA: false
