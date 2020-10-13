@@ -19,9 +19,9 @@ OBSERVATIONS_DB = {
 }
 
 SQS = {
-    "TEST": 'aqts-capture-trigger-queue-TEST',
-    "QA": 'aqts-capture-trigger-queue-QA',
-    "PROD": 'aqts-capture-trigger-queue-PROD-EXTERNAL'
+    "TEST": ['aqts-capture-trigger-queue-TEST', 'aqts-capture-error-queue-TEST'],
+    "QA": ['aqts-capture-trigger-queue-QA', 'aqts-capture-error-queue-QA'],
+    "PROD": ['aqts-capture-trigger-queue-PROD-EXTERNAL']
 }
 
 TRIGGER = {

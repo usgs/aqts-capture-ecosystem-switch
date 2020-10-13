@@ -44,10 +44,11 @@ def stop_observations_db_instance(instance_identifier):
     my_rds.stop_db_instance(DBClusterIdentifier=instance_identifier)
 
 
-def purge_queue(queue_name):
-    sqs = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
-    queue_info = sqs.get_queue_url(QueueName=queue_name)
-    sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
+def purge_queue(queue_names):
+    for queue_name in queue_names:
+        sqs = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
+        queue_info = sqs.get_queue_url(QueueName=queue_name)
+        sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
 
 
 def disable_triggers(function_names):
