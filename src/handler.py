@@ -31,14 +31,6 @@ TRIGGER = {
     "QA": ['aqts-capture-trigger-QA-aqtsCaptureTrigger'],
     "PROD": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
 }
-
-
-four_days_ago = datetime.datetime.now() - datetime.timedelta(4)
-
-etl_start = f"{four_days_ago.year}-{four_days_ago.month}-{four_days_ago.day}"
-OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
-    "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED') and start_time > %s"
-
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
@@ -46,6 +38,24 @@ logger.setLevel(log_level)
 STAGE = os.getenv('STAGE')
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+
+
+def _get_etl_start():
+    four_days_ago = datetime.datetime.now() - datetime.timedelta(4)
+    my_month = str(four_days_ago.month)
+    if len(my_month) == 1:
+        my_month = f"0{my_month}"
+    my_day = str(four_days_ago.day)
+    if len(my_day) == 1:
+        my_day = f"0{my_day}"
+    my_etl_start = f"{four_days_ago.year}-{my_month}-{my_day}"
+    return my_etl_start
+
+
+etl_start = _get_etl_start()
+OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
+    "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED') and start_time > %s"
+
 
 
 def start_capture_db(event, context):
@@ -170,3 +180,4 @@ def _stop_db(db, triggers):
             stop_db_cluster(db)
             stopped = True
     return stopped
+
