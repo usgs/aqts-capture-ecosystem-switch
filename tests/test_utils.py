@@ -61,6 +61,7 @@ class TestUtils(TestCase):
         client = mock.Mock()
         mock_boto.return_value = client
         client.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        client.get_event_source_mapping.return_value = {"State": "Disabled"}
         result = enable_triggers(["my_function_name"])
         assert result is True
         mock_boto.assert_called_with("lambda", "us-west-2")
@@ -68,12 +69,37 @@ class TestUtils(TestCase):
         client.update_event_source_mapping.assert_called_with(UUID='string', Enabled=True)
 
     @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_enable_triggers_already_enabled(self, mock_boto):
+        client = mock.Mock()
+        mock_boto.return_value = client
+        client.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        client.get_event_source_mapping.return_value = {"State": "Enabled"}
+        result = enable_triggers(["my_function_name"])
+        assert result is False
+        mock_boto.assert_called_with("lambda", "us-west-2")
+        client.list_event_source_mappings.assert_called_with(FunctionName='my_function_name')
+        client.update_event_source_mapping.assert_not_called()
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
     def test_disable_triggers(self, mock_boto):
         client = mock.Mock()
         mock_boto.return_value = client
         client.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        client.get_event_source_mapping.return_value = {"State": "Enabled"}
         result = disable_triggers(["my_function_name"])
         assert result is True
         mock_boto.assert_called_with("lambda", "us-west-2")
         client.list_event_source_mappings.assert_called_with(FunctionName='my_function_name')
         client.update_event_source_mapping.assert_called_with(UUID='string', Enabled=False)
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_disable_triggers_already_disabled(self, mock_boto):
+        client = mock.Mock()
+        mock_boto.return_value = client
+        client.list_event_source_mappings.return_value = self.mock_event_source_mapping
+        client.get_event_source_mapping.return_value = {"State": "Disabled"}
+        result = disable_triggers(["my_function_name"])
+        assert result is False
+        mock_boto.assert_called_with("lambda", "us-west-2")
+        client.list_event_source_mappings.assert_called_with(FunctionName='my_function_name')
+        client.update_event_source_mapping.assert_not_called()

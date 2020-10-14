@@ -57,10 +57,12 @@ def disable_triggers(function_names):
     for function_name in function_names:
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
         for item in response['EventSourceMappings']:
-            my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=False)
-            returned = my_lambda.get_event_source_mapping(UUID=item['UUID'])
-            return_value = True
-            logger.debug(f"Trigger should be disabled.  function name: {function_name} item: {returned}")
+            response = my_lambda.get_event_source_mapping(UUID=item['UUID'])
+            if response['State'] in ('Enabled', 'Enabling', 'Updating', 'Creating'):
+                my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=False)
+                response = my_lambda.get_event_source_mapping(UUID=item['UUID'])
+                return_value = True
+                logger.info(f"Trigger should be disabled.  function name: {function_name} item: {response}")
     return return_value
 
 
@@ -70,8 +72,11 @@ def enable_triggers(function_names):
     for function_name in function_names:
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
         for item in response['EventSourceMappings']:
-            my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
-            returned = my_lambda.get_event_source_mapping(UUID=item['UUID'])
-            logger.debug(f"Trigger should be enabled.  function name: {function_name} item: {returned}")
-            return_value = True
+            response = my_lambda.get_event_source_mapping(UUID=item['UUID'])
+            print(response)
+            if response['State'] in ('Disabled', 'Disabling', 'Updating', 'Creating'):
+                my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
+                response = my_lambda.get_event_source_mapping(UUID=item['UUID'])
+                logger.info(f"Trigger should be enabled.  function name: {function_name} item: {response}")
+                return_value = True
     return return_value
