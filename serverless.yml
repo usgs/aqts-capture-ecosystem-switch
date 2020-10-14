@@ -16,25 +16,40 @@ provider:
     "wma:environment": ${self:provider.stage}
     "wma:taggingVersion": 0.0.1
     "wma:costCenter": TBD
+    "wma:organization": IOW
     commitIdentifier: ${git:sha1}
 
 custom:
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#CronExpressions
+  # The test database starts at 7 am central and stops at 6 pm central time, Monday through Friday.
+  # The qa database stops at 6 pm central on Fridays
+  # The production database never stops or starts according to a schedule, the lambdas exist only for manual use.
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
-    QA: cron(0 14 ? * MON *)
+    QA: cron(0 12 ? * MON *)
+    PROD: cron(0 12 ? * MON *)
   stopObservationSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
+    PROD: cron(0 23 ? * FRI *)
   startCaptureSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
-    QA: cron(0 14 ? * MON *)
+    QA: cron(0 12 ? * MON *)
+    PROD: cron(0 12 ? * MON *)
   stopCaptureSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
+    PROD: cron(0 23 ? * FRI *)
+  # No scheduling enabled for prod.  For qa, only Friday stops are scheduled.  For test, both stop and
+  # starts are scheduled.
   startScheduleEnabled:
-    TEST: true
+    TEST: false
     QA: false
-
+    PROD: false
+  stopScheduleEnabled:
+    TEST: false
+    QA: true
+    PROD: false
 
   exportGitVariables: false
   accountNumber: ${ssm:/iow/aws/accountNumber}
@@ -44,9 +59,7 @@ custom:
   observationsDb:
     connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-${self:provider.stage}~true}
 
-
 functions:
-
   StartObservationsDb:
     handler: src.handler.start_observations_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
@@ -73,7 +86,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.stopObservationSchedules.${self:provider.stage}}
-          enabled: true
+          enabled: ${self:custom.stopScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   StartCaptureDb:
@@ -99,7 +112,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.stopCaptureSchedules.${self:provider.stage}}
-          enabled: true
+          enabled: ${self:custom.stopScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   ControlDbUtilization:
@@ -118,6 +131,32 @@ functions:
             detail:
               alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
     vpc: ${self:custom.vpc}
+
+resources:
+  Resources:
+    snsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: ${self:service}-${self:provider.stage}-topic
+        TopicName: ${self:service}-${self:provider.stage}-topic
+    concurrencyAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-invocation-alarm
+        AlarmDescription: Notify when the db control utilization lambda is invoked
+        Namespace: 'AWS/Lambda'
+        Dimensions:
+          - Name: FunctionName
+            Value:
+              Ref: ControlDbUtilizationLambdaFunction
+        MetricName: ConcurrentExecutions
+        Statistic: Maximum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Threshold: 1
+        Period: 60
+        EvaluationPeriods: 1
+        AlarmActions:
+          - Ref: snsTopic
 
 plugins:
   - serverless-plugin-git-variables
