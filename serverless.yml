@@ -16,6 +16,7 @@ provider:
     "wma:environment": ${self:provider.stage}
     "wma:taggingVersion": 0.0.1
     "wma:costCenter": TBD
+    "wma:organization": IOW
     commitIdentifier: ${git:sha1}
 
 custom:
@@ -42,11 +43,11 @@ custom:
   # No scheduling enabled for prod.  For qa, only Friday stops are scheduled.  For test, both stop and
   # starts are scheduled.
   startScheduleEnabled:
-    TEST: true
+    TEST: false
     QA: false
     PROD: false
   stopScheduleEnabled:
-    TEST: true
+    TEST: false
     QA: true
     PROD: false
 
