@@ -44,11 +44,11 @@ custom:
   # No scheduling enabled for prod.  For qa, only Friday stops are scheduled.  For test, both stop and
   # starts are scheduled.
   startScheduleEnabled:
-    TEST: false
+    TEST: true
     QA: false
     PROD: false
   stopScheduleEnabled:
-    TEST: false
+    TEST: true
     QA: true
     PROD: false
 
