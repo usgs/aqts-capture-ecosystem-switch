@@ -41,7 +41,7 @@ def stop_db_cluster(cluster_identifier):
 
 def stop_observations_db_instance(instance_identifier):
     my_rds = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-    my_rds.stop_db_instance(DBClusterIdentifier=instance_identifier)
+    my_rds.stop_db_instance(DBInstanceIdentifier=instance_identifier)
 
 
 def purge_queue(queue_names):
