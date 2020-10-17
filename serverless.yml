@@ -133,6 +133,114 @@ functions:
               alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
     vpc: ${self:custom.vpc}
 
+  restoreDbCluster:
+    handler: src.handler.restore_db_cluster
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
+  modifyDbCluster:
+    handler: src.handler.modify_db_cluster
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
+  createDbInstance:
+    handler: src.handler.create_db_instance
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
+  deleteDbInstance:
+    handler: src.handler.delete_db_instance
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
+  deleteDbCluster:
+    handler: src.handler.delete_db_cluster
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
+
+
+stepFunctions:
+  stateMachines:
+    aqtsCreateCaptureDb:
+      loggingConfig:
+        level: ALL
+        includeExecutionData: true
+        destinations:
+          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      role: arn:aws:iam::${self:custom.accountNumber}:role/step-functions-service-access
+      name: aqts-capture-create-db-${self:provider.stage}
+      definition:
+        Comment: "AQTS CreateCaptureDb"
+        StartAt: RestoreDbCluster
+        States:
+          RestoreDbCluster:
+            Type: Task
+            ResultPath: "$.lambda_result_restore_db_cluster"
+            Resource:
+              Fn::GetAtt: [restoreDbCluster, Arn]
+            Next: ModifyDbCluster
+          ModifyDbCluster:
+            Type: Task
+            InputPath: "$.db_config"
+            ResultPath: "$.lambda_result_modify_db_cluster"
+            Resource:
+              Fn::GetAtt: [modifyDbCluster, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 36
+                BackoffRate: 1
+            Next: CreateDbInstance
+          CreateDbInstance:
+            Type: Task
+            InputPath: "$.db_config"
+            ResultPath: "$.lambda_result_create_db_instance"
+            Resource:
+              Fn::GetAtt: [createDbInstance, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 36
+                BackoffRate: 1
+            Next: ModifySchemaOwnerPassword
+          ModifySchemaOwnerPassword:
+            Type: Task
+            InputPath: "$.db_config"
+            ResultPath: "$.lambda_result_modify_schema_owner_password"
+            Resource:
+              Fn::GetAtt: [modifySchemaOwnerPassword, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 36
+                BackoffRate: 1
+            End: true
+
+
 resources:
   Resources:
     snsTopic:

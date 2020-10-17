@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 
 import boto3
@@ -31,6 +32,31 @@ TRIGGER = {
     "QA": ['aqts-capture-trigger-QA-aqtsCaptureTrigger'],
     "PROD": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
 }
+
+NWCAPTURE_LOAD = 'NWCAPTURE-DB-LOAD'
+
+# Default snapshot identifier, may be overridden by passing a custom
+# snapshot identifier in the step function event
+two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+month = str(two_days_ago.month)
+if len(month) == 1:
+    month = f"0{month}"
+day = str(two_days_ago.day)
+if len(day) == 1:
+    day = f"0{day}"
+SNAPSHOT_IDENTIFIER = f"rds:nwcapture-prod-external-{two_days_ago.year}-{month}-{day}-10-08"
+
+STAGE = os.getenv('STAGE')
+CAPTURE_TRIGGER_QUEUE = f"aqts-capture-trigger-queue-{STAGE}"
+ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
+
+DEFAULT_DB_INSTANCE_IDENTIFIER = 'nwcapture-load-instance1'
+DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
+ENGINE = 'aurora-postgresql'
+DEFAULT_DB_CLUSTER_IDENTIFIER = 'nwcapture-load'
+NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
+DEFAULT_NWCAPTURE_NEW = 'NWCAPTURE-DB-LOAD'
+
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
@@ -38,6 +64,8 @@ logger.setLevel(log_level)
 STAGE = os.getenv('STAGE')
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+secrets_client = boto3.client('secretsmanager', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
 
 def _get_etl_start():
@@ -55,7 +83,6 @@ def _get_etl_start():
 etl_start = _get_etl_start()
 OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
     "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED') and start_time > %s"
-
 
 
 def start_capture_db(event, context):
@@ -181,3 +208,130 @@ def _stop_db(db, triggers):
             stopped = True
     return stopped
 
+
+def delete_db_cluster(event, context):
+    logger.info(event)
+    rds_client.delete_db_cluster(
+        DBClusterIdentifier=_get_cluster_identifier(event),
+        SkipFinalSnapshot=True
+    )
+
+
+def _get_cluster_identifier(event):
+    my_cluster_identifier = DEFAULT_DB_CLUSTER_IDENTIFIER
+    if event.get('db_config') is not None and event['db_config'].get('db_cluster_identifier') is not None:
+        my_cluster_identifier = event['db_config']['db_cluster_identifier']
+    return my_cluster_identifier
+
+
+def _get_instance_identifier(event):
+    my_instance_identifier = DEFAULT_DB_INSTANCE_IDENTIFIER
+    if event.get('db_config') is not None and event['db_config'].get('db_instance_identifier') is not None:
+        my_instance_identifier = event['db_config']['db_instance_identifier']
+    return my_instance_identifier
+
+
+def _get_instance_class(event):
+    my_instance_class = DEFAULT_DB_INSTANCE_CLASS
+    if event.get('db_config') is not None and event['db_config'].get('db_instance_class') is not None:
+        my_instance_class = event['db_config']['db_instance_class']
+    return my_instance_class
+
+
+def modify_db_cluster(event, context):
+    logger.info(event)
+    rds_client.modify_db_cluster(
+        DBClusterIdentifier=_get_cluster_identifier(event),
+        ApplyImmediately=True,
+        MasterUserPassword='Password123'
+    )
+
+
+def delete_db_instance(event, context):
+    logger.info(event)
+    rds_client.delete_db_instance(
+        DBInstanceIdentifier=_get_instance_identifier(event),
+        SkipFinalSnapshot=True
+    )
+
+
+def create_db_instance(event, context):
+    logger.info(event)
+    rds_client.create_db_instance(
+        DBInstanceIdentifier=_get_instance_identifier(event),
+        DBInstanceClass=_get_instance_class(event),
+        DBClusterIdentifier=_get_cluster_identifier(event),
+        Engine=ENGINE
+    )
+
+
+def restore_db_cluster(event, context):
+    logger.info(event)
+    """
+    By default we try to restore the production snapshot that
+    is two days old.  If a specific snapshot needs to be used
+    for the test, it can be passed in as part of an event when
+    the step function is invoked with the key 'snapshotIdentifier'.
+
+    Restoring an aurora db cluster from snapshot takes one to two hours.
+    """
+
+    original = secrets_client.get_secret_value(
+        SecretId=NWCAPTURE_REAL
+    )
+    secret_string = json.loads(original['SecretString'])
+    kms_key = str(secret_string['KMS_KEY_ID'])
+    subnet_name = str(secret_string['DB_SUBGROUP_NAME'])
+    vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
+    if not kms_key or not subnet_name or not vpc_security_group_id:
+        raise Exception(f"Missing db configuration data {secret_string}")
+    my_snapshot_identifier = SNAPSHOT_IDENTIFIER
+    if event is not None:
+        if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
+            my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
+
+    rds_client.restore_db_cluster_from_snapshot(
+        DBClusterIdentifier=_get_cluster_identifier(event),
+        SnapshotIdentifier=my_snapshot_identifier,
+        Engine=ENGINE,
+        EngineVersion='11.7',
+        Port=5432,
+        DBSubnetGroupName=subnet_name,
+        DatabaseName='nwcapture-load',
+        EnableIAMDatabaseAuthentication=False,
+        EngineMode='provisioned',
+        DBClusterParameterGroupName='aqts-capture',
+        DeletionProtection=False,
+        CopyTagsToSnapshot=False,
+        KmsKeyId=kms_key,
+        VpcSecurityGroupIds=[
+            vpc_security_group_id
+        ],
+    )
+
+
+def modify_schema_owner_password(event, context):
+    logger.info(event)
+    """
+    We don't know the password for 'capture_owner' on the production db,
+    but we have already changed the postgres password in the modifyDbCluster step.
+    So change the password for 'capture_owner' here.
+    :param event:
+    :param context:
+    :return:
+    """
+    original = secrets_client.get_secret_value(
+        SecretId=NWCAPTURE_LOAD,
+    )
+    secret_string = json.loads(original['SecretString'])
+    db_host = secret_string['DATABASE_ADDRESS']
+    db_name = secret_string['DATABASE_NAME']
+    rds = RDS(db_host, 'postgres', db_name, 'Password123')
+    sql = "alter user capture_owner with password 'Password123'"
+    rds.alter_permissions(sql)
+
+    sqs = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
+    queue_info = sqs.get_queue_url(QueueName=CAPTURE_TRIGGER_QUEUE)
+    sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
+    queue_info = sqs.get_queue_url(QueueName=ERROR_QUEUE)
+    sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
