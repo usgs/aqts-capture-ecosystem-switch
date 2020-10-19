@@ -152,7 +152,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   GrowDb:
-    handler: src.handler.shrink_db
+    handler: src.handler.grow_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}

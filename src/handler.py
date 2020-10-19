@@ -186,7 +186,9 @@ def _stop_db(db, triggers):
 def shrink_db(event, context):
     stage = os.environ['STAGE']
     identifier = f"nwcapture-{stage}-instance1"
-    cpu_util = _get_cpu_utilization(identifier, 300)
+    period = 60
+    total_time = 300
+    cpu_util = _get_cpu_utilization(identifier, period, total_time)
     logger.info(f"shrink db cpu_util = {cpu_util}")
 
     # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
