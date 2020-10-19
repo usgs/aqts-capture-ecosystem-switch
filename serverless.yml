@@ -148,7 +148,7 @@ functions:
     events:
       - schedule:
           rate: rate(10 minutes)
-          enabled: true
+          enabled: false
     vpc: ${self:custom.vpc}
 
   GrowDb:
@@ -162,7 +162,7 @@ functions:
     events:
       - schedule:
           rate: rate(10 minutes)
-          enabled: true
+          enabled: false
     vpc: ${self:custom.vpc}
 
 resources:
@@ -187,6 +187,40 @@ resources:
         ComparisonOperator: GreaterThanOrEqualToThreshold
         Threshold: 1
         Period: 60
+        EvaluationPeriods: 1
+        AlarmActions:
+          - Ref: snsTopic
+    growDbAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-grow-db-alarm
+        AlarmDescription: Notify when the cpu utilization is above 75% for an hour
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value: arn:aws:rds:us-west-2:#{AWS::AccountId}:db:nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Threshold: 75
+        Period: 300
+        EvaluationPeriods: 1
+        AlarmActions:
+          - Ref: snsTopic
+    shrinkDbAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-shrink-db-alarm
+        AlarmDescription: Notify when the cpu utilization is below 50% for an hour
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value: arn:aws:rds:us-west-2:#{AWS::AccountId}:db:nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Threshold: 50
+        Period: 300
         EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic
