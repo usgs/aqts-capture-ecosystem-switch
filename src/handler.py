@@ -186,10 +186,19 @@ def _stop_db(db, triggers):
 def shrink_db(event, context):
     stage = os.environ['STAGE']
     identifier = f"nwcapture-{stage.lower()}-instance1"
-    period = 60
+    period = 300
     total_time = 300
     cpu_util = _get_cpu_utilization(identifier, period, total_time)
     logger.info(f"shrink db cpu_util = {cpu_util}")
+    time_to_shrink = True
+    values = cpu_util['MetricDataResults'][0]['Values']
+    for value in values:
+        if value > 40:
+            time_to_shrink = False
+    if time_to_shrink:
+        logger.info(f"It's time to shrink the db {values}")
+    else:
+        logger.info(f"Not time to shrink the db {values}")
 
     # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
     # db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
@@ -206,9 +215,18 @@ def shrink_db(event, context):
 def grow_db(event, context):
     stage = os.environ['STAGE']
     identifier = f"nwcapture-{stage.lower()}-instance1"
-    period = 60
+    period = 300
     total_time = 300
     cpu_util = _get_cpu_utilization(identifier, period, total_time)
+    time_to_grow = True
+    values = cpu_util['MetricDataResults'][0]['Values']
+    for value in values:
+        if value < 70:
+            time_to_grow = False
+    if time_to_grow:
+        logger.info(f"It's time to grow the db {values}")
+    else:
+        logger.info(f"Not time to grow the db {values}")
     logger.info(f"identifier {identifier} period {period} grow db cpu_util = {cpu_util}")
     # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
     # db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
