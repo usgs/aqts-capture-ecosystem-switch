@@ -172,7 +172,6 @@ functions:
       MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
-
   deleteDbInstance:
     handler: src.handler.delete_db_instance
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
@@ -190,8 +189,6 @@ functions:
       LOG_LEVEL: INFO
       MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
-
-
 
 stepFunctions:
   stateMachines:
@@ -253,7 +250,6 @@ stepFunctions:
                 BackoffRate: 1
             End: true
 
-
 resources:
   Resources:
     snsTopic:
@@ -283,6 +279,8 @@ resources:
 plugins:
   - serverless-plugin-git-variables
   - serverless-python-requirements
+  - serverless-step-functions
+  - serverless-pseudo-parameters
 
 package:
   exclude:
