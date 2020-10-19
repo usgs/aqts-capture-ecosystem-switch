@@ -238,9 +238,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.rds_client')
     def test_delete_db_instance_custom(self, mock_rds):
         event = {
-            "db_config": {
-                "db_cluster_identifier": "NWCAPTURE-TEST123"
-            }
+            "db_cluster_identifier": "NWCAPTURE-TEST123"
         }
         handler.delete_db_instance(event, {})
         mock_rds.delete_db_instance.assert_called_once_with(
@@ -257,9 +255,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.rds_client')
     def test_delete_db_cluster_custom(self, mock_rds):
         event = {
-            "db_config": {
-                "db_cluster_identifier": "NWCAPTURE-TEST123"
-            }
+            "db_cluster_identifier": "NWCAPTURE-TEST123"
         }
         handler.delete_db_cluster(event, {})
         mock_rds.delete_db_cluster.assert_called_once_with(
@@ -278,10 +274,9 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.rds_client')
     def test_create_db_instance_custom(self, mock_rds):
         event = {
-            "db_config": {
-                "db_cluster_identifier": "custom-cluster",
-                "db_instance_class": "t2.micro"
-            }
+            "db_cluster_identifier": "custom-cluster",
+            "db_instance_class": "t2.micro"
+
         }
         handler.create_db_instance(event, {})
         mock_rds.create_db_instance.assert_called_once_with(
@@ -294,9 +289,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.rds_client')
     def test_modify_db_cluster(self, mock_rds):
         event = {
-            "db_config": {
-                "db_cluster_identifier": "custom_cluster_id"
-            }
+            "db_cluster_identifier": "custom_cluster_id"
         }
         handler.modify_db_cluster(event, {})
         mock_rds.modify_db_cluster.assert_called_once_with(

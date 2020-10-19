@@ -221,23 +221,15 @@ def delete_db_cluster(event, context):
 
 def _get_cluster_identifier(event):
     my_cluster_identifier = DEFAULT_DB_CLUSTER_IDENTIFIER
-    if event.get('db_config') is not None and event['db_config'].get('db_cluster_identifier') is not None:
-        my_cluster_identifier = event['db_config']['db_cluster_identifier']
+    if event.get('db_cluster_identifier') is not None:
+        my_cluster_identifier = event['db_cluster_identifier']
     return my_cluster_identifier
-
-
-def _get_instance_identifier(event):
-    my_instance_identifier = DEFAULT_DB_INSTANCE_IDENTIFIER
-    if event.get('db_config') is not None and event['db_config'].get('db_cluster_identifier') is not None:
-        cluster = event['db_config']['db_cluster_identifier']
-        my_instance_identifier = f"{cluster}-instance1"
-    return my_instance_identifier
 
 
 def _get_instance_class(event):
     my_instance_class = DEFAULT_DB_INSTANCE_CLASS
-    if event.get('db_config') is not None and event['db_config'].get('db_instance_class') is not None:
-        my_instance_class = event['db_config']['db_instance_class']
+    if event.get('db_instance_class') is not None:
+        my_instance_class = event['db_instance_class']
     return my_instance_class
 
 
@@ -256,18 +248,22 @@ def modify_db_cluster(event, context):
 
 def delete_db_instance(event, context):
     logger.info(event)
+    cluster_id = _get_cluster_identifier(event)
+    instance_id = f"{cluster_id}-instance1"
     rds_client.delete_db_instance(
-        DBInstanceIdentifier=_get_instance_identifier(event),
+        DBInstanceIdentifier=instance_id,
         SkipFinalSnapshot=True
     )
 
 
 def create_db_instance(event, context):
     logger.info(event)
+    cluster_id = _get_cluster_identifier(event)
+    instance_id = f"{cluster_id}-instance1"
     rds_client.create_db_instance(
-        DBInstanceIdentifier=_get_instance_identifier(event),
+        DBInstanceIdentifier=instance_id,
         DBInstanceClass=_get_instance_class(event),
-        DBClusterIdentifier=_get_cluster_identifier(event),
+        DBClusterIdentifier=cluster_id,
         Engine=ENGINE
     )
 
