@@ -236,10 +236,34 @@ class TestHandler(TestCase):
             SkipFinalSnapshot=True)
 
     @mock.patch('src.handler.rds_client')
+    def test_delete_db_instance_custom(self, mock_rds):
+        event = {
+            "db_config": {
+                "db_cluster_identifier": "NWCAPTURE-TEST123"
+            }
+        }
+        handler.delete_db_instance(event, {})
+        mock_rds.delete_db_instance.assert_called_once_with(
+            DBInstanceIdentifier='NWCAPTURE-TEST123-instance1',
+            SkipFinalSnapshot=True)
+
+    @mock.patch('src.handler.rds_client')
     def test_delete_db_cluster(self, mock_rds):
         handler.delete_db_cluster({}, {})
         mock_rds.delete_db_cluster.assert_called_once_with(
             DBClusterIdentifier='nwcapture-load',
+            SkipFinalSnapshot=True)
+
+    @mock.patch('src.handler.rds_client')
+    def test_delete_db_cluster_custom(self, mock_rds):
+        event = {
+            "db_config": {
+                "db_cluster_identifier": "NWCAPTURE-TEST123"
+            }
+        }
+        handler.delete_db_cluster(event, {})
+        mock_rds.delete_db_cluster.assert_called_once_with(
+            DBClusterIdentifier='NWCAPTURE-TEST123',
             SkipFinalSnapshot=True)
 
     @mock.patch('src.handler.rds_client')
