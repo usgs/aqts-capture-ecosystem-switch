@@ -185,7 +185,7 @@ def _stop_db(db, triggers):
 
 def shrink_db(event, context):
     stage = os.environ['STAGE']
-    identifier = f"nwcapture-{stage}-instance1"
+    identifier = f"nwcapture-{stage.lower()}-instance1"
     period = 60
     total_time = 300
     cpu_util = _get_cpu_utilization(identifier, period, total_time)
@@ -205,7 +205,7 @@ def shrink_db(event, context):
 
 def grow_db(event, context):
     stage = os.environ['STAGE']
-    identifier = f"nwcapture-{stage}-instance1"
+    identifier = f"nwcapture-{stage.lower()}-instance1"
     period = 60
     total_time = 300
     cpu_util = _get_cpu_utilization(identifier, period, total_time)
