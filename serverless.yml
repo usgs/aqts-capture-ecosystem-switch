@@ -208,7 +208,7 @@ resources:
         Dimensions:
           - Name: DBInstanceIdentifier
             Value:
-              Ref: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+              Ref: arn:aws:rds:us-west-2:#{AWS::AccountId}:db:nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
@@ -226,7 +226,7 @@ resources:
         Dimensions:
           - Name: DBInstanceIdentifier
             Value:
-              Ref: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+              Ref: arn:aws:rds:us-west-2:#{AWS::AccountId}:db:nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: LessThanOrEqualToThreshold
