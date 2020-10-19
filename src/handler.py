@@ -204,9 +204,9 @@ def shrink_db(event, context):
 def grow_db(event, context):
     stage = os.environ['STAGE']
     identifier = f"nwcapture-{stage}-instance1"
-
-    cpu_util = _get_cpu_utilization(identifier, 300)
-    logger.info(f"grow db cpu_util = {cpu_util}")
+    period = 300 
+    cpu_util = _get_cpu_utilization(identifier, period)
+    logger.info(f"identifier {identifier} period {period} grow db cpu_util = {cpu_util}")
     # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
     # db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
     # if db_instance_class == 'db.r5.8xlarge':
@@ -241,7 +241,7 @@ def _get_cpu_utilization(db_instance_identifier, period_in_seconds):
                 }
             }
         ],
-        StartTime=(datetime.datetime.now() - datetime.timedelta(seconds=period_in_seconds)).timestamp(),
+        StartTime=(datetime.datetime.now() - datetime.timedelta(seconds=period_in_seconds * 2)).timestamp(),
         EndTime=datetime.datetime.now().timestamp()
     )
-    return response['MetricDataResults'][0]['Values']
+    return response
