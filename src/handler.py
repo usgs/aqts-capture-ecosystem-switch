@@ -66,6 +66,7 @@ STAGE = os.getenv('STAGE')
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 secrets_client = boto3.client('secretsmanager', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+sqs_client = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
 
 def _get_etl_start():
@@ -174,6 +175,7 @@ def run_etl_query(rds=None):
     shut the db down anyway.
     """
     if rds is None:
+        # TODO db host, db user, db address, db password ... get from secrets
         rds = RDS()
     result = rds.execute_sql(OBSERVATIONS_ETL_IN_PROGRESS_SQL, (etl_start,))
     if result[0] > 0:
@@ -226,8 +228,9 @@ def _get_cluster_identifier(event):
 
 def _get_instance_identifier(event):
     my_instance_identifier = DEFAULT_DB_INSTANCE_IDENTIFIER
-    if event.get('db_config') is not None and event['db_config'].get('db_instance_identifier') is not None:
-        my_instance_identifier = event['db_config']['db_instance_identifier']
+    if event.get('db_config') is not None and event['db_config'].get('db_cluster_identifier') is not None:
+        cluster = event['db_config']['db_cluster_identifier']
+        my_instance_identifier = f"{cluster}-instance1"
     return my_instance_identifier
 
 
@@ -281,9 +284,9 @@ def restore_db_cluster(event, context):
     )
     secret_string = json.loads(original['SecretString'])
     kms_key = str(secret_string['KMS_KEY_ID'])
-    subnet_name = str(secret_string['DB_SUBGROUP_NAME'])
+    subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
-    if not kms_key or not subnet_name or not vpc_security_group_id:
+    if not kms_key or not subgroup_name or not vpc_security_group_id:
         raise Exception(f"Missing db configuration data {secret_string}")
     my_snapshot_identifier = SNAPSHOT_IDENTIFIER
     if event is not None:
@@ -296,7 +299,7 @@ def restore_db_cluster(event, context):
         Engine=ENGINE,
         EngineVersion='11.7',
         Port=5432,
-        DBSubnetGroupName=subnet_name,
+        DBSubnetGroupName=subgroup_name,
         DatabaseName='nwcapture-load',
         EnableIAMDatabaseAuthentication=False,
         EngineMode='provisioned',
@@ -330,8 +333,7 @@ def modify_schema_owner_password(event, context):
     sql = "alter user capture_owner with password 'Password123'"
     rds.alter_permissions(sql)
 
-    sqs = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION'))
-    queue_info = sqs.get_queue_url(QueueName=CAPTURE_TRIGGER_QUEUE)
-    sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
-    queue_info = sqs.get_queue_url(QueueName=ERROR_QUEUE)
-    sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
+    queue_info = sqs_client.get_queue_url(QueueName=CAPTURE_TRIGGER_QUEUE)
+    sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
+    queue_info = sqs_client.get_queue_url(QueueName=ERROR_QUEUE)
+    sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])

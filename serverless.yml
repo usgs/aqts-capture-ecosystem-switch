@@ -18,6 +18,9 @@ provider:
     "wma:costCenter": TBD
     "wma:organization": IOW
     "displayName": "Eco-switch"
+    "wma:role": etl
+    "wma:system": NWIS
+    "wma:subSystem": NWISWeb-Capture
     commitIdentifier: ${git:sha1}
 
 custom:
@@ -159,6 +162,16 @@ functions:
       LOG_LEVEL: INFO
       MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
+
+  modifySchemaOwnerPassword:
+    handler: src.handler.create_db_instance
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
 
   deleteDbInstance:
     handler: src.handler.delete_db_instance
