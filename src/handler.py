@@ -293,6 +293,7 @@ def restore_db_cluster(event, context):
         if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
             my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
 
+    cluster_id = _get_cluster_identifier(event).upper()
     rds_client.restore_db_cluster_from_snapshot(
         DBClusterIdentifier=_get_cluster_identifier(event),
         SnapshotIdentifier=my_snapshot_identifier,
@@ -310,6 +311,28 @@ def restore_db_cluster(event, context):
         VpcSecurityGroupIds=[
             vpc_security_group_id
         ],
+        Tags=[
+            {
+                'Key': 'Name',
+                'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{cluster_id}"
+            },
+            {
+                'Key': 'wma:organization',
+                'Value': 'IOW'
+            },
+            {
+                'Key': 'wma:role',
+                'Value': 'etl'
+            },
+            {
+                'Key': 'wma:system',
+                'Value': 'NWIS'
+            },
+            {
+                'Key': 'wma:subSystem',
+                'Value': 'NWISWeb - Capture'
+            }
+        ]
     )
 
 

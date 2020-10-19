@@ -255,16 +255,17 @@ class TestHandler(TestCase):
     def test_create_db_instance_custom(self, mock_rds):
         event = {
             "db_config": {
-                "db_instance_identifier": "custom_instance_id",
+                "db_cluster_identifier": "custom-cluster",
                 "db_instance_class": "t2.micro"
             }
         }
         handler.create_db_instance(event, {})
         mock_rds.create_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='custom_instance_id',
+            DBInstanceIdentifier='custom-cluster-instance1',
             DBInstanceClass='t2.micro',
-            DBClusterIdentifier='nwcapture-load',
-            Engine='aurora-postgresql')
+            DBClusterIdentifier='custom-cluster',
+            Engine='aurora-postgresql'
+        )
 
     @mock.patch('src.handler.rds_client')
     def test_modify_db_cluster(self, mock_rds):
@@ -293,10 +294,16 @@ class TestHandler(TestCase):
             "SecretString": my_secret_string
         }
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
-        handler.restore_db_cluster({}, {})
+
+        event = {
+            "db_config": {
+                "snapshot_identifier": "my_snapshot_id"
+            }
+        }
+        handler.restore_db_cluster(event, {})
         mock_rds.restore_db_cluster_from_snapshot.assert_called_once_with(
             DBClusterIdentifier='nwcapture-load',
-            SnapshotIdentifier='rds:nwcapture-prod-external-2020-10-15-10-08',
+            SnapshotIdentifier='my_snapshot_id',
             Engine='aurora-postgresql',
             EngineVersion='11.7',
             Port=5432,
@@ -308,7 +315,15 @@ class TestHandler(TestCase):
             DeletionProtection=False,
             CopyTagsToSnapshot=False,
             KmsKeyId='kms',
-            VpcSecurityGroupIds=['vpc_id']
+            VpcSecurityGroupIds=['vpc_id'],
+            Tags=[
+                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-NWCAPTURE-LOAD'},
+                {'Key': 'wma:organization', 'Value': 'IOW'},
+                {'Key': 'wma:role', 'Value': 'etl'},
+                {'Key': 'wma:system', 'Value': 'NWIS'},
+                {'Key': 'wma:subSystem', 'Value': 'NWISWeb - Capture'}
+            ]
+
         )
 
     @mock.patch('src.handler.RDS', autospec=True)
