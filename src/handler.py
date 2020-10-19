@@ -38,6 +38,7 @@ logger.setLevel(log_level)
 STAGE = os.getenv('STAGE')
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+rds_client = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
 
 
 def _get_etl_start():
@@ -181,3 +182,34 @@ def _stop_db(db, triggers):
             stopped = True
     return stopped
 
+
+def shrink_db(event, context):
+    stage = os.environ['STAGE']
+    identifier = f"nwcapture-{stage}-instance1"
+    response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
+    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    if db_instance_class == 'db.r5.4xlarge':
+        return "DB is already shrunk"
+    else:
+        rds_client.modify_db_instance(
+            DbInstanceIdentifier=identifier,
+            DbInstanceClass='db.r5.4xlarge'
+        )
+        return "Shrinking DB, please stand by."
+
+
+def grow_db(event, context):
+    stage = os.environ['STAGE']
+    identifier = f"nwcapture-{stage}-instance1"
+    response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
+    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    if db_instance_class == 'db.r5.8xlarge':
+        return "DB is already at max size"
+    else:
+        disable_triggers(TRIGGER[stage])
+        rds_client.modify_db_instance(
+            DbInstanceIdentifier=identifier,
+            DbInstanceClass='db.r5.8xlarge'
+        )
+        enable_triggers(TRIGGER[stage])
+        return "Growing DB, please stand by."

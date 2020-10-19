@@ -25,6 +25,11 @@ custom:
   # The test database starts at 7 am central and stops at 6 pm central time, Monday through Friday.
   # The qa database stops at 6 pm central on Fridays
   # The production database never stops or starts according to a schedule, the lambdas exist only for manual use.
+  stage:
+    DEV: dev
+    TEST: test
+    QA: qa
+    PROD: prod-external
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
@@ -133,6 +138,42 @@ functions:
               alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
     vpc: ${self:custom.vpc}
 
+  ShrinkDb:
+    handler: src.handler.shrink_db
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+      MAX_RETRIES: 6
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-shrink-db-alarm" ]
+    vpc: ${self:custom.vpc}
+
+  GrowDb:
+    handler: src.handler.shrink_db
+    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+      MAX_RETRIES: 6
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-grow-db-alarm" ]
+    vpc: ${self:custom.vpc}
+
+
+
 resources:
   Resources:
     snsTopic:
@@ -158,6 +199,43 @@ resources:
         EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic
+    growDbAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-grow-db-alarm
+        AlarmDescription: Notify when the cpu utilization is above 75% for an hour
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value:
+              Ref: nwcapture-${self:custom.stage}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Threshold: 75
+        Period: 300
+        EvaluationPeriods: 1
+        AlarmActions:
+          - Ref: snsTopic
+    shrinkDbAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-shrink-db-alarm
+        AlarmDescription: Notify when the cpu utilization is below 50% for an hour
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value:
+              Ref: nwcapture-${self:custom.stage}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Threshold: 50
+        Period: 300
+        EvaluationPeriods: 1
+        AlarmActions:
+          - Ref: snsTopic
+
 
 plugins:
   - serverless-plugin-git-variables
