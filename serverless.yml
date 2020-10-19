@@ -145,14 +145,11 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
+      MAX_RETRIES: 1
     events:
-      - cloudwatchEvent:
-          event:
-            source:
-              - 'aws.cloudwatch'
-            detail:
-              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-shrink-db-alarm" ]
+      - schedule:
+          rate: rate(10 minutes)
+          enabled: true
     vpc: ${self:custom.vpc}
 
   GrowDb:
@@ -162,14 +159,11 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
+      MAX_RETRIES: 1
     events:
-      - cloudwatchEvent:
-          event:
-            source:
-              - 'aws.cloudwatch'
-            detail:
-              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-grow-db-alarm" ]
+      - schedule:
+          rate: rate(10 minutes)
+          enabled: true
     vpc: ${self:custom.vpc}
 
 
@@ -196,42 +190,6 @@ resources:
         ComparisonOperator: GreaterThanOrEqualToThreshold
         Threshold: 1
         Period: 60
-        EvaluationPeriods: 1
-        AlarmActions:
-          - Ref: snsTopic
-    growDbAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-grow-db-alarm
-        AlarmDescription: Notify when the cpu utilization is above 75% for an hour
-        Namespace: 'AWS/RDS'
-        Dimensions:
-          - Name: DBInstanceIdentifier
-            Value:
-              Ref: arn:aws:rds:us-west-2:#{AWS::AccountId}:db:nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
-        MetricName: CPUUtilization
-        Statistic: Average
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        Threshold: 75
-        Period: 300
-        EvaluationPeriods: 1
-        AlarmActions:
-          - Ref: snsTopic
-    shrinkDbAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-shrink-db-alarm
-        AlarmDescription: Notify when the cpu utilization is below 50% for an hour
-        Namespace: 'AWS/RDS'
-        Dimensions:
-          - Name: DBInstanceIdentifier
-            Value:
-              Ref: arn:aws:rds:us-west-2:#{AWS::AccountId}:db:nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
-        MetricName: CPUUtilization
-        Statistic: Average
-        ComparisonOperator: LessThanOrEqualToThreshold
-        Threshold: 50
-        Period: 300
         EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic

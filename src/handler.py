@@ -186,30 +186,62 @@ def _stop_db(db, triggers):
 def shrink_db(event, context):
     stage = os.environ['STAGE']
     identifier = f"nwcapture-{stage}-instance1"
-    response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
-    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
-    if db_instance_class == 'db.r5.4xlarge':
-        return "DB is already shrunk"
-    else:
-        rds_client.modify_db_instance(
-            DbInstanceIdentifier=identifier,
-            DbInstanceClass='db.r5.4xlarge'
-        )
-        return "Shrinking DB, please stand by."
+    cpu_util = _get_cpu_utilization(identifier, 300)
+    logger.info(f"shrink db cpu_util = {cpu_util}")
+
+    # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
+    # db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    # if db_instance_class == 'db.r5.4xlarge':
+    #     return "DB is already shrunk"
+    # else:
+    #     rds_client.modify_db_instance(
+    #         DbInstanceIdentifier=identifier,
+    #         DbInstanceClass='db.r5.4xlarge'
+    #     )
+    #     return "Shrinking DB, please stand by."
 
 
 def grow_db(event, context):
     stage = os.environ['STAGE']
     identifier = f"nwcapture-{stage}-instance1"
-    response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
-    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
-    if db_instance_class == 'db.r5.8xlarge':
-        return "DB is already at max size"
-    else:
-        disable_triggers(TRIGGER[stage])
-        rds_client.modify_db_instance(
-            DbInstanceIdentifier=identifier,
-            DbInstanceClass='db.r5.8xlarge'
-        )
-        enable_triggers(TRIGGER[stage])
-        return "Growing DB, please stand by."
+
+    cpu_util = _get_cpu_utilization(identifier, 300)
+    logger.info(f"grow db cpu_util = {cpu_util}")
+    # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
+    # db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    # if db_instance_class == 'db.r5.8xlarge':
+    #     return "DB is already at max size"
+    # else:
+    #     disable_triggers(TRIGGER[stage])
+    #     rds_client.modify_db_instance(
+    #         DbInstanceIdentifier=identifier,
+    #         DbInstanceClass='db.r5.8xlarge'
+    #     )
+    #     enable_triggers(TRIGGER[stage])
+    #     return "Growing DB, please stand by."
+
+
+def _get_cpu_utilization(db_instance_identifier, period_in_seconds):
+    response = cloudwatch_client.get_metric_data(
+        MetricDataQueries=[
+            {
+                'Id': 'loadTestCpuUtilization',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/RDS',
+                        'MetricName': 'CPUUtilization',
+                        'Dimensions': [
+                            {
+                                "Name": "DBInstanceIdentifier",
+                                "Value": db_instance_identifier
+                            }]
+                    },
+                    'Period': period_in_seconds,
+                    'Stat': 'Average',
+                }
+            }
+        ],
+        StartTime=(datetime.datetime.now() - datetime.timedelta(seconds=period_in_seconds)).timestamp(),
+        EndTime=datetime.datetime.now().timestamp()
+    )
+    return response['MetricDataResults'][0]['Values']
