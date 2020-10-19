@@ -25,11 +25,11 @@ custom:
   # The test database starts at 7 am central and stops at 6 pm central time, Monday through Friday.
   # The qa database stops at 6 pm central on Fridays
   # The production database never stops or starts according to a schedule, the lambdas exist only for manual use.
-  stage:
-    DEV: "dev"
-    TEST: "test"
-    QA: "qa"
-    PROD: "prod-external"
+  environments:
+    DEV: dev
+    TEST: test
+    QA: qa
+    PROD: prod
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
@@ -208,7 +208,7 @@ resources:
         Dimensions:
           - Name: DBInstanceIdentifier
             Value:
-              Ref: nwcapture-${self:custom.stage}-instance1
+              Ref: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
@@ -226,7 +226,7 @@ resources:
         Dimensions:
           - Name: DBInstanceIdentifier
             Value:
-              Ref: nwcapture-${self:custom.stage}-instance1
+              Ref: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: LessThanOrEqualToThreshold
