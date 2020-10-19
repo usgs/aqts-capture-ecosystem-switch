@@ -204,8 +204,9 @@ def shrink_db(event, context):
 def grow_db(event, context):
     stage = os.environ['STAGE']
     identifier = f"nwcapture-{stage}-instance1"
-    period = 300 
-    cpu_util = _get_cpu_utilization(identifier, period)
+    period = 60
+    total_time = 300
+    cpu_util = _get_cpu_utilization(identifier, period, total_time)
     logger.info(f"identifier {identifier} period {period} grow db cpu_util = {cpu_util}")
     # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
     # db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
@@ -221,7 +222,7 @@ def grow_db(event, context):
     #     return "Growing DB, please stand by."
 
 
-def _get_cpu_utilization(db_instance_identifier, period_in_seconds):
+def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):
     response = cloudwatch_client.get_metric_data(
         MetricDataQueries=[
             {
@@ -241,7 +242,7 @@ def _get_cpu_utilization(db_instance_identifier, period_in_seconds):
                 }
             }
         ],
-        StartTime=(datetime.datetime.now() - datetime.timedelta(seconds=period_in_seconds * 2)).timestamp(),
+        StartTime=(datetime.datetime.now() - datetime.timedelta(seconds=total_time)).timestamp(),
         EndTime=datetime.datetime.now().timestamp()
     )
     return response
