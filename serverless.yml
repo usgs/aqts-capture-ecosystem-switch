@@ -26,10 +26,10 @@ custom:
   # The qa database stops at 6 pm central on Fridays
   # The production database never stops or starts according to a schedule, the lambdas exist only for manual use.
   stage:
-    DEV: dev
-    TEST: test
-    QA: qa
-    PROD: prod-external
+    DEV: "dev"
+    TEST: "test"
+    QA: "qa"
+    PROD: "prod-external"
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
