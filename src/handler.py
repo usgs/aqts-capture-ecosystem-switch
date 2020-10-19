@@ -243,8 +243,12 @@ def _get_instance_class(event):
 
 def modify_db_cluster(event, context):
     logger.info(event)
+    cluster_id = _get_cluster_identifier(event)
+    logger.info(f"using cluster_identifier {cluster_id}")
+    response = rds_client.describe_db_clusters()
+    logger.info(f" all clusters {response}")
     rds_client.modify_db_cluster(
-        DBClusterIdentifier=_get_cluster_identifier(event),
+        DBClusterIdentifier=cluster_id,
         ApplyImmediately=True,
         MasterUserPassword='Password123'
     )
