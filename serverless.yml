@@ -146,9 +146,12 @@ functions:
       STAGE: ${self:provider.stage}
       MAX_RETRIES: 1
     events:
-      - schedule:
-          rate: rate(10 minutes)
-          enabled: false
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-shrink-db-alarm" ]
     vpc: ${self:custom.vpc}
 
   GrowDb:
@@ -160,9 +163,12 @@ functions:
       STAGE: ${self:provider.stage}
       MAX_RETRIES: 1
     events:
-      - schedule:
-          rate: rate(10 minutes)
-          enabled: false
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-grow-db-alarm" ]
     vpc: ${self:custom.vpc}
 
 resources:
@@ -219,8 +225,8 @@ resources:
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: LessThanOrEqualToThreshold
-        Threshold: 50
-        Period: 300
+        Threshold: 25
+        Period: 1800
         EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic
