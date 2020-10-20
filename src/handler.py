@@ -213,33 +213,33 @@ def _stop_db(db, triggers):
 
 def delete_db_cluster(event, context):
     logger.info(event)
-    # rds_client.delete_db_cluster(
-    #     DBClusterIdentifier=_get_cluster_identifier(event),
-    #     SkipFinalSnapshot=True
-    # )
+    rds_client.delete_db_cluster(
+        DBClusterIdentifier=_get_cluster_identifier(event),
+        SkipFinalSnapshot=True
+    )
 
 
 def modify_db_cluster(event, context):
     logger.info(event)
     cluster_id = _get_cluster_identifier(event)
     logger.info(f"using cluster_identifier {cluster_id}")
-    # response = rds_client.describe_db_clusters()
-    # logger.info(f" all clusters {response}")
-    # rds_client.modify_db_cluster(
-    #     DBClusterIdentifier=cluster_id,
-    #     ApplyImmediately=True,
-    #     MasterUserPassword='Password123'
-    # )
+    response = rds_client.describe_db_clusters()
+    logger.info(f" all clusters {response}")
+    rds_client.modify_db_cluster(
+        DBClusterIdentifier=cluster_id,
+        ApplyImmediately=True,
+        MasterUserPassword='Password123'
+    )
 
 
 def delete_db_instance(event, context):
     logger.info(event)
-    # cluster_id = _get_cluster_identifier(event)
-    # instance_id = f"{cluster_id}-instance1"
-    # rds_client.delete_db_instance(
-    #     DBInstanceIdentifier=instance_id,
-    #     SkipFinalSnapshot=True
-    # )
+    cluster_id = _get_cluster_identifier(event)
+    instance_id = f"{cluster_id}-instance1"
+    rds_client.delete_db_instance(
+        DBInstanceIdentifier=instance_id,
+        SkipFinalSnapshot=True
+    )
 
 
 def create_db_instance(event, context):
@@ -248,12 +248,12 @@ def create_db_instance(event, context):
     instance_id = f"{cluster_id}-instance1"
     logger.info(f"instance_id={instance_id}")
     logger.info(f"instance_class={_get_instance_class(event)}")
-    # rds_client.create_db_instance(
-    #     DBInstanceIdentifier=instance_id,
-    #     DBInstanceClass=_get_instance_class(event),
-    #     DBClusterIdentifier=cluster_id,
-    #     Engine=ENGINE
-    # )
+    rds_client.create_db_instance(
+        DBInstanceIdentifier=instance_id,
+        DBInstanceClass=_get_instance_class(event),
+        DBClusterIdentifier=cluster_id,
+        Engine=ENGINE
+    )
 
 
 def restore_db_cluster(event, context):
@@ -266,62 +266,62 @@ def restore_db_cluster(event, context):
 
     Restoring an aurora db cluster from snapshot takes one to two hours.
     """
-    #
-    # original = secrets_client.get_secret_value(
-    #     SecretId=NWCAPTURE_REAL
-    # )
-    # secret_string = json.loads(original['SecretString'])
-    # kms_key = str(secret_string['KMS_KEY_ID'])
-    # subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
-    # vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
-    # if not kms_key or not subgroup_name or not vpc_security_group_id:
-    #     raise Exception(f"Missing db configuration data {secret_string}")
-    # my_snapshot_identifier = SNAPSHOT_IDENTIFIER
-    # if event is not None:
-    #     if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
-    #         my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
-    #
-    # cluster_id = _get_cluster_identifier(event).upper()
-    # rds_client.restore_db_cluster_from_snapshot(
-    #     DBClusterIdentifier=_get_cluster_identifier(event),
-    #     SnapshotIdentifier=my_snapshot_identifier,
-    #     Engine=ENGINE,
-    #     EngineVersion='11.7',
-    #     Port=5432,
-    #     DBSubnetGroupName=subgroup_name,
-    #     DatabaseName='nwcapture-load',
-    #     EnableIAMDatabaseAuthentication=False,
-    #     EngineMode='provisioned',
-    #     DBClusterParameterGroupName='aqts-capture',
-    #     DeletionProtection=False,
-    #     CopyTagsToSnapshot=False,
-    #     KmsKeyId=kms_key,
-    #     VpcSecurityGroupIds=[
-    #         vpc_security_group_id
-    #     ],
-    #     Tags=[
-    #         {
-    #             'Key': 'Name',
-    #             'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{cluster_id}"
-    #         },
-    #         {
-    #             'Key': 'wma:organization',
-    #             'Value': 'IOW'
-    #         },
-    #         {
-    #             'Key': 'wma:role',
-    #             'Value': 'etl'
-    #         },
-    #         {
-    #             'Key': 'wma:system',
-    #             'Value': 'NWIS'
-    #         },
-    #         {
-    #             'Key': 'wma:subSystem',
-    #             'Value': 'NWISWeb - Capture'
-    #         }
-    #     ]
-    # )
+
+    original = secrets_client.get_secret_value(
+        SecretId=NWCAPTURE_REAL
+    )
+    secret_string = json.loads(original['SecretString'])
+    kms_key = str(secret_string['KMS_KEY_ID'])
+    subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
+    vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
+    if not kms_key or not subgroup_name or not vpc_security_group_id:
+        raise Exception(f"Missing db configuration data {secret_string}")
+    my_snapshot_identifier = SNAPSHOT_IDENTIFIER
+    if event is not None:
+        if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
+            my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
+
+    cluster_id = _get_cluster_identifier(event).upper()
+    rds_client.restore_db_cluster_from_snapshot(
+        DBClusterIdentifier=_get_cluster_identifier(event),
+        SnapshotIdentifier=my_snapshot_identifier,
+        Engine=ENGINE,
+        EngineVersion='11.7',
+        Port=5432,
+        DBSubnetGroupName=subgroup_name,
+        DatabaseName='nwcapture-load',
+        EnableIAMDatabaseAuthentication=False,
+        EngineMode='provisioned',
+        DBClusterParameterGroupName='aqts-capture',
+        DeletionProtection=False,
+        CopyTagsToSnapshot=False,
+        KmsKeyId=kms_key,
+        VpcSecurityGroupIds=[
+            vpc_security_group_id
+        ],
+        Tags=[
+            {
+                'Key': 'Name',
+                'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{cluster_id}"
+            },
+            {
+                'Key': 'wma:organization',
+                'Value': 'IOW'
+            },
+            {
+                'Key': 'wma:role',
+                'Value': 'etl'
+            },
+            {
+                'Key': 'wma:system',
+                'Value': 'NWIS'
+            },
+            {
+                'Key': 'wma:subSystem',
+                'Value': 'NWISWeb - Capture'
+            }
+        ]
+    )
 
 
 def modify_schema_owner_password(event, context):
@@ -334,20 +334,20 @@ def modify_schema_owner_password(event, context):
     :param context:
     :return:
     """
-    # original = secrets_client.get_secret_value(
-    #     SecretId=NWCAPTURE_LOAD,
-    # )
-    # secret_string = json.loads(original['SecretString'])
-    # db_host = secret_string['DATABASE_ADDRESS']
-    # db_name = secret_string['DATABASE_NAME']
-    # rds = RDS(db_host, 'postgres', db_name, 'Password123')
-    # sql = "alter user capture_owner with password 'Password123'"
-    # rds.alter_permissions(sql)
-    #
-    # queue_info = sqs_client.get_queue_url(QueueName=CAPTURE_TRIGGER_QUEUE)
-    # sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
-    # queue_info = sqs_client.get_queue_url(QueueName=ERROR_QUEUE)
-    # sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
+    original = secrets_client.get_secret_value(
+        SecretId=NWCAPTURE_LOAD,
+    )
+    secret_string = json.loads(original['SecretString'])
+    db_host = secret_string['DATABASE_ADDRESS']
+    db_name = secret_string['DATABASE_NAME']
+    rds = RDS(db_host, 'postgres', db_name, 'Password123')
+    sql = "alter user capture_owner with password 'Password123'"
+    rds.alter_permissions(sql)
+
+    queue_info = sqs_client.get_queue_url(QueueName=CAPTURE_TRIGGER_QUEUE)
+    sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
+    queue_info = sqs_client.get_queue_url(QueueName=ERROR_QUEUE)
+    sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
 
 
 def _get_cluster_identifier(event):
