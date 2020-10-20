@@ -167,7 +167,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   modifySchemaOwnerPassword:
-    handler: src.handler.create_db_instance
+    handler: src.handler.modify_schema_owner_password
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
