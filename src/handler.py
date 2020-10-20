@@ -35,10 +35,59 @@ log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
 
-STAGE = os.getenv('STAGE')
+STAGE = os.getenv('STAGE', 'TEST')
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-rds_client = boto3.client('rds', os.environ['AWS_DEPLOYMENT_REGION'])
+rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+
+DEFAULT_DB_INSTANCE_IDENTIFIER = f"nwcapture-{STAGE.lower()}-instance1"
+DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
+SMALL_DB_SIZE = 'db.r5.4xlarge'
+BIG_DB_SIZE = 'db.r5.8xlarge'
+
+
+def disable_trigger_before_shrink(event, context):
+    response = rds_client.describe_db_instances(DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    if db_instance_class == SMALL_DB_SIZE:
+        raise Exception("Database has already shrunk")
+    disable_triggers(TRIGGER[STAGE])
+
+
+def disable_trigger_before_grow(event, context):
+    response = rds_client.describe_db_instances(DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    if db_instance_class == BIG_DB_SIZE:
+        raise Exception("Database has already grown")
+    disable_triggers(TRIGGER[STAGE])
+
+
+def enable_trigger_after_shrink(event, context):
+    response = rds_client.describe_db_instances(DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    if db_instance_class == BIG_DB_SIZE:
+        raise Exception("Database has not shrunk yet")
+    if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
+        enable_triggers(TRIGGER[STAGE])
+
+
+def enable_trigger_after_grow(event, context):
+    response = rds_client.describe_db_instances(DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    if db_instance_class == SMALL_DB_SIZE:
+        raise Exception("Database has not grown yet")
+    if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
+        enable_triggers(TRIGGER[STAGE])
+
+
+def _is_cluster_available(cluster_id):
+    response = rds_client.describe_db_clusters()
+    all_dbs = response['DBClusters']
+    available_clusters = [x['DBClusterIdentifier'] for x in all_dbs if x['Status'] == 'available']
+    if cluster_id in available_clusters:
+        return True
+    else:
+        raise Exception(f"DB {DEFAULT_DB_CLUSTER_IDENTIFIER} is not ready yet")
 
 
 def _get_etl_start():
@@ -56,7 +105,6 @@ def _get_etl_start():
 etl_start = _get_etl_start()
 OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
     "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED') and start_time > %s"
-
 
 
 def start_capture_db(event, context):
@@ -183,69 +231,69 @@ def _stop_db(db, triggers):
     return stopped
 
 
+# TODO run this with 'breaching' and 'ignore' on TEST
 def shrink_db(event, context):
-    # stage = os.environ['STAGE']
-    # identifier = f"nwcapture-{stage.lower()}-instance1"
-    # period = 300
-    # total_time = 300
-    # cpu_util = _get_cpu_utilization(identifier, period, total_time)
-    # logger.info(f"shrink db cpu_util = {cpu_util}")
-    # time_to_shrink = True
-    # values = cpu_util['MetricDataResults'][0]['Values']
-    # for value in values:
-    #     if value > 40:
-    #         time_to_shrink = False
-    # if time_to_shrink:
-    #     logger.info(f"It's time to shrink the db {values}")
-    # else:
-    #     logger.info(f"Not time to shrink the db {values}")
-
-    # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
-    # db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
-    # if db_instance_class == 'db.r5.4xlarge':
-    #     return "DB is already shrunk"
-    # else:
-    #     rds_client.modify_db_instance(
-    #         DbInstanceIdentifier=identifier,
-    #         DbInstanceClass='db.r5.4xlarge'
-    #     )
-    #     return "Shrinking DB, please stand by."
+    stage = os.environ['STAGE']
+    identifier = f"nwcapture-{stage.lower()}-instance1"
+    period = 300
+    total_time = 900
+    cpu_util = _get_cpu_utilization(identifier, period, total_time)
+    print(f"cpu_util is {cpu_util}")
+    logger.info(f"shrink db cpu_util = {cpu_util}")
+    time_to_shrink = True
+    values = cpu_util['MetricDataResults'][0]['Values']
+    for value in values:
+        if value > 25:
+            time_to_shrink = False
+    if time_to_shrink:
+        logger.info(f"It's time to shrink the db {values}")
+    else:
+        logger.info(f"Not time to shrink the db {values}")
+    print(f"time to shrink is {time_to_shrink}")
+    response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
+    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    print(f"db_instance_class = {db_instance_class}")
+    if db_instance_class == 'db.r5.4xlarge':
+        return "DB is already shrunk"
+    else:
+        rds_client.modify_db_instance(
+            DbInstanceIdentifier=identifier,
+            DbInstanceClass='db.r5.4xlarge'
+        )
+        return "Shrinking DB, please stand by."
     logger.info(event)
     logger.info("time to shrink the db")
 
 
 def grow_db(event, context):
-    # stage = os.environ['STAGE']
-    # identifier = f"nwcapture-{stage.lower()}-instance1"
-    # period = 300
-    # total_time = 300
-    # cpu_util = _get_cpu_utilization(identifier, period, total_time)
-    # time_to_grow = True
-    # values = cpu_util['MetricDataResults'][0]['Values']
-    # for value in values:
-    #     if value < 70:
-    #         time_to_grow = False
-    # if time_to_grow:
-    #     logger.info(f"It's time to grow the db {values}")
-    # else:
-    #     logger.info(f"Not time to grow the db {values}")
-    # logger.info(f"identifier {identifier} period {period} grow db cpu_util = {cpu_util}")
-    #
-    #
-    # response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
-    # db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
-    # if db_instance_class == 'db.r5.8xlarge':
-    #     return "DB is already at max size"
-    # else:
-    #     disable_triggers(TRIGGER[stage])
-    #     rds_client.modify_db_instance(
-    #         DbInstanceIdentifier=identifier,
-    #         DbInstanceClass='db.r5.8xlarge'
-    #     )
-    #     enable_triggers(TRIGGER[stage])
-    #     return "Growing DB, please stand by."
     logger.info(event)
-    logger.info("time to grow the db")
+    stage = os.environ['STAGE']
+    identifier = f"nwcapture-{stage.lower()}-instance1"
+    period = 300
+    total_time = 300
+    cpu_util = _get_cpu_utilization(identifier, period, total_time)
+    time_to_grow = True
+    values = cpu_util['MetricDataResults'][0]['Values']
+    for value in values:
+        if value < 70:
+            time_to_grow = False
+    if time_to_grow:
+        logger.info(f"It's time to grow the db {values}")
+    else:
+        logger.info(f"Not time to grow the db {values}")
+    logger.info(f"identifier {identifier} period {period} grow db cpu_util = {cpu_util}")
+
+    response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
+    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    if db_instance_class == 'db.r5.8xlarge':
+        return "DB is already at max size"
+    else:
+        disable_triggers(TRIGGER[stage])
+        rds_client.modify_db_instance(
+            DbInstanceIdentifier=identifier,
+            DbInstanceClass='db.r5.8xlarge'
+        )
+        return "Growing DB, please stand by."
 
 
 def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):

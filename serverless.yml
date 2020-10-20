@@ -137,7 +137,30 @@ functions:
               alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
     vpc: ${self:custom.vpc}
 
-  ShrinkDb:
+
+  disableTriggerBeforeShrink:
+    handler: src.handler.disable_trigger_before_shrink
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
+
+  enableTriggerAfterShrink:
+    handler: src.handler.enable_trigger_after_shrink
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
+
+  shrinkDb:
     handler: src.handler.shrink_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
@@ -145,16 +168,19 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
       MAX_RETRIES: 1
-    events:
-      - cloudwatchEvent:
-          event:
-            source:
-              - 'aws.cloudwatch'
-            detail:
-              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-shrink-db-alarm" ]
+#      events:
+#        - schedule:
+#            rate: rate(10 minutes)
+#    events:
+#      - cloudwatchEvent:
+#          event:
+#            source:
+#              - 'aws.cloudwatch'
+#            detail:
+#              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-shrink-db-alarm" ]
     vpc: ${self:custom.vpc}
 
-  GrowDb:
+  growDb:
     handler: src.handler.grow_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
@@ -162,14 +188,89 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
       MAX_RETRIES: 1
-    events:
-      - cloudwatchEvent:
-          event:
-            source:
-              - 'aws.cloudwatch'
-            detail:
-              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-grow-db-alarm" ]
+#    events:
+#      - schedule:
+#          rate: rate(10 minutes)
+#    events:
+#      - cloudwatchEvent:
+#          event:
+#            source:
+#              - 'aws.cloudwatch'
+#            detail:
+#              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-grow-db-alarm" ]
     vpc: ${self:custom.vpc}
+
+
+stepFunctions:
+  stateMachines:
+    aqtsShrinkDb:
+      loggingConfig:
+        level: ALL
+        includeExecutionData: true
+        destinations:
+          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      name: aqts-ecosystem-switch-shrink-db-${self:provider.stage}
+      definition:
+        Comment: "AQTS Shrink Db"
+        StartAt: DisableTriggerBeforeShrink
+        States:
+          DisableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [disableTriggerBeforeShrink, Arn]
+            Next: ShrinkDb
+          ShrinkDb:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [shrinkDb, Arn]
+            Next: EnableTriggerAfterShrink
+          EnableTriggerAfterShrink:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [enableTriggerAfterShrink, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 600
+                MaxAttempts: 10
+                BackoffRate: 1
+            End: true
+    aqtsGrowDb:
+      loggingConfig:
+        level: ALL
+        includeExecutionData: true
+        destinations:
+          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      name: aqts-ecosystem-switch-grow-db-${self:provider.stage}
+      definition:
+        Comment: "AQTS Grow Db"
+        StartAt: DisableTriggerBeforeGrow
+        States:
+          DisableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ disableTriggerBeforeGrow, Arn ]
+            Next: GrowDb
+          GrowDb:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ growDb, Arn ]
+            Next: enableTriggerAfterGrow
+          EnableTriggerAfterShrink:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ enableTriggerAfterGrow, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 600
+                MaxAttempts: 10
+                BackoffRate: 1
+            End: true
+
+
 
 resources:
   Resources:
@@ -228,7 +329,8 @@ resources:
         Threshold: 25
         Period: 1800
         EvaluationPeriods: 1
-        TreatMissingData: breaching
+        # TODO should be breaching?  Should be ignore?
+        TreatMissingData: missing
         AlarmActions:
           - Ref: snsTopic
 

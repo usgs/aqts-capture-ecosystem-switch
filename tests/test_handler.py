@@ -2,7 +2,8 @@ import os
 from unittest import TestCase, mock
 
 from src import handler
-from src.handler import TRIGGER, STAGES, DB, run_etl_query
+from src.handler import TRIGGER, STAGES, DB, run_etl_query, DEFAULT_DB_CLUSTER_IDENTIFIER, \
+    DEFAULT_DB_INSTANCE_IDENTIFIER
 
 
 class TestHandler(TestCase):
@@ -268,3 +269,98 @@ class TestHandler(TestCase):
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.stop_capture_db(self.initial_event, self.context)
+
+    @mock.patch('src.handler.rds_client')
+    @mock.patch('src.handler.disable_triggers')
+    def test_disable_trigger_before_shrink_exception_already_shrunk(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DbInstanceClass": "db.r5.4xlarge"
+            }]
+        }
+        with self.assertRaises(Exception) as context:
+            handler.disable_trigger_before_shrink({}, {})
+        mock_rds.describe_db_instances.assert_called_once_with(
+             DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+        mock_utils.assert_not_called()
+
+    @mock.patch('src.handler.rds_client')
+    @mock.patch('src.handler.disable_triggers')
+    def test_disable_trigger_before_shrink_exception_ok(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DbInstanceClass": "db.r5.8xlarge"
+            }]
+        }
+        handler.disable_trigger_before_shrink({}, {})
+        mock_rds.describe_db_instances.assert_called_once_with(
+            DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+        mock_utils.assert_called_once_with(TRIGGER['TEST'])
+
+
+    @mock.patch('src.handler.rds_client')
+    @mock.patch('src.handler.disable_triggers')
+    def test_disable_trigger_before_grow_exception_already_grown(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DbInstanceClass": "db.r5.8xlarge"
+            }]
+        }
+        with self.assertRaises(Exception) as context:
+            handler.disable_trigger_before_grow({}, {})
+        mock_rds.describe_db_instances.assert_called_once_with(
+             DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+        mock_utils.assert_not_called()
+
+    @mock.patch('src.handler.rds_client')
+    @mock.patch('src.handler.disable_triggers')
+    def test_disable_trigger_before_grow_exception_ok(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DbInstanceClass": "db.r5.4xlarge"
+            }]
+        }
+        handler.disable_trigger_before_grow({}, {})
+        mock_rds.describe_db_instances.assert_called_once_with(
+            DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+        mock_utils.assert_called_once_with(TRIGGER['TEST'])
+
+    @mock.patch('src.handler.cloudwatch_client')
+    @mock.patch('src.handler.rds_client')
+    @mock.patch('src.handler.disable_triggers')
+    def test_shrink_db(self, mock_utils, mock_rds, mock_cloudwatch):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DbInstanceClass": "db.r5.8xlarge"
+            }]
+        }
+        handler.shrink_db({}, {})
+        mock_rds.modify_db_instance.assert_called_once_with(
+            DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+            DbInstanceClass='db.r5.4xlarge')
+
+    @mock.patch('src.handler.cloudwatch_client')
+    @mock.patch('src.handler.rds_client')
+    @mock.patch('src.handler.disable_triggers')
+    def test_grow_db(self, mock_utils, mock_rds, mock_cloudwatch):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DbInstanceClass": "db.r5.4xlarge"
+            }]
+        }
+        handler.grow_db({}, {})
+        mock_rds.modify_db_instance.assert_called_once_with(
+            DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+            DbInstanceClass='db.r5.8xlarge')
