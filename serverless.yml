@@ -217,7 +217,6 @@ stepFunctions:
             Next: ModifyPostgresPassword
           ModifyPostgresPassword:
             Type: Task
-            InputPath: "$"
             Resource:
               Fn::GetAtt: [modifyPostgresPassword, Arn]
             Retry:
@@ -229,7 +228,6 @@ stepFunctions:
             Next: CreateDbInstance
           CreateDbInstance:
             Type: Task
-            InputPath: "$"
             Resource:
               Fn::GetAtt: [createDbInstance, Arn]
             Retry:
@@ -241,7 +239,6 @@ stepFunctions:
             Next: ModifySchemaOwnerPassword
           ModifySchemaOwnerPassword:
             Type: Task
-            InputPath: "$"
             Resource:
               Fn::GetAtt: [modifySchemaOwnerPassword, Arn]
             Retry:

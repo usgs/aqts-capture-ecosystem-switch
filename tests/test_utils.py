@@ -3,7 +3,8 @@ from unittest import TestCase, mock
 
 from src import handler
 from src.handler import TRIGGER, STAGES, DB
-from src.utils import enable_triggers, disable_triggers
+from src.utils import enable_triggers, disable_triggers, purge_queue, stop_db_cluster, start_db_cluster, \
+    describe_db_clusters
 
 
 class TestUtils(TestCase):
@@ -103,3 +104,40 @@ class TestUtils(TestCase):
         mock_boto.assert_called_with("lambda", "us-west-2")
         client.list_event_source_mappings.assert_called_with(FunctionName='my_function_name')
         client.update_event_source_mapping.assert_not_called()
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_purge_queue(self, mock_boto):
+        client = mock.Mock()
+        mock_boto.return_value = client
+        client.get_queue_url.return_value = {"QueueUrl": "my_queue_url"}
+        purge_queue("foo")
+        client.purge_queue.assert_called_with(QueueUrl="my_queue_url")
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_stop_db_cluster(self, mock_boto):
+        client = mock.Mock()
+        mock_boto.return_value = client
+        stop_db_cluster("foo")
+        client.stop_db_cluster.assert_called_with(DBClusterIdentifier="foo")
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_start_db_cluster(self, mock_boto):
+        client = mock.Mock()
+        mock_boto.return_value = client
+        start_db_cluster("foo")
+        client.start_db_cluster.assert_called_with(DBClusterIdentifier="foo")
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_describe_db_clusters(self, mock_boto):
+        client = mock.Mock()
+        mock_boto.return_value = client
+        client.describe_db_clusters.return_value = {
+            'DBClusters': [
+                {
+                    'DBClusterIdentifier': 'foo',
+                    'Status': 'available'
+                }
+            ]
+        }
+        describe_db_clusters("stop")
+        client.describe_db_clusters.assert_called_once_with()

@@ -33,29 +33,18 @@ TRIGGER = {
     "PROD": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
 }
 
-NWCAPTURE_LOAD = 'NWCAPTURE-DB-LOAD'
-
-# Default snapshot identifier, may be overridden by passing a custom
-# snapshot identifier in the step function event
-two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
-month = str(two_days_ago.month)
-if len(month) == 1:
-    month = f"0{month}"
-day = str(two_days_ago.day)
-if len(day) == 1:
-    day = f"0{day}"
-SNAPSHOT_IDENTIFIER = f"rds:nwcapture-prod-external-{two_days_ago.year}-{month}-{day}-10-08"
-
 STAGE = os.getenv('STAGE', 'TEST')
 CAPTURE_TRIGGER_QUEUE = f"aqts-capture-trigger-queue-{STAGE}"
 ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
-DEFAULT_DB_INSTANCE_IDENTIFIER = 'nwcapture-load-instance1'
+"""
+These are intentionally hardcoded to QA for now.
+"""
+DEFAULT_DB_INSTANCE_IDENTIFIER = 'nwcapture-qa-experimental-instance1'
 DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
 ENGINE = 'aurora-postgresql'
-DEFAULT_DB_CLUSTER_IDENTIFIER = 'nwcapture-load'
+DEFAULT_DB_CLUSTER_IDENTIFIER = 'nwcapture-qa-experimental'
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
-DEFAULT_NWCAPTURE_NEW = 'NWCAPTURE-DB-LOAD'
 
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -215,7 +204,7 @@ def delete_db_cluster(event, context):
     logger.info("enter delete db cluster")
     logger.info(event)
     rds_client.delete_db_cluster(
-        DBClusterIdentifier=_get_cluster_identifier(event),
+        DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SkipFinalSnapshot=True
     )
 
@@ -229,12 +218,10 @@ def modify_postgres_password(event, context):
     secret_string = json.loads(original['SecretString'])
     postgres_password = secret_string['POSTGRES_PASSWORD']
 
-    cluster_id = _get_cluster_identifier(event)
-    logger.info(f"using cluster_identifier {cluster_id}")
     response = rds_client.describe_db_clusters()
     logger.info(f" all clusters {response}")
     rds_client.modify_db_cluster(
-        DBClusterIdentifier=cluster_id,
+        DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         ApplyImmediately=True,
         MasterUserPassword=postgres_password
     )
@@ -243,10 +230,8 @@ def modify_postgres_password(event, context):
 def delete_db_instance(event, context):
     logger.info("enter delete db instance")
     logger.info(event)
-    cluster_id = _get_cluster_identifier(event)
-    instance_id = f"{cluster_id}-instance1"
     rds_client.delete_db_instance(
-        DBInstanceIdentifier=instance_id,
+        DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
         SkipFinalSnapshot=True
     )
 
@@ -254,45 +239,33 @@ def delete_db_instance(event, context):
 def create_db_instance(event, context):
     logger.info("enter create db instance")
     logger.info(event)
-    cluster_id = _get_cluster_identifier(event)
-    instance_id = f"{cluster_id}-instance1"
-    logger.info(f"instance_id={instance_id}")
-    logger.info(f"instance_class={_get_instance_class(event)}")
     stage = os.environ['STAGE'].lower()
     rds_client.create_db_instance(
-        DBInstanceIdentifier=instance_id,
-        DBInstanceClass=_get_instance_class(event),
-        DBClusterIdentifier=cluster_id,
+        DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+        DBInstanceClass=DEFAULT_DB_INSTANCE_CLASS,
+        DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         Engine=ENGINE,
         Tags=[
-              {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
-              {'Key': 'aws:stack-name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
-              {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
-              {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
-              {'Key': 'wma:contact', 'Value': 'tbd'},
-              {'Key': 'wma:costCenter', 'Value': 'tbd'},
-              {'Key': 'wma:criticality', 'Value': 'tbd'},
-              {'Key': 'wma:environment', 'Value': stage},
-              {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-              {'Key': 'wma:organization', 'Value': 'tbd'},
-              {'Key': 'wma:role', 'Value': 'database'},
-              {'Key': 'wma:system', 'Value': 'NWIS'},
-              {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
-              {'Key': 'taggingVersion', 'Value': '0.0.1'}]
+            {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
+            {'Key': 'aws:stack-name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
+            {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
+            {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+            {'Key': 'wma:contact', 'Value': 'tbd'},
+            {'Key': 'wma:costCenter', 'Value': 'tbd'},
+            {'Key': 'wma:criticality', 'Value': 'tbd'},
+            {'Key': 'wma:environment', 'Value': stage},
+            {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+            {'Key': 'wma:organization', 'Value': 'tbd'},
+            {'Key': 'wma:role', 'Value': 'database'},
+            {'Key': 'wma:system', 'Value': 'NWIS'},
+            {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+            {'Key': 'taggingVersion', 'Value': '0.0.1'}]
     )
 
 
 def restore_db_cluster(event, context):
     logger.info("enter restore db cluster")
     logger.info(event)
-    """
-    By default we try to restore the production snapshot that
-    is two days old.  If a specific snapshot needs to be used
-    for the test, it can be passed in as part of an event when
-    the step function is invoked with the key 'snapshotIdentifier'.
-
-    Restoring an aurora db cluster from snapshot takes one to two hours.
-    """
 
     original = secrets_client.get_secret_value(
         SecretId=NWCAPTURE_REAL
@@ -303,20 +276,19 @@ def restore_db_cluster(event, context):
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
     if not kms_key or not subgroup_name or not vpc_security_group_id:
         raise Exception(f"Missing db configuration data {secret_string}")
-    my_snapshot_identifier = SNAPSHOT_IDENTIFIER
+    my_snapshot_identifier = get_snapshot_identifier()
     if event is not None:
         if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
             my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
 
-    cluster_id = _get_cluster_identifier(event).upper()
     rds_client.restore_db_cluster_from_snapshot(
-        DBClusterIdentifier=_get_cluster_identifier(event),
+        DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SnapshotIdentifier=my_snapshot_identifier,
         Engine=ENGINE,
         EngineVersion='11.7',
         Port=5432,
         DBSubnetGroupName=subgroup_name,
-        DatabaseName='nwcapture-load',
+        DatabaseName=DB[os.environ['STAGE']],
         EnableIAMDatabaseAuthentication=False,
         EngineMode='provisioned',
         DBClusterParameterGroupName='aqts-capture',
@@ -408,16 +380,12 @@ def modify_schema_owner_password(event, context):
     sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
 
 
-def _get_cluster_identifier(event):
-    my_cluster_identifier = DEFAULT_DB_CLUSTER_IDENTIFIER
-    if event.get('db_cluster_identifier') is not None:
-        my_cluster_identifier = event['db_cluster_identifier']
-    return my_cluster_identifier
-
-
-def _get_instance_class(event):
-    my_instance_class = DEFAULT_DB_INSTANCE_CLASS
-    if event.get('db_instance_class') is not None:
-        my_instance_class = event['db_instance_class']
-    return my_instance_class
-
+def get_snapshot_identifier():
+    two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+    month = str(two_days_ago.month)
+    if len(month) == 1:
+        month = f"0{month}"
+    day = str(two_days_ago.day)
+    if len(day) == 1:
+        day = f"0{day}"
+    return f"rds:nwcapture-prod-external-{two_days_ago.year}-{month}-{day}-10-08"

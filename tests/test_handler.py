@@ -3,7 +3,8 @@ import os
 from unittest import TestCase, mock
 
 from src import handler
-from src.handler import TRIGGER, STAGES, DB, run_etl_query
+from src.handler import TRIGGER, STAGES, DB, run_etl_query, DEFAULT_DB_INSTANCE_IDENTIFIER, \
+    DEFAULT_DB_CLUSTER_IDENTIFIER
 
 
 class TestHandler(TestCase):
@@ -232,35 +233,16 @@ class TestHandler(TestCase):
     def test_delete_db_instance(self, mock_rds):
         handler.delete_db_instance({}, {})
         mock_rds.delete_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='nwcapture-load-instance1',
-            SkipFinalSnapshot=True)
-
-    @mock.patch('src.handler.rds_client')
-    def test_delete_db_instance_custom(self, mock_rds):
-        event = {
-            "db_cluster_identifier": "NWCAPTURE-TEST123"
-        }
-        handler.delete_db_instance(event, {})
-        mock_rds.delete_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='NWCAPTURE-TEST123-instance1',
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             SkipFinalSnapshot=True)
 
     @mock.patch('src.handler.rds_client')
     def test_delete_db_cluster(self, mock_rds):
         handler.delete_db_cluster({}, {})
         mock_rds.delete_db_cluster.assert_called_once_with(
-            DBClusterIdentifier='nwcapture-load',
+            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             SkipFinalSnapshot=True)
 
-    @mock.patch('src.handler.rds_client')
-    def test_delete_db_cluster_custom(self, mock_rds):
-        event = {
-            "db_cluster_identifier": "NWCAPTURE-TEST123"
-        }
-        handler.delete_db_cluster(event, {})
-        mock_rds.delete_db_cluster.assert_called_once_with(
-            DBClusterIdentifier='NWCAPTURE-TEST123',
-            SkipFinalSnapshot=True)
 
     @mock.patch('src.handler.rds_client')
     def test_create_db_instance_default(self, mock_rds):
@@ -268,9 +250,9 @@ class TestHandler(TestCase):
         handler.create_db_instance({}, {})
 
         mock_rds.create_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='nwcapture-load-instance1',
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass='db.r5.8xlarge',
-            DBClusterIdentifier='nwcapture-load',
+            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             Engine='aurora-postgresql',
             Tags=[
                 {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
@@ -290,37 +272,6 @@ class TestHandler(TestCase):
             ]
         )
 
-    @mock.patch('src.handler.rds_client')
-    def test_create_db_instance_custom(self, mock_rds):
-        os.environ['STAGE'] = 'TEST'
-        event = {
-            "db_cluster_identifier": "custom-cluster",
-            "db_instance_class": "t2.micro"
-
-        }
-        handler.create_db_instance(event, {})
-        mock_rds.create_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='custom-cluster-instance1',
-            DBInstanceClass='t2.micro',
-            DBClusterIdentifier='custom-cluster',
-            Engine='aurora-postgresql',
-            Tags=[
-                {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
-                {'Key': 'aws:stack-name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
-                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
-                {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
-                {'Key': 'wma:contact', 'Value': 'tbd'},
-                {'Key': 'wma:costCenter', 'Value': 'tbd'},
-                {'Key': 'wma:criticality', 'Value': 'tbd'},
-                {'Key': 'wma:environment', 'Value': 'test'},
-                {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-                {'Key': 'wma:organization', 'Value': 'tbd'},
-                {'Key': 'wma:role', 'Value': 'database'},
-                {'Key': 'wma:system', 'Value': 'NWIS'},
-                {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
-                {'Key': 'taggingVersion', 'Value': '0.0.1'}
-            ]
-        )
 
     @mock.patch('src.handler.secrets_client')
     @mock.patch('src.handler.rds_client')
@@ -335,18 +286,16 @@ class TestHandler(TestCase):
         }
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
 
-        event = {
-            "db_cluster_identifier": "custom_cluster_id"
-        }
-        handler.modify_postgres_password(event, {})
+        handler.modify_postgres_password({}, {})
         mock_rds.modify_db_cluster.assert_called_once_with(
-            DBClusterIdentifier='custom_cluster_id',
+            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             ApplyImmediately=True,
             MasterUserPassword='Password123')
 
     @mock.patch('src.handler.secrets_client')
     @mock.patch('src.handler.rds_client')
     def test_restore_db_cluster(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'QA'
         my_secret_string = json.dumps(
             {
                 "KMS_KEY_ID": "kms",
@@ -359,20 +308,15 @@ class TestHandler(TestCase):
         }
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
 
-        event = {
-            "db_config": {
-                "snapshot_identifier": "my_snapshot_id"
-            }
-        }
-        handler.restore_db_cluster(event, {})
+        handler.restore_db_cluster({}, {})
         mock_rds.restore_db_cluster_from_snapshot.assert_called_once_with(
-            DBClusterIdentifier='nwcapture-load',
-            SnapshotIdentifier='my_snapshot_id',
+            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
+            SnapshotIdentifier=handler.get_snapshot_identifier(),
             Engine='aurora-postgresql',
             EngineVersion='11.7',
             Port=5432,
             DBSubnetGroupName='subgroup',
-            DatabaseName='nwcapture-load',
+            DatabaseName='nwcapture-qa',
             EnableIAMDatabaseAuthentication=False,
             EngineMode='provisioned',
             DBClusterParameterGroupName='aqts-capture',
