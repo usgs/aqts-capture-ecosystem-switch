@@ -230,17 +230,12 @@ class TestHandler(TestCase):
             handler.start_capture_db(self.initial_event, self.context)
 
     @mock.patch('src.handler.rds_client')
-    def test_delete_db_instance(self, mock_rds):
+    def test_delete_capture_db(self, mock_rds):
         os.environ['STAGE'] = 'QA'
-        handler.delete_db_instance({}, {})
+        handler.delete_capture_db({}, {})
         mock_rds.delete_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             SkipFinalSnapshot=True)
-
-    @mock.patch('src.handler.rds_client')
-    def test_delete_db_cluster(self, mock_rds):
-        os.environ['STAGE'] = 'QA'
-        handler.delete_db_cluster({}, {})
         mock_rds.delete_db_cluster.assert_called_once_with(
             DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             SkipFinalSnapshot=True)

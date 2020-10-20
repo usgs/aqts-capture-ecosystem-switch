@@ -200,15 +200,6 @@ def _stop_db(db, triggers):
     return stopped
 
 
-def delete_db_cluster(event, context):
-    _validate()
-    logger.info(event)
-    rds_client.delete_db_cluster(
-        DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
-        SkipFinalSnapshot=True
-    )
-
-
 def modify_postgres_password(event, context):
     _validate()
     logger.info("enter modify postgres password")
@@ -228,12 +219,14 @@ def modify_postgres_password(event, context):
     )
 
 
-def delete_db_instance(event, context):
+def delete_capture_db(event, context):
     _validate()
-    logger.info("enter delete db instance")
-    logger.info(event)
     rds_client.delete_db_instance(
         DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+        SkipFinalSnapshot=True
+    )
+    rds_client.delete_db_cluster(
+        DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SkipFinalSnapshot=True
     )
 

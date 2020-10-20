@@ -176,8 +176,8 @@ functions:
       MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
-  deleteDbInstance:
-    handler: src.handler.delete_db_instance
+  deleteCaptureDb:
+    handler: src.handler.delete_capture_db
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -186,15 +186,6 @@ functions:
       MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
-  deleteDbCluster:
-    handler: src.handler.delete_db_cluster
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      STAGE: ${self:provider.stage}
-      LOG_LEVEL: INFO
-      MAX_RETRIES: 6
-    vpc: ${self:custom.vpc}
 
 stepFunctions:
   stateMachines:
