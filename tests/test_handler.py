@@ -231,6 +231,7 @@ class TestHandler(TestCase):
 
     @mock.patch('src.handler.rds_client')
     def test_delete_db_instance(self, mock_rds):
+        os.environ['STAGE'] = 'QA'
         handler.delete_db_instance({}, {})
         mock_rds.delete_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
@@ -238,15 +239,15 @@ class TestHandler(TestCase):
 
     @mock.patch('src.handler.rds_client')
     def test_delete_db_cluster(self, mock_rds):
+        os.environ['STAGE'] = 'QA'
         handler.delete_db_cluster({}, {})
         mock_rds.delete_db_cluster.assert_called_once_with(
             DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             SkipFinalSnapshot=True)
 
-
     @mock.patch('src.handler.rds_client')
     def test_create_db_instance_default(self, mock_rds):
-        os.environ['STAGE'] = 'TEST'
+        os.environ['STAGE'] = 'QA'
         handler.create_db_instance({}, {})
 
         mock_rds.create_db_instance.assert_called_once_with(
@@ -255,14 +256,12 @@ class TestHandler(TestCase):
             DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             Engine='aurora-postgresql',
             Tags=[
-                {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
-                {'Key': 'aws:stack-name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
-                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
+                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-QA'},
                 {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
                 {'Key': 'wma:contact', 'Value': 'tbd'},
                 {'Key': 'wma:costCenter', 'Value': 'tbd'},
                 {'Key': 'wma:criticality', 'Value': 'tbd'},
-                {'Key': 'wma:environment', 'Value': 'test'},
+                {'Key': 'wma:environment', 'Value': 'qa'},
                 {'Key': 'wma:operationalHours', 'Value': 'tbd'},
                 {'Key': 'wma:organization', 'Value': 'tbd'},
                 {'Key': 'wma:role', 'Value': 'database'},
@@ -271,7 +270,6 @@ class TestHandler(TestCase):
                 {'Key': 'taggingVersion', 'Value': '0.0.1'}
             ]
         )
-
 
     @mock.patch('src.handler.secrets_client')
     @mock.patch('src.handler.rds_client')
@@ -345,6 +343,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.secrets_client')
     @mock.patch('src.handler.rds_client')
     def test_modify_schema_owner_password(self, mock_rds, mock_secrets_client, mock_sqs_client, mock_db):
+        os.environ['STAGE'] = 'QA'
         my_secret_string = json.dumps(
             {
                 "DATABASE_ADDRESS": "address",

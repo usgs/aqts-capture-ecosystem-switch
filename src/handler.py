@@ -201,7 +201,7 @@ def _stop_db(db, triggers):
 
 
 def delete_db_cluster(event, context):
-    logger.info("enter delete db cluster")
+    _validate()
     logger.info(event)
     rds_client.delete_db_cluster(
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
@@ -210,6 +210,7 @@ def delete_db_cluster(event, context):
 
 
 def modify_postgres_password(event, context):
+    _validate()
     logger.info("enter modify postgres password")
     logger.info(event)
     original = secrets_client.get_secret_value(
@@ -228,6 +229,7 @@ def modify_postgres_password(event, context):
 
 
 def delete_db_instance(event, context):
+    _validate()
     logger.info("enter delete db instance")
     logger.info(event)
     rds_client.delete_db_instance(
@@ -237,6 +239,7 @@ def delete_db_instance(event, context):
 
 
 def create_db_instance(event, context):
+    _validate()
     logger.info("enter create db instance")
     logger.info(event)
     stage = os.environ['STAGE'].lower()
@@ -246,8 +249,6 @@ def create_db_instance(event, context):
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         Engine=ENGINE,
         Tags=[
-            {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
-            {'Key': 'aws:stack-name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
             {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
             {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
             {'Key': 'wma:contact', 'Value': 'tbd'},
@@ -264,6 +265,7 @@ def create_db_instance(event, context):
 
 
 def restore_db_cluster(event, context):
+    _validate()
     logger.info("enter restore db cluster")
     logger.info(event)
 
@@ -352,7 +354,7 @@ def restore_db_cluster(event, context):
 
 
 def modify_schema_owner_password(event, context):
-    logger.info("enter modify schema owner password")
+    _validate()
     logger.info(event)
     """
     We don't know the password for 'capture_owner' on the production db,
@@ -389,3 +391,8 @@ def get_snapshot_identifier():
     if len(day) == 1:
         day = f"0{day}"
     return f"rds:nwcapture-prod-external-{two_days_ago.year}-{month}-{day}-10-08"
+
+
+def _validate():
+    if os.environ['STAGE'] != "QA":
+        raise Exception("This lambda is currently only supported on the QA tier")
