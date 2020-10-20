@@ -228,6 +228,7 @@ resources:
         Threshold: 25
         Period: 1800
         EvaluationPeriods: 1
+        TreatMissingData: breaching
         AlarmActions:
           - Ref: snsTopic
 
