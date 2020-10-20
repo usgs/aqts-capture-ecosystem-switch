@@ -218,7 +218,7 @@ stepFunctions:
             Next: ModifyDbCluster
           ModifyDbCluster:
             Type: Task
-            InputPath: "$.db_config"
+            InputPath: "$"
             ResultPath: "$.lambda_result_modify_db_cluster"
             Resource:
               Fn::GetAtt: [modifyDbCluster, Arn]
@@ -231,7 +231,7 @@ stepFunctions:
             Next: CreateDbInstance
           CreateDbInstance:
             Type: Task
-            InputPath: "$.db_config"
+            InputPath: "$"
             ResultPath: "$.lambda_result_create_db_instance"
             Resource:
               Fn::GetAtt: [createDbInstance, Arn]
@@ -244,7 +244,7 @@ stepFunctions:
             Next: ModifySchemaOwnerPassword
           ModifySchemaOwnerPassword:
             Type: Task
-            InputPath: "$.db_config"
+            InputPath: "$"
             ResultPath: "$.lambda_result_modify_schema_owner_password"
             Resource:
               Fn::GetAtt: [modifySchemaOwnerPassword, Arn]
