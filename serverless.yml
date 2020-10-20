@@ -146,8 +146,8 @@ functions:
       MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
-  modifyDbCluster:
-    handler: src.handler.modify_db_cluster
+  modifyPostgresPassword:
+    handler: src.handler.modify_postgres_password
     role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -212,47 +212,43 @@ stepFunctions:
         States:
           RestoreDbCluster:
             Type: Task
-            ResultPath: "$.lambda_result_restore_db_cluster"
             Resource:
               Fn::GetAtt: [restoreDbCluster, Arn]
-            Next: ModifyDbCluster
-          ModifyDbCluster:
+            Next: ModifyPostgresPassword
+          ModifyPostgresPassword:
             Type: Task
             InputPath: "$"
-            ResultPath: "$.lambda_result_modify_db_cluster"
             Resource:
-              Fn::GetAtt: [modifyDbCluster, Arn]
+              Fn::GetAtt: [modifyPostgresPassword, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 36
+                IntervalSeconds: 600
+                MaxAttempts: 10
                 BackoffRate: 1
             Next: CreateDbInstance
           CreateDbInstance:
             Type: Task
             InputPath: "$"
-            ResultPath: "$.lambda_result_create_db_instance"
             Resource:
               Fn::GetAtt: [createDbInstance, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 36
+                IntervalSeconds: 600
+                MaxAttempts: 10
                 BackoffRate: 1
             Next: ModifySchemaOwnerPassword
           ModifySchemaOwnerPassword:
             Type: Task
             InputPath: "$"
-            ResultPath: "$.lambda_result_modify_schema_owner_password"
             Resource:
               Fn::GetAtt: [modifySchemaOwnerPassword, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 36
+                IntervalSeconds: 600
+                MaxAttempts: 10
                 BackoffRate: 1
             End: true
 

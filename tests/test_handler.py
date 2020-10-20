@@ -264,15 +264,35 @@ class TestHandler(TestCase):
 
     @mock.patch('src.handler.rds_client')
     def test_create_db_instance_default(self, mock_rds):
+        os.environ['STAGE'] = 'TEST'
         handler.create_db_instance({}, {})
+
         mock_rds.create_db_instance.assert_called_once_with(
             DBInstanceIdentifier='nwcapture-load-instance1',
             DBInstanceClass='db.r5.8xlarge',
             DBClusterIdentifier='nwcapture-load',
-            Engine='aurora-postgresql')
+            Engine='aurora-postgresql',
+            Tags=[
+                {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
+                {'Key': 'aws:stack-name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
+                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
+                {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+                {'Key': 'wma:contact', 'Value': 'tbd'},
+                {'Key': 'wma:costCenter', 'Value': 'tbd'},
+                {'Key': 'wma:criticality', 'Value': 'tbd'},
+                {'Key': 'wma:environment', 'Value': 'test'},
+                {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+                {'Key': 'wma:organization', 'Value': 'tbd'},
+                {'Key': 'wma:role', 'Value': 'database'},
+                {'Key': 'wma:system', 'Value': 'NWIS'},
+                {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+                {'Key': 'taggingVersion', 'Value': '0.0.1'}
+            ]
+        )
 
     @mock.patch('src.handler.rds_client')
     def test_create_db_instance_custom(self, mock_rds):
+        os.environ['STAGE'] = 'TEST'
         event = {
             "db_cluster_identifier": "custom-cluster",
             "db_instance_class": "t2.micro"
@@ -283,15 +303,42 @@ class TestHandler(TestCase):
             DBInstanceIdentifier='custom-cluster-instance1',
             DBInstanceClass='t2.micro',
             DBClusterIdentifier='custom-cluster',
-            Engine='aurora-postgresql'
+            Engine='aurora-postgresql',
+            Tags=[
+                {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
+                {'Key': 'aws:stack-name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
+                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
+                {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+                {'Key': 'wma:contact', 'Value': 'tbd'},
+                {'Key': 'wma:costCenter', 'Value': 'tbd'},
+                {'Key': 'wma:criticality', 'Value': 'tbd'},
+                {'Key': 'wma:environment', 'Value': 'test'},
+                {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+                {'Key': 'wma:organization', 'Value': 'tbd'},
+                {'Key': 'wma:role', 'Value': 'database'},
+                {'Key': 'wma:system', 'Value': 'NWIS'},
+                {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+                {'Key': 'taggingVersion', 'Value': '0.0.1'}
+            ]
         )
 
+    @mock.patch('src.handler.secrets_client')
     @mock.patch('src.handler.rds_client')
-    def test_modify_db_cluster(self, mock_rds):
+    def test_modify_postgres_password(self, mock_rds, mock_secrets_client):
+        my_secret_string = json.dumps(
+            {
+                "POSTGRES_PASSWORD": "Password123"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+
         event = {
             "db_cluster_identifier": "custom_cluster_id"
         }
-        handler.modify_db_cluster(event, {})
+        handler.modify_postgres_password(event, {})
         mock_rds.modify_db_cluster.assert_called_once_with(
             DBClusterIdentifier='custom_cluster_id',
             ApplyImmediately=True,
@@ -333,13 +380,19 @@ class TestHandler(TestCase):
             CopyTagsToSnapshot=False,
             KmsKeyId='kms',
             VpcSecurityGroupIds=['vpc_id'],
-            Tags=[
-                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-NWCAPTURE-LOAD'},
-                {'Key': 'wma:organization', 'Value': 'IOW'},
-                {'Key': 'wma:role', 'Value': 'etl'},
-                {'Key': 'wma:system', 'Value': 'NWIS'},
-                {'Key': 'wma:subSystem', 'Value': 'NWISWeb - Capture'}
-            ]
+
+            Tags=[{'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-None'},
+                  {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+                  {'Key': 'wma:contact', 'Value': 'tbd'},
+                  {'Key': 'wma:costCenter', 'Value': 'tbd'},
+                  {'Key': 'wma:criticality', 'Value': 'tbd'},
+                  {'Key': 'wma:environment', 'Value': 'qa'},
+                  {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+                  {'Key': 'wma:organization', 'Value': 'tbd'},
+                  {'Key': 'wma:role', 'Value': 'database'},
+                  {'Key': 'wma:system', 'Value': 'NWIS'},
+                  {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+                  {'Key': 'taggingVersion', 'Value': '0.0.1'}]
 
         )
 
@@ -352,7 +405,9 @@ class TestHandler(TestCase):
             {
                 "DATABASE_ADDRESS": "address",
                 "DATABASE_NAME": "name",
-                "VPC_SECURITY_GROUP_ID": "vpc_id"
+                "VPC_SECURITY_GROUP_ID": "vpc_id",
+                "POSTGRES_PASSWORD": "Password123",
+                "SCHEMA_OWNER_PASSWORD": "Password123"
             }
         )
         mock_secret_payload = {

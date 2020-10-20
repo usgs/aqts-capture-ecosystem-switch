@@ -46,7 +46,7 @@ if len(day) == 1:
     day = f"0{day}"
 SNAPSHOT_IDENTIFIER = f"rds:nwcapture-prod-external-{two_days_ago.year}-{month}-{day}-10-08"
 
-STAGE = os.getenv('STAGE')
+STAGE = os.getenv('STAGE', 'TEST')
 CAPTURE_TRIGGER_QUEUE = f"aqts-capture-trigger-queue-{STAGE}"
 ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
@@ -212,6 +212,7 @@ def _stop_db(db, triggers):
 
 
 def delete_db_cluster(event, context):
+    logger.info("enter delete db cluster")
     logger.info(event)
     rds_client.delete_db_cluster(
         DBClusterIdentifier=_get_cluster_identifier(event),
@@ -219,8 +220,15 @@ def delete_db_cluster(event, context):
     )
 
 
-def modify_db_cluster(event, context):
+def modify_postgres_password(event, context):
+    logger.info("enter modify postgres password")
     logger.info(event)
+    original = secrets_client.get_secret_value(
+        SecretId=NWCAPTURE_REAL,
+    )
+    secret_string = json.loads(original['SecretString'])
+    postgres_password = secret_string['POSTGRES_PASSWORD']
+
     cluster_id = _get_cluster_identifier(event)
     logger.info(f"using cluster_identifier {cluster_id}")
     response = rds_client.describe_db_clusters()
@@ -228,11 +236,12 @@ def modify_db_cluster(event, context):
     rds_client.modify_db_cluster(
         DBClusterIdentifier=cluster_id,
         ApplyImmediately=True,
-        MasterUserPassword='Password123'
+        MasterUserPassword=postgres_password
     )
 
 
 def delete_db_instance(event, context):
+    logger.info("enter delete db instance")
     logger.info(event)
     cluster_id = _get_cluster_identifier(event)
     instance_id = f"{cluster_id}-instance1"
@@ -243,20 +252,38 @@ def delete_db_instance(event, context):
 
 
 def create_db_instance(event, context):
+    logger.info("enter create db instance")
     logger.info(event)
     cluster_id = _get_cluster_identifier(event)
     instance_id = f"{cluster_id}-instance1"
     logger.info(f"instance_id={instance_id}")
     logger.info(f"instance_class={_get_instance_class(event)}")
+    stage = os.environ['STAGE'].lower()
     rds_client.create_db_instance(
         DBInstanceIdentifier=instance_id,
         DBInstanceClass=_get_instance_class(event),
         DBClusterIdentifier=cluster_id,
-        Engine=ENGINE
+        Engine=ENGINE,
+        Tags=[
+              {'Key': 'aws:cloudformation:logical-id', 'Value': 'RDSInstance1'},
+              {'Key': 'aws:stack-name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
+              {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
+              {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+              {'Key': 'wma:contact', 'Value': 'tbd'},
+              {'Key': 'wma:costCenter', 'Value': 'tbd'},
+              {'Key': 'wma:criticality', 'Value': 'tbd'},
+              {'Key': 'wma:environment', 'Value': stage},
+              {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+              {'Key': 'wma:organization', 'Value': 'tbd'},
+              {'Key': 'wma:role', 'Value': 'database'},
+              {'Key': 'wma:system', 'Value': 'NWIS'},
+              {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+              {'Key': 'taggingVersion', 'Value': '0.0.1'}]
     )
 
 
 def restore_db_cluster(event, context):
+    logger.info("enter restore db cluster")
     logger.info(event)
     """
     By default we try to restore the production snapshot that
@@ -302,15 +329,39 @@ def restore_db_cluster(event, context):
         Tags=[
             {
                 'Key': 'Name',
-                'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{cluster_id}"
+                'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{STAGE}"
+            },
+            {
+                'Key': 'wma:applicationId',
+                'Value': 'NWISWEB-CAPTURE'
+            },
+            {
+                'Key': 'wma:contact',
+                'Value': 'tbd'
+            },
+            {
+                'Key': 'wma:costCenter',
+                'Value': 'tbd'
+            },
+            {
+                'Key': 'wma:criticality',
+                'Value': 'tbd'
+            },
+            {
+                'Key': 'wma:environment',
+                'Value': 'qa'
+            },
+            {
+                'Key': 'wma:operationalHours',
+                'Value': 'tbd'
             },
             {
                 'Key': 'wma:organization',
-                'Value': 'IOW'
+                'Value': 'tbd'
             },
             {
                 'Key': 'wma:role',
-                'Value': 'etl'
+                'Value': 'database'
             },
             {
                 'Key': 'wma:system',
@@ -318,13 +369,18 @@ def restore_db_cluster(event, context):
             },
             {
                 'Key': 'wma:subSystem',
-                'Value': 'NWISWeb - Capture'
+                'Value': 'NWISWeb-Capture'
+            },
+            {
+                'Key': 'taggingVersion',
+                'Value': '0.0.1'
             }
         ]
     )
 
 
 def modify_schema_owner_password(event, context):
+    logger.info("enter modify schema owner password")
     logger.info(event)
     """
     We don't know the password for 'capture_owner' on the production db,
@@ -335,14 +391,16 @@ def modify_schema_owner_password(event, context):
     :return:
     """
     original = secrets_client.get_secret_value(
-        SecretId=NWCAPTURE_LOAD,
+        SecretId=NWCAPTURE_REAL,
     )
     secret_string = json.loads(original['SecretString'])
     db_host = secret_string['DATABASE_ADDRESS']
     db_name = secret_string['DATABASE_NAME']
-    rds = RDS(db_host, 'postgres', db_name, 'Password123')
-    sql = "alter user capture_owner with password 'Password123'"
-    rds.alter_permissions(sql)
+    postgres_password = secret_string['POSTGRES_PASSWORD']
+    schema_owner_password = secret_string['SCHEMA_OWNER_PASSWORD']
+    rds = RDS(db_host, 'postgres', db_name, postgres_password)
+    sql = "alter user capture_owner with password '%s'"
+    rds.alter_permissions(sql, (schema_owner_password,))
 
     queue_info = sqs_client.get_queue_url(QueueName=CAPTURE_TRIGGER_QUEUE)
     sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
