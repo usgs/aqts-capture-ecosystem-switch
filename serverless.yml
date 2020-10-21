@@ -9,7 +9,7 @@ provider:
   timeout: 90
   logRetentionInDays: 90
   deploymentBucket:
-    name: iow-cloud-applications
+    name: ${opt:bucket, iow-cloud-applications}
   stackTags:
     "wma:applicationId": "Aquarius TS Capture Ecosystem Switch"
     "wma:contact": "Kenneth Kehl kkehl@contractor.usgs.gov"
@@ -64,7 +64,6 @@ custom:
     PROD: false
 
   exportGitVariables: false
-  accountNumber: ${ssm:/iow/aws/accountNumber}
   vpc:
     securityGroupIds: ${ssm:/iow/retriever-capture/${self:provider.stage}/securityGroupIds~split}
     subnetIds: ${ssm:/iow/aws/vpc/${self:provider.stage}/subnetIds~split}
@@ -74,7 +73,7 @@ custom:
 functions:
   StartObservationsDb:
     handler: src.handler.start_observations_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -87,7 +86,7 @@ functions:
 
   StopObservationsDb:
     handler: src.handler.stop_observations_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       DB_HOST: ${self:custom.observationsDb.connectInfo.DATABASE_ADDRESS}
       DB_USER: ${self:custom.observationsDb.connectInfo.WQP_READ_ONLY_USERNAME}
@@ -103,7 +102,7 @@ functions:
 
   StartCaptureDb:
     handler: src.handler.start_capture_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -116,7 +115,7 @@ functions:
 
   StopCaptureDb:
     handler: src.handler.stop_capture_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -129,7 +128,7 @@ functions:
 
   ControlDbUtilization:
     handler: src.handler.control_db_utilization
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
@@ -146,7 +145,7 @@ functions:
 
   restoreDbCluster:
     handler: src.handler.restore_db_cluster
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -156,7 +155,7 @@ functions:
 
   modifyPostgresPassword:
     handler: src.handler.modify_postgres_password
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -166,7 +165,7 @@ functions:
 
   createDbInstance:
     handler: src.handler.create_db_instance
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -176,7 +175,7 @@ functions:
 
   modifySchemaOwnerPassword:
     handler: src.handler.modify_schema_owner_password
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -186,7 +185,7 @@ functions:
 
   deleteCaptureDb:
     handler: src.handler.delete_capture_db
-    role: arn:aws:iam::${self:custom.accountNumber}:role/csr-Lambda-Role
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -203,7 +202,7 @@ stepFunctions:
         includeExecutionData: true
         destinations:
           - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
-      role: arn:aws:iam::${self:custom.accountNumber}:role/step-functions-service-access
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-capture-ecosystem-switch-create-db-${self:provider.stage}
       definition:
         Comment: "AQTS CreateCaptureDb"
@@ -276,6 +275,7 @@ resources:
 
 plugins:
   - serverless-plugin-git-variables
+  - serverless-pseudo-parameters
   - serverless-python-requirements
   - serverless-step-functions
   - serverless-pseudo-parameters

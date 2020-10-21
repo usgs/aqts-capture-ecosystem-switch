@@ -37,10 +37,11 @@ STAGE = os.getenv('STAGE', 'TEST')
 CAPTURE_TRIGGER_QUEUE = f"aqts-capture-trigger-queue-{STAGE}"
 ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
-DEFAULT_DB_INSTANCE_IDENTIFIER = f"nwcapture-{STAGE.lower()}-instance1"
+DB_HOST_EXPERIMENTAL = 'nwcapture-qa-experimental.cluster-c8adwxz9sely.us-west-2.rds.amazonaws.com'
+DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}-experimental"
+DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
 DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
 ENGINE = 'aurora-postgresql'
-DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
@@ -366,7 +367,8 @@ def modify_schema_owner_password(event, context):
         SecretId=NWCAPTURE_REAL,
     )
     secret_string = json.loads(original['SecretString'])
-    db_host = secret_string['DATABASE_ADDRESS']
+    db_host = DB_HOST_EXPERIMENTAL
+    #db_host = secret_string['DATABASE_ADDRESS']
     db_name = secret_string['DATABASE_NAME']
     postgres_password = secret_string['POSTGRES_PASSWORD']
     schema_owner_password = secret_string['SCHEMA_OWNER_PASSWORD']
