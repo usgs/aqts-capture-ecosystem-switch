@@ -169,6 +169,25 @@ functions:
       MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
+  disableTriggerBeforeGrow:
+    handler: src.handler.disable_trigger_before_grow
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
+
+  enableTriggerAfterGrow:
+    handler: src.handler.enable_trigger_after_grow
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+      MAX_RETRIES: 6
+    vpc: ${self:custom.vpc}
 
   shrinkDb:
     handler: src.handler.shrink_db
@@ -308,8 +327,8 @@ stepFunctions:
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 600
-                MaxAttempts: 10
+                IntervalSeconds: 60
+                MaxAttempts: 30
                 BackoffRate: 1
             End: true
 
