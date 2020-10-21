@@ -37,14 +37,10 @@ STAGE = os.getenv('STAGE', 'TEST')
 CAPTURE_TRIGGER_QUEUE = f"aqts-capture-trigger-queue-{STAGE}"
 ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
-"""
-These are intentionally hardcoded to QA for now.
-"""
-DEFAULT_DB_INSTANCE_IDENTIFIER = 'nwcapture-qa-experimental-instance1'
+DEFAULT_DB_INSTANCE_IDENTIFIER = f"nwcapture-{STAGE.lower()}-experimental-instance1"
 DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
 ENGINE = 'aurora-postgresql'
-DEFAULT_DB_CLUSTER_IDENTIFIER = 'nwcapture-qa-experimental'
-DB_HOST_EXPERIMENTAL = 'nwcapture-qa-experimental.cluster-c8adwxz9sely.us-west-2.rds.amazonaws.com'
+DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}-experimental"
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
@@ -222,14 +218,22 @@ def modify_postgres_password(event, context):
 
 def delete_capture_db(event, context):
     _validate()
-    rds_client.delete_db_instance(
-        DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-        SkipFinalSnapshot=True
-    )
+    try:
+        rds_client.delete_db_instance(
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+            SkipFinalSnapshot=True
+        )
+    except rds_client.exceptions.DBInstanceNotFoundFault as e:
+        """
+        We could be in a messed up state where the instance doesn't exist but the cluster does,
+        due to vagaries of how long AWS takes to set up a cluster, so proceed
+        """
+
     rds_client.delete_db_cluster(
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SkipFinalSnapshot=True
     )
+    disable_triggers(TRIGGER[os.environ['STAGE']])
 
 
 def create_db_instance(event, context):
@@ -362,8 +366,7 @@ def modify_schema_owner_password(event, context):
         SecretId=NWCAPTURE_REAL,
     )
     secret_string = json.loads(original['SecretString'])
-    #db_host = secret_string['DATABASE_ADDRESS']
-    db_host = DB_HOST_EXPERIMENTAL
+    db_host = secret_string['DATABASE_ADDRESS']
     db_name = secret_string['DATABASE_NAME']
     postgres_password = secret_string['POSTGRES_PASSWORD']
     schema_owner_password = secret_string['SCHEMA_OWNER_PASSWORD']
@@ -378,6 +381,8 @@ def modify_schema_owner_password(event, context):
     sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
     queue_info = sqs_client.get_queue_url(QueueName=ERROR_QUEUE)
     sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
+
+    enable_triggers(TRIGGER[os.environ['STAGE']])
 
 
 def get_snapshot_identifier():

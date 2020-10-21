@@ -229,10 +229,13 @@ class TestHandler(TestCase):
         with self.assertRaises(Exception) as context:
             handler.start_capture_db(self.initial_event, self.context)
 
+
+    @mock.patch('src.handler.disable_triggers', autospec=True)
     @mock.patch('src.handler.rds_client')
-    def test_delete_capture_db(self, mock_rds):
+    def test_delete_capture_db(self, mock_rds, mock_triggers):
         os.environ['STAGE'] = 'QA'
         handler.delete_capture_db({}, {})
+        mock_triggers.return_value = True
         mock_rds.delete_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             SkipFinalSnapshot=True)
@@ -333,12 +336,16 @@ class TestHandler(TestCase):
 
         )
 
+
+    @mock.patch('src.handler.enable_triggers', autospec=True)
     @mock.patch('src.handler.RDS', autospec=True)
     @mock.patch('src.handler.sqs_client')
     @mock.patch('src.handler.secrets_client')
     @mock.patch('src.handler.rds_client')
-    def test_modify_schema_owner_password(self, mock_rds, mock_secrets_client, mock_sqs_client, mock_db):
+    def test_modify_schema_owner_password(self, mock_rds, mock_secrets_client, mock_sqs_client,
+                                          mock_db, mock_triggers):
         os.environ['STAGE'] = 'QA'
+        mock_triggers.return_value = True
         my_secret_string = json.dumps(
             {
                 "DATABASE_ADDRESS": "address",
