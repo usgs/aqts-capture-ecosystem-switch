@@ -371,7 +371,7 @@ def modify_schema_owner_password(event, context):
         f"db_host {db_host} db_name {db_name} postgres_password {postgres_password} sop {schema_owner_password}")
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
     logger.info("got rds ok")
-    sql = "alter user capture_owner with password '%s'"
+    sql = "alter user capture_owner with password %s"
     rds.alter_permissions(sql, (schema_owner_password,))
 
     queue_info = sqs_client.get_queue_url(QueueName=CAPTURE_TRIGGER_QUEUE)
