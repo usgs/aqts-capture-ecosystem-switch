@@ -482,7 +482,8 @@ class TestHandler(TestCase):
         handler.shrink_db({}, {})
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-            DBInstanceClass=SMALL_DB_SIZE)
+            DBInstanceClass=SMALL_DB_SIZE,
+            ApplyImmediately=True)
 
     @mock.patch('src.handler.cloudwatch_client')
     @mock.patch('src.handler.rds_client')
@@ -498,4 +499,5 @@ class TestHandler(TestCase):
         handler.grow_db({}, {})
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-            DBInstanceClass=BIG_DB_SIZE)
+            DBInstanceClass=BIG_DB_SIZE,
+            ApplyImmediately=True)

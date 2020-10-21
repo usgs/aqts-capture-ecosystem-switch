@@ -273,7 +273,8 @@ def shrink_db(event, context):
     else:
         rds_client.modify_db_instance(
             DBInstanceIdentifier=identifier,
-            DBInstanceClass=SMALL_DB_SIZE
+            DBInstanceClass=SMALL_DB_SIZE,
+            ApplyImmediately=True
         )
         return "Shrinking DB, please stand by."
     logger.info(event)
@@ -306,7 +307,8 @@ def grow_db(event, context):
         disable_triggers(TRIGGER[stage])
         rds_client.modify_db_instance(
             DBInstanceIdentifier=identifier,
-            DBInstanceClass=BIG_DB_SIZE
+            DBInstanceClass=BIG_DB_SIZE,
+            ApplyImmediately=True
         )
         return "Growing DB, please stand by."
 

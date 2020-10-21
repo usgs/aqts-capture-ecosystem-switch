@@ -358,6 +358,12 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [enableTriggerAfterShrink, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 20
+                BackoffRate: 1
             End: true
 
     aqtsGrowDb:
@@ -386,6 +392,12 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [ enableTriggerAfterGrow, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 20
+                BackoffRate: 1
             End: true
 
 resources:
