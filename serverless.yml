@@ -262,35 +262,6 @@ functions:
 
 stepFunctions:
   stateMachines:
-
-    aqtsShrinkDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
-      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
-      name: aqts-ecosystem-switch-shrink-db-${self:provider.stage}
-      definition:
-        Comment: "AQTS Shrink Db"
-        StartAt: DisableTriggerBeforeShrink
-        States:
-          DisableTrigger:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [disableTriggerBeforeShrink, Arn]
-            Next: ShrinkDb
-          ShrinkDb:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [shrinkDb, Arn]
-            Next: EnableTriggerAfterShrink
-          EnableTriggerAfterShrink:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [enableTriggerAfterShrink, Arn]
-            End: true
-
     aqtsCreateCaptureDb:
       loggingConfig:
         level: ALL
@@ -340,6 +311,34 @@ stepFunctions:
                 IntervalSeconds: 600
                 MaxAttempts: 10
                 BackoffRate: 1
+            End: true
+
+    aqtsShrinkDb:
+      loggingConfig:
+        level: ALL
+        includeExecutionData: true
+        destinations:
+          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      name: aqts-ecosystem-switch-shrink-db-${self:provider.stage}
+      definition:
+        Comment: "AQTS Shrink Db"
+        StartAt: DisableTriggerBeforeShrink
+        States:
+          DisableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [disableTriggerBeforeShrink, Arn]
+            Next: ShrinkDb
+          ShrinkDb:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [shrinkDb, Arn]
+            Next: EnableTriggerAfterShrink
+          EnableTriggerAfterShrink:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [enableTriggerAfterShrink, Arn]
             End: true
 
     aqtsGrowDb:
