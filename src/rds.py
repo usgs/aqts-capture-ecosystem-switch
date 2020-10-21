@@ -1,41 +1,30 @@
-"""
-This module manages persisting data from a message into the RDS Resource.
-"""
-
-# the postgresql connection module
-import os
-
 from psycopg2 import connect
 from psycopg2 import OperationalError, DataError, IntegrityError
 
-# project specific configuration parameters.
-from .config import CONFIG
 
 # allows for logging information
 import logging
 
-log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
-logger.setLevel(log_level)
+logger.setLevel(logging.INFO)
 
 
 class RDS:
 
-    def __init__(self, connect_timeout=65):
+    def __init__(self, db_host, db_user, db_name, db_password, connect_timeout=65):
         """
         connect to the database resource.
         wait for 50 seconds before giving up on getting a connection
         """
         self.connection_parameters = {
-            'host': CONFIG['rds']['host'],
-            'database': CONFIG['rds']['database'],
-            'user': CONFIG['rds']['user'],
-            'password': CONFIG['rds']['password'],
+            'host': db_host,
+            'database': db_name,
+            'user': db_user,
+            'password': db_password,
             'connect_timeout': connect_timeout
             # keyword argument from https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS
         }
-
-        logger.debug("created RDS instance %s" % self.connection_parameters)
+        logger.info("created RDS instance %s" % self.connection_parameters)
         self.conn, self.cursor = self._connect()
 
     def _connect(self):
@@ -55,11 +44,17 @@ class RDS:
             logger.debug(f'Error closing connection objection: {repr(e)}', exc_info=True)
             raise RuntimeError
 
-    def execute_sql(self, sql, params):
+    def execute_sql(self, sql):
         try:
-            self.cursor.execute(sql, params)
+            self.cursor.execute(sql)
             return self.cursor.fetchone()
         except (OperationalError, DataError, IntegrityError) as e:
             logger.debug(f'Error during SQL execution: {repr(e)}', exc_info=True)
             self.conn.rollback()
 
+    def alter_permissions(self, sql, params=()):
+        try:
+            self.cursor.execute(sql, params)
+        except (OperationalError, DataError, IntegrityError) as e:
+            logger.debug(f'Error during SQL execution: {repr(e)}', exc_info=True)
+            self.conn.rollback()
