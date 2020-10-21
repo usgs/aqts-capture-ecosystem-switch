@@ -254,7 +254,7 @@ def create_db_instance(event, context):
             {'Key': 'wma:criticality', 'Value': 'tbd'},
             {'Key': 'wma:environment', 'Value': stage},
             {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-            {'Key': 'wma:organization', 'Value': 'tbd'},
+            {'Key': 'wma:organization', 'Value': 'IOW'},
             {'Key': 'wma:role', 'Value': 'database'},
             {'Key': 'wma:system', 'Value': 'NWIS'},
             {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
@@ -299,54 +299,18 @@ def restore_db_cluster(event, context):
             vpc_security_group_id
         ],
         Tags=[
-            {
-                'Key': 'Name',
-                'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{STAGE}"
-            },
-            {
-                'Key': 'wma:applicationId',
-                'Value': 'NWISWEB-CAPTURE'
-            },
-            {
-                'Key': 'wma:contact',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:costCenter',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:criticality',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:environment',
-                'Value': 'qa'
-            },
-            {
-                'Key': 'wma:operationalHours',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:organization',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:role',
-                'Value': 'database'
-            },
-            {
-                'Key': 'wma:system',
-                'Value': 'NWIS'
-            },
-            {
-                'Key': 'wma:subSystem',
-                'Value': 'NWISWeb-Capture'
-            },
-            {
-                'Key': 'taggingVersion',
-                'Value': '0.0.1'
-            }
+            {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{STAGE}"},
+            {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+            {'Key': 'wma:contact', 'Value': 'tbd'},
+            {'Key': 'wma:costCenter', 'Value': 'tbd'},
+            {'Key': 'wma:criticality', 'Value': 'tbd'},
+            {'Key': 'wma:environment', 'Value': 'qa'},
+            {'Key': 'wma:operationalHours','Value': 'tbd'},
+            {'Key': 'wma:organization', 'Value': 'IOW'},
+            {'Key': 'wma:role', 'Value': 'database'},
+            {'Key': 'wma:system', 'Value': 'NWIS'},
+            {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+            {'Key': 'taggingVersion', 'Value': '0.0.1'}
         ]
     )
 

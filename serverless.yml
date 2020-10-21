@@ -77,7 +77,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     events:
       - schedule:
           rate: ${self:custom.startObservationSchedules.${self:provider.stage}}
@@ -106,7 +105,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     events:
       - schedule:
           rate: ${self:custom.startCaptureSchedules.${self:provider.stage}}
@@ -119,7 +117,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     events:
       - schedule:
           rate: ${self:custom.stopCaptureSchedules.${self:provider.stage}}
@@ -133,7 +130,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     events:
       - cloudwatchEvent:
           event:
@@ -150,7 +146,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
   modifyPostgresPassword:
@@ -160,7 +155,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
   createDbInstance:
@@ -170,7 +164,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
   modifySchemaOwnerPassword:
@@ -180,7 +173,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
   deleteCaptureDb:
@@ -190,7 +182,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
 
@@ -221,7 +212,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 600
-                MaxAttempts: 10
+                MaxAttempts: 12
                 BackoffRate: 1
             Next: CreateDbInstance
           CreateDbInstance:
@@ -232,7 +223,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 600
-                MaxAttempts: 10
+                MaxAttempts: 12
                 BackoffRate: 1
             Next: ModifySchemaOwnerPassword
           ModifySchemaOwnerPassword:
@@ -243,7 +234,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 600
-                MaxAttempts: 10
+                MaxAttempts: 12
                 BackoffRate: 1
             End: true
 
