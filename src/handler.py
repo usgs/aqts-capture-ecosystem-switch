@@ -271,14 +271,12 @@ def shrink_db(event, context):
     if db_instance_class == SMALL_DB_SIZE:
         return "DB is already shrunk"
     else:
-        rds_client.modify_db_instance(
+        response = rds_client.modify_db_instance(
             DBInstanceIdentifier=identifier,
             DBInstanceClass=SMALL_DB_SIZE,
             ApplyImmediately=True
         )
-        return "Shrinking DB, please stand by."
-    logger.info(event)
-    logger.info("time to shrink the db")
+        return f"Shrinking DB, please stand by. {response}"
 
 
 def grow_db(event, context):
@@ -305,12 +303,12 @@ def grow_db(event, context):
         return "DB is already at max size"
     else:
         disable_triggers(TRIGGER[stage])
-        rds_client.modify_db_instance(
+        response = rds_client.modify_db_instance(
             DBInstanceIdentifier=identifier,
             DBInstanceClass=BIG_DB_SIZE,
             ApplyImmediately=True
         )
-        return "Growing DB, please stand by."
+        return f"Growing DB, please stand by. {response}"
 
 
 def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):
