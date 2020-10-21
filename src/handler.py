@@ -37,10 +37,10 @@ STAGE = os.getenv('STAGE', 'TEST')
 CAPTURE_TRIGGER_QUEUE = f"aqts-capture-trigger-queue-{STAGE}"
 ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
-DEFAULT_DB_INSTANCE_IDENTIFIER = f"nwcapture-{STAGE.lower()}-experimental-instance1"
+DEFAULT_DB_INSTANCE_IDENTIFIER = f"nwcapture-{STAGE.lower()}-instance1"
 DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
 ENGINE = 'aurora-postgresql'
-DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}-experimental"
+DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)

@@ -46,11 +46,19 @@ custom:
     PROD: cron(0 23 ? * FRI *)
   # No scheduling enabled for prod.  For qa, only Friday stops are scheduled.  For test, both stop and
   # starts are scheduled.
-  startScheduleEnabled:
+  startCaptureDbScheduleEnabled:
     TEST: true
     QA: false
     PROD: false
-  stopScheduleEnabled:
+  startObservationDbScheduleEnabled:
+    TEST: true
+    QA: false
+    PROD: false
+  stopCaptureDbScheduleEnabled:
+    TEST: true
+    QA: false
+    PROD: false
+  stopObservationDbScheduleEnabled:
     TEST: true
     QA: true
     PROD: false
@@ -74,7 +82,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.startObservationSchedules.${self:provider.stage}}
-          enabled: ${self:custom.startScheduleEnabled.${self:provider.stage}}
+          enabled: ${self:custom.startObservationDbScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   StopObservationsDb:
@@ -90,7 +98,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.stopObservationSchedules.${self:provider.stage}}
-          enabled: ${self:custom.stopScheduleEnabled.${self:provider.stage}}
+          enabled: ${self:custom.stopObservationDbScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   StartCaptureDb:
@@ -103,7 +111,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.startCaptureSchedules.${self:provider.stage}}
-          enabled: ${self:custom.startScheduleEnabled.${self:provider.stage}}
+          enabled: ${self:custom.startCaptureDbScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   StopCaptureDb:
@@ -116,7 +124,7 @@ functions:
     events:
       - schedule:
           rate: ${self:custom.stopCaptureSchedules.${self:provider.stage}}
-          enabled: ${self:custom.stopScheduleEnabled.${self:provider.stage}}
+          enabled: ${self:custom.stopCaptureDbScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
   ControlDbUtilization:
