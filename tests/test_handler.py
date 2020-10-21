@@ -4,7 +4,7 @@ from unittest import TestCase, mock
 
 from src import handler
 from src.handler import TRIGGER, STAGES, DB, run_etl_query, DEFAULT_DB_INSTANCE_IDENTIFIER, \
-    DEFAULT_DB_CLUSTER_IDENTIFIER
+    DEFAULT_DB_CLUSTER_IDENTIFIER, SMALL_DB_SIZE, BIG_DB_SIZE
 
 
 class TestHandler(TestCase):
@@ -250,7 +250,7 @@ class TestHandler(TestCase):
 
         mock_rds.create_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-            DBInstanceClass='db.r5.8xlarge',
+            DBInstanceClass=BIG_DB_SIZE,
             DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             Engine='aurora-postgresql',
             Tags=[
@@ -412,13 +412,13 @@ class TestHandler(TestCase):
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {
             "DBInstances": [{
-                "DbInstanceClass": "db.r5.4xlarge"
+                "DBInstanceClass": SMALL_DB_SIZE
             }]
         }
         with self.assertRaises(Exception) as context:
             handler.disable_trigger_before_shrink({}, {})
         mock_rds.describe_db_instances.assert_called_once_with(
-             DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
         mock_utils.assert_not_called()
 
     @mock.patch('src.handler.rds_client')
@@ -428,12 +428,12 @@ class TestHandler(TestCase):
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {
             "DBInstances": [{
-                "DbInstanceClass": "db.r5.8xlarge"
+                "DBInstanceClass": BIG_DB_SIZE
             }]
         }
         handler.disable_trigger_before_shrink({}, {})
         mock_rds.describe_db_instances.assert_called_once_with(
-            DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
         mock_utils.assert_called_once_with(TRIGGER['TEST'])
 
 
@@ -444,13 +444,13 @@ class TestHandler(TestCase):
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {
             "DBInstances": [{
-                "DbInstanceClass": "db.r5.8xlarge"
+                "DBInstanceClass": BIG_DB_SIZE
             }]
         }
         with self.assertRaises(Exception) as context:
             handler.disable_trigger_before_grow({}, {})
         mock_rds.describe_db_instances.assert_called_once_with(
-             DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
         mock_utils.assert_not_called()
 
     @mock.patch('src.handler.rds_client')
@@ -460,12 +460,12 @@ class TestHandler(TestCase):
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {
             "DBInstances": [{
-                "DbInstanceClass": "db.r5.4xlarge"
+                "DBInstanceClass": SMALL_DB_SIZE
             }]
         }
         handler.disable_trigger_before_grow({}, {})
         mock_rds.describe_db_instances.assert_called_once_with(
-            DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
         mock_utils.assert_called_once_with(TRIGGER['TEST'])
 
     @mock.patch('src.handler.cloudwatch_client')
@@ -476,13 +476,13 @@ class TestHandler(TestCase):
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {
             "DBInstances": [{
-                "DbInstanceClass": "db.r5.8xlarge"
+                "DBInstanceClass": BIG_DB_SIZE
             }]
         }
         handler.shrink_db({}, {})
         mock_rds.modify_db_instance.assert_called_once_with(
-            DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-            DbInstanceClass='db.r5.4xlarge')
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+            DBInstanceClass=SMALL_DB_SIZE)
 
     @mock.patch('src.handler.cloudwatch_client')
     @mock.patch('src.handler.rds_client')
@@ -492,10 +492,10 @@ class TestHandler(TestCase):
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {
             "DBInstances": [{
-                "DbInstanceClass": "db.r5.4xlarge"
+                "DBInstanceClass": SMALL_DB_SIZE
             }]
         }
         handler.grow_db({}, {})
         mock_rds.modify_db_instance.assert_called_once_with(
-            DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-            DbInstanceClass='db.r5.8xlarge')
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+            DBInstanceClass=BIG_DB_SIZE)

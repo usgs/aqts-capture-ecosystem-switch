@@ -57,29 +57,28 @@ sqs_client = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2')
 
 DEFAULT_DB_INSTANCE_IDENTIFIER = f"nwcapture-{STAGE.lower()}-instance1"
 DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
-SMALL_DB_SIZE = 'db.r5.4xlarge'
+SMALL_DB_SIZE = 'db.r5.2xlarge'
 BIG_DB_SIZE = 'db.r5.8xlarge'
 
 
-def disable_trigger_before_shrink(event, context):
-    response = rds_client.describe_db_instances(DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
-    if db_instance_class == SMALL_DB_SIZE:
-        raise Exception("Database has already shrunk")
-    disable_triggers(TRIGGER[STAGE])
-
-
 def disable_trigger_before_grow(event, context):
-    response = rds_client.describe_db_instances(DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == BIG_DB_SIZE:
         raise Exception("Database has already grown")
     disable_triggers(TRIGGER[STAGE])
 
 
+def disable_trigger_before_shrink(event, context):
+    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
+    if db_instance_class == SMALL_DB_SIZE:
+        raise Exception("Database has already shrunk")
+    disable_triggers(TRIGGER[STAGE])
+
 def enable_trigger_after_shrink(event, context):
-    response = rds_client.describe_db_instances(DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == BIG_DB_SIZE:
         raise Exception("Database has not shrunk yet")
     if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
@@ -87,8 +86,8 @@ def enable_trigger_after_shrink(event, context):
 
 
 def enable_trigger_after_grow(event, context):
-    response = rds_client.describe_db_instances(DbInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == SMALL_DB_SIZE:
         raise Exception("Database has not grown yet")
     if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
@@ -266,15 +265,15 @@ def shrink_db(event, context):
     else:
         logger.info(f"Not time to shrink the db {values}")
     print(f"time to shrink is {time_to_shrink}")
-    response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
-    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
+    response = rds_client.describe_db_instances(DBInstanceIdentifier=identifier)
+    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     print(f"db_instance_class = {db_instance_class}")
-    if db_instance_class == 'db.r5.4xlarge':
+    if db_instance_class == SMALL_DB_SIZE:
         return "DB is already shrunk"
     else:
         rds_client.modify_db_instance(
-            DbInstanceIdentifier=identifier,
-            DbInstanceClass='db.r5.4xlarge'
+            DBInstanceIdentifier=identifier,
+            DBInstanceClass=SMALL_DB_SIZE
         )
         return "Shrinking DB, please stand by."
     logger.info(event)
@@ -299,15 +298,15 @@ def grow_db(event, context):
         logger.info(f"Not time to grow the db {values}")
     logger.info(f"identifier {identifier} period {period} grow db cpu_util = {cpu_util}")
 
-    response = rds_client.describe_db_instances(DbInstanceIdentifier=identifier)
-    db_instance_class = str(response['DBInstances'][0]['DbInstanceClass'])
-    if db_instance_class == 'db.r5.8xlarge':
+    response = rds_client.describe_db_instances(DBInstanceIdentifier=identifier)
+    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
+    if db_instance_class == BIG_DB_SIZE:
         return "DB is already at max size"
     else:
         disable_triggers(TRIGGER[stage])
         rds_client.modify_db_instance(
-            DbInstanceIdentifier=identifier,
-            DbInstanceClass='db.r5.8xlarge'
+            DBInstanceIdentifier=identifier,
+            DBInstanceClass=BIG_DB_SIZE
         )
         return "Growing DB, please stand by."
 
@@ -336,6 +335,7 @@ def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):
         EndTime=datetime.datetime.now().timestamp()
     )
     return response
+
 
 def modify_postgres_password(event, context):
     _validate()
