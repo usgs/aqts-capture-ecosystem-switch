@@ -381,7 +381,7 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [ growDb, Arn ]
-            Next: enableTriggerAfterGrow
+            Next: EnableTriggerAfterGrow
           EnableTriggerAfterGrow:
             Type: Task
             Resource:
