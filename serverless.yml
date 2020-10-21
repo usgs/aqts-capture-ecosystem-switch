@@ -308,7 +308,7 @@ stepFunctions:
                 IntervalSeconds: 600
                 MaxAttempts: 10
                 BackoffRate: 1
-          Next: CreateDbInstance
+            Next: CreateDbInstance
           CreateDbInstance:
             Type: Task
             Resource:
