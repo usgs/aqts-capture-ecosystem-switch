@@ -149,7 +149,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   disableTriggerBeforeShrink:
-    handler: src.handler.disable_trigger_before_shrink
+    handler: src.db_resizer.disable_trigger_before_shrink
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -160,7 +160,7 @@ functions:
 
 
   enableTriggerAfterShrink:
-    handler: src.handler.enable_trigger_after_shrink
+    handler: src.db_resizer.enable_trigger_after_shrink
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -170,7 +170,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   disableTriggerBeforeGrow:
-    handler: src.handler.disable_trigger_before_grow
+    handler: src.db_resizer.disable_trigger_before_grow
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -180,14 +180,13 @@ functions:
     vpc: ${self:custom.vpc}
 
   executeShrinkMachine:
-    handler: src.handler.execute_shrink_machine
+    handler: src.db_resizer.execute_shrink_machine
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-capture-ecosystem-switch-shrink-db-${self:provider.stage}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 2
     events:
       - schedule:
           rate: rate(20 minutes)
@@ -196,7 +195,7 @@ functions:
 
 
   enableTriggerAfterGrow:
-    handler: src.handler.enable_trigger_after_grow
+    handler: src.db_resizer.enable_trigger_after_grow
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -206,7 +205,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   shrinkDb:
-    handler: src.handler.shrink_db
+    handler: src.db_resizer.shrink_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -226,7 +225,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   growDb:
-    handler: src.handler.grow_db
+    handler: src.db_resizer.grow_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
