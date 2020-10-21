@@ -344,7 +344,7 @@ stepFunctions:
         Comment: "AQTS Shrink Db"
         StartAt: DisableTriggerBeforeShrink
         States:
-          DisableTrigger:
+          DisableTriggerBeforeShrink:
             Type: Task
             Resource:
               Fn::GetAtt: [disableTriggerBeforeShrink, Arn]
@@ -372,7 +372,7 @@ stepFunctions:
         Comment: "AQTS Grow Db"
         StartAt: DisableTriggerBeforeGrow
         States:
-          DisableTrigger:
+          DisableTriggerBeforeGrow:
             Type: Task
             Resource:
               Fn::GetAtt: [ disableTriggerBeforeGrow, Arn ]
