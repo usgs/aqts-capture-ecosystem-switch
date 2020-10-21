@@ -1,9 +1,10 @@
+import json
 import os
 from unittest import TestCase, mock
 
 from src import handler
-from src.handler import TRIGGER, STAGES, DB, run_etl_query, DEFAULT_DB_CLUSTER_IDENTIFIER, \
-    DEFAULT_DB_INSTANCE_IDENTIFIER
+from src.handler import TRIGGER, STAGES, DB, run_etl_query, DEFAULT_DB_INSTANCE_IDENTIFIER, \
+    DEFAULT_DB_CLUSTER_IDENTIFIER
 
 
 class TestHandler(TestCase):
@@ -228,7 +229,141 @@ class TestHandler(TestCase):
         with self.assertRaises(Exception) as context:
             handler.start_capture_db(self.initial_event, self.context)
 
-    @mock.patch('src.rds.RDS', autospec=True)
+
+    @mock.patch('src.handler.disable_triggers', autospec=True)
+    @mock.patch('src.handler.rds_client')
+    def test_delete_capture_db(self, mock_rds, mock_triggers):
+        os.environ['STAGE'] = 'QA'
+        handler.delete_capture_db({}, {})
+        mock_triggers.return_value = True
+        mock_rds.delete_db_instance.assert_called_once_with(
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+            SkipFinalSnapshot=True)
+        mock_rds.delete_db_cluster.assert_called_once_with(
+            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
+            SkipFinalSnapshot=True)
+
+    @mock.patch('src.handler.rds_client')
+    def test_create_db_instance_default(self, mock_rds):
+        os.environ['STAGE'] = 'QA'
+        handler.create_db_instance({}, {})
+
+        mock_rds.create_db_instance.assert_called_once_with(
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+            DBInstanceClass='db.r5.8xlarge',
+            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
+            Engine='aurora-postgresql',
+            Tags=[
+                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-QA'},
+                {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+                {'Key': 'wma:contact', 'Value': 'tbd'},
+                {'Key': 'wma:costCenter', 'Value': 'tbd'},
+                {'Key': 'wma:criticality', 'Value': 'tbd'},
+                {'Key': 'wma:environment', 'Value': 'qa'},
+                {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+                {'Key': 'wma:organization', 'Value': 'tbd'},
+                {'Key': 'wma:role', 'Value': 'database'},
+                {'Key': 'wma:system', 'Value': 'NWIS'},
+                {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+                {'Key': 'taggingVersion', 'Value': '0.0.1'}
+            ]
+        )
+
+    @mock.patch('src.handler.secrets_client')
+    @mock.patch('src.handler.rds_client')
+    def test_modify_postgres_password(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'QA'
+        my_secret_string = json.dumps(
+            {
+                "POSTGRES_PASSWORD": "Password123"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+
+        handler.modify_postgres_password({}, {})
+        mock_rds.modify_db_cluster.assert_called_once_with(
+            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
+            ApplyImmediately=True,
+            MasterUserPassword='Password123')
+
+    @mock.patch('src.handler.secrets_client')
+    @mock.patch('src.handler.rds_client')
+    def test_restore_db_cluster(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'QA'
+        my_secret_string = json.dumps(
+            {
+                "KMS_KEY_ID": "kms",
+                "DB_SUBGROUP_NAME": "subgroup",
+                "VPC_SECURITY_GROUP_ID": "vpc_id"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+
+        handler.restore_db_cluster({}, {})
+        mock_rds.restore_db_cluster_from_snapshot.assert_called_once_with(
+            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
+            SnapshotIdentifier=handler.get_snapshot_identifier(),
+            Engine='aurora-postgresql',
+            EngineVersion='11.7',
+            Port=5432,
+            DBSubnetGroupName='subgroup',
+            DatabaseName='nwcapture-qa',
+            EnableIAMDatabaseAuthentication=False,
+            EngineMode='provisioned',
+            DBClusterParameterGroupName='aqts-capture',
+            DeletionProtection=False,
+            CopyTagsToSnapshot=False,
+            KmsKeyId='kms',
+            VpcSecurityGroupIds=['vpc_id'],
+
+            Tags=[{'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
+                  {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+                  {'Key': 'wma:contact', 'Value': 'tbd'},
+                  {'Key': 'wma:costCenter', 'Value': 'tbd'},
+                  {'Key': 'wma:criticality', 'Value': 'tbd'},
+                  {'Key': 'wma:environment', 'Value': 'qa'},
+                  {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+                  {'Key': 'wma:organization', 'Value': 'tbd'},
+                  {'Key': 'wma:role', 'Value': 'database'},
+                  {'Key': 'wma:system', 'Value': 'NWIS'},
+                  {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+                  {'Key': 'taggingVersion', 'Value': '0.0.1'}]
+
+        )
+
+
+    @mock.patch('src.handler.enable_triggers', autospec=True)
+    @mock.patch('src.handler.RDS', autospec=True)
+    @mock.patch('src.handler.sqs_client')
+    @mock.patch('src.handler.secrets_client')
+    @mock.patch('src.handler.rds_client')
+    def test_modify_schema_owner_password(self, mock_rds, mock_secrets_client, mock_sqs_client,
+                                          mock_db, mock_triggers):
+        os.environ['STAGE'] = 'QA'
+        mock_triggers.return_value = True
+        my_secret_string = json.dumps(
+            {
+                "DATABASE_ADDRESS": "address",
+                "DATABASE_NAME": "name",
+                "VPC_SECURITY_GROUP_ID": "vpc_id",
+                "POSTGRES_PASSWORD": "Password123",
+                "SCHEMA_OWNER_PASSWORD": "Password123"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        handler.modify_schema_owner_password({}, {})
+        self.assertEqual(mock_sqs_client.purge_queue.call_count, 2)
+
+    @mock.patch('src.rds.RDS')
     def test_run_etl_query(self, mock_rds):
         """
         So there are 4 ETLs running
