@@ -179,6 +179,22 @@ functions:
       MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
+  executeShrinkMachine:
+    handler: src.handler.execute_shrink_machine
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-capture-ecosystem-switch-shrink-db-${self:provider.stage}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+      MAX_RETRIES: 2
+    events:
+      - schedule:
+          rate: rate(20 minutes)
+          enabled: true
+    vpc: ${self:custom.vpc}
+
+
   enableTriggerAfterGrow:
     handler: src.handler.enable_trigger_after_grow
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
