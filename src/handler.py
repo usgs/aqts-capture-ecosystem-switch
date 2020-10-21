@@ -365,7 +365,10 @@ def modify_schema_owner_password(event, context):
     db_name = secret_string['DATABASE_NAME']
     postgres_password = secret_string['POSTGRES_PASSWORD']
     schema_owner_password = secret_string['SCHEMA_OWNER_PASSWORD']
+    logger.info(
+        f"db_host {db_host} db_name {db_name} postgres_password {postgres_password} sop {schema_owner_password}")
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
+    logger.info("got rds ok")
     sql = "alter user capture_owner with password '%s'"
     rds.alter_permissions(sql, (schema_owner_password,))
 
