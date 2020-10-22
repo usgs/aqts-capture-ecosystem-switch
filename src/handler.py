@@ -165,7 +165,11 @@ def run_etl_query(rds=None):
     """
     if rds is None:
         # TODO db host, db user, db address, db password ... get from secrets
-        rds = RDS()
+        db_host = os.environ['DB_HOST']
+        db_user = os.environ['DB_USER']
+        db_name = os.environ['DB_NAME']
+        db_password = os.environ['DB_PASSWORD']
+        rds = RDS(db_host, db_user, db_name, db_password)
     result = rds.execute_sql(OBSERVATIONS_ETL_IN_PROGRESS_SQL, (etl_start,))
     if result[0] > 0:
         logger.debug(f"Cannot shutdown down observations db because {result[0]} processes are running")
