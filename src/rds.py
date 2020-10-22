@@ -44,9 +44,9 @@ class RDS:
             logger.debug(f'Error closing connection objection: {repr(e)}', exc_info=True)
             raise RuntimeError
 
-    def execute_sql(self, sql):
+    def execute_sql(self, sql, params=()):
         try:
-            self.cursor.execute(sql)
+            self.cursor.execute(sql, params)
             return self.cursor.fetchone()
         except (OperationalError, DataError, IntegrityError) as e:
             logger.debug(f'Error during SQL execution: {repr(e)}', exc_info=True)
