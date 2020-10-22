@@ -2,11 +2,7 @@
   "name": "aqts-capture-ecosystem-switch",
   "description": "Deployment via serverless",
   "dependencies": {
-<<<<<<< HEAD
-    "serverless": "2.1.1",
-=======
     "serverless": "2.8.0",
->>>>>>> 9680a1b7376d5737e41aaf1bf4df5cd4bed02e90
     "serverless-pseudo-parameters": "2.5.0",
     "serverless-python-requirements": "^5.1.0",
     "serverless-plugin-git-variables": "^4.0.0",
