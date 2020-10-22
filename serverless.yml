@@ -325,7 +325,7 @@ stepFunctions:
       name: aqts-ecosystem-switch-shrink-db-${self:provider.stage}
       definition:
         Comment: "AQTS Shrink Db"
-        StartAt: DisableTriggerBeforeShrink
+        StartAt: DisableTriggerBeforeResize
         States:
           DisableTriggerBeforeResize:
             Type: Task
@@ -364,7 +364,7 @@ stepFunctions:
         Comment: "AQTS Grow Db"
         StartAt: DisableTriggerBeforeResize
         States:
-          DisableTriggerBeforeGrow:
+          DisableTriggerBeforeResize:
             Type: Task
             InputPath: "$"
             Resource:
