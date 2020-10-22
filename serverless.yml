@@ -327,20 +327,23 @@ stepFunctions:
         Comment: "AQTS Shrink Db"
         StartAt: DisableTriggerBeforeShrink
         States:
-          DisableTriggerBeforeShrink:
+          DisableTriggerBeforeResize:
             Type: Task
+            InputPath: "$"
             Resource:
-              Fn::GetAtt: [disableTriggerBeforeShrink, Arn]
+              Fn::GetAtt: [disableTriggerBeforeResize, Arn]
             Next: ShrinkDb
           ShrinkDb:
             Type: Task
+            InputPath: "$"
             Resource:
               Fn::GetAtt: [shrinkDb, Arn]
-            Next: EnableTriggerAfterShrink
-          EnableTriggerAfterShrink:
+            Next: EnableTriggerAfterResize
+          EnableTriggerAfterResize:
             Type: Task
+            InputPath: "$"
             Resource:
-              Fn::GetAtt: [enableTriggerAfterShrink, Arn]
+              Fn::GetAtt: [enableTriggerAfterResize, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
@@ -359,22 +362,25 @@ stepFunctions:
       name: aqts-ecosystem-switch-grow-db-${self:provider.stage}
       definition:
         Comment: "AQTS Grow Db"
-        StartAt: DisableTriggerBeforeGrow
+        StartAt: DisableTriggerBeforeResize
         States:
           DisableTriggerBeforeGrow:
             Type: Task
+            InputPath: "$"
             Resource:
-              Fn::GetAtt: [ disableTriggerBeforeGrow, Arn ]
+              Fn::GetAtt: [ disableTriggerBeforeResize, Arn ]
             Next: GrowDb
           GrowDb:
             Type: Task
+            InputPath: "$"
             Resource:
               Fn::GetAtt: [ growDb, Arn ]
-            Next: EnableTriggerAfterGrow
-          EnableTriggerAfterGrow:
+            Next: EnableTriggerAfterResize
+          EnableTriggerAfterResize:
             Type: Task
+            InputPath: "$"
             Resource:
-              Fn::GetAtt: [ enableTriggerAfterGrow, Arn ]
+              Fn::GetAtt: [ enableTriggerAfterResize, Arn ]
             Retry:
               - ErrorEquals:
                   - States.ALL
