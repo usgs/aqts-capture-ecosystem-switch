@@ -91,6 +91,152 @@ class TestDbResizeHandler(TestCase):
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
         mock_utils.assert_not_called()
 
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.handler.disable_triggers')
+    def test_disable_trigger_before_resize_exception_unrecognized_resize_action(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DBInstanceClass": SMALL_DB_SIZE
+            }]
+        }
+        with self.assertRaises(Exception) as context:
+            event = {"resize_action": "INVALID"}
+            db_resize_handler.disable_trigger_before_resize(event, {})
+        mock_rds.describe_db_instances.assert_called_once_with(
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+        mock_utils.assert_not_called()
+
+
+
+    @mock.patch('src.db_resize_handler._is_cluster_available')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.enable_triggers')
+    def test_enable_trigger_after_resize_ok_shrink(self, mock_enable_trigger, mock_rds, mock_cluster):
+        os.environ['STAGE'] = 'TEST'
+        mock_enable_trigger.return_value = True
+        mock_cluster.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DBInstanceClass": SMALL_DB_SIZE
+            }]
+        }
+        event = {"resize_action": "SHRINK"}
+        db_resize_handler.enable_trigger_after_resize(event, {})
+        mock_rds.describe_db_instances.assert_called_once_with(
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+        mock_enable_trigger.assert_called_once_with(['aqts-capture-trigger-TEST-aqtsCaptureTrigger'])
+
+    @mock.patch('src.db_resize_handler._is_cluster_available')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.enable_triggers')
+    def test_enable_trigger_after_resize_ok_grow(self, mock_enable_trigger, mock_rds, mock_cluster):
+        os.environ['STAGE'] = 'TEST'
+        mock_enable_trigger.return_value = True
+        mock_cluster.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DBInstanceClass": BIG_DB_SIZE
+            }]
+        }
+        event = {"resize_action": "GROW"}
+        db_resize_handler.enable_trigger_after_resize(event, {})
+        mock_rds.describe_db_instances.assert_called_once_with(
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+        mock_enable_trigger.assert_called_once_with(['aqts-capture-trigger-TEST-aqtsCaptureTrigger'])
+
+    @mock.patch('src.db_resize_handler._is_cluster_available')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.enable_triggers')
+    def test_enable_trigger_after_resize_exception_grow_not_finished(self, mock_enable_trigger, mock_rds, mock_cluster):
+        os.environ['STAGE'] = 'TEST'
+        mock_enable_trigger.return_value = True
+        mock_cluster.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DBInstanceClass": SMALL_DB_SIZE
+            }]
+        }
+        event = {"resize_action": "GROW"}
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.enable_trigger_after_resize(event, {})
+        mock_rds.describe_db_instances.assert_called_once_with(DBInstanceIdentifier='nwcapture-test-instance1')
+        mock_enable_trigger.assert_not_called()
+
+    @mock.patch('src.db_resize_handler._is_cluster_available')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.enable_triggers')
+    def test_enable_trigger_after_resize_exception_shrink_not_finished(self, mock_enable_trigger, mock_rds, mock_cluster):
+        os.environ['STAGE'] = 'TEST'
+        mock_enable_trigger.return_value = True
+        mock_cluster.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DBInstanceClass": BIG_DB_SIZE
+            }]
+        }
+        event = {"resize_action": "SHRINK"}
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.enable_trigger_after_resize(event, {})
+        mock_rds.describe_db_instances.assert_called_once_with(DBInstanceIdentifier='nwcapture-test-instance1')
+        mock_enable_trigger.assert_not_called()
+
+    @mock.patch('src.db_resize_handler._is_cluster_available')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.enable_triggers')
+    def test_enable_trigger_after_resize_exception_cluster_not_ready(self, mock_enable_trigger, mock_rds,
+                                                                       mock_cluster):
+        os.environ['STAGE'] = 'TEST'
+        mock_enable_trigger.return_value = True
+        mock_cluster.side_effect = Exception("cluster not ready")
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DBInstanceClass": BIG_DB_SIZE
+            }]
+        }
+        event = {"resize_action": "GROW"}
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.enable_trigger_after_resize(event, {})
+        mock_rds.describe_db_instances.assert_called_once_with(DBInstanceIdentifier='nwcapture-test-instance1')
+        mock_enable_trigger.assert_not_called()
+
+    @mock.patch('src.db_resize_handler._is_cluster_available')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.enable_triggers')
+    def test_enable_trigger_after_resize_exception_resize_none(self, mock_enable_trigger, mock_rds, mock_cluster):
+        os.environ['STAGE'] = 'TEST'
+        mock_enable_trigger.return_value = True
+        mock_cluster.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DBInstanceClass": SMALL_DB_SIZE
+            }]
+        }
+        event = {"resize_action": None}
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.enable_trigger_after_resize(event, {})
+        mock_rds.describe_db_instances.assert_not_called()
+        mock_enable_trigger.assert_not_called()
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.handler.enable_triggers')
+    def test_enable_trigger_after_resize_invalid(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {
+            "DBInstances": [{
+                "DBInstanceClass": BIG_DB_SIZE
+            }]
+        }
+        with self.assertRaises(Exception) as context:
+            event = {"resize_action": "INVALID"}
+            db_resize_handler.enable_trigger_after_resize(event, {})
+        mock_rds.describe_db_instances.assert_called_once_with(
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+        mock_utils.assert_not_called()
+
+
     @mock.patch('src.db_resize_handler.cloudwatch_client')
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.handler.disable_triggers')

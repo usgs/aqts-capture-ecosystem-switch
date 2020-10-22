@@ -68,6 +68,7 @@ def enable_trigger_after_resize(event, context):
         raise Exception(f"Unrecognized resize action {event}")
     if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
         enable_triggers(TRIGGER[STAGE])
+        return
 
 
 def shrink_db(event, context):
@@ -166,14 +167,6 @@ def _is_cluster_available(cluster_id):
 
 
 def _execute_state_machine(state_machine_arn, invocation_payload, region='us-west-2'):
-    """
-    Kicks off execution of a state machine in AWS Step Functions.
-
-    :param str state_machine_arn: Amazon Resource Number (ARN) for the step function to be triggered
-    :param str invocation_payload: JSON data to kick off the step function
-    :param str region: AWS region where the step function is deployed
-
-    """
     sf = boto3.client('stepfunctions', region_name=region)
     resp = sf.start_execution(
         stateMachineArn=state_machine_arn,
