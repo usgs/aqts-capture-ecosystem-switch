@@ -1,23 +1,10 @@
 import datetime
+import json
 import os
 
 import boto3
 from src.utils import enable_triggers, disable_triggers
 import logging
-
-# STAGES = ['TEST', 'QA', 'PROD']
-# DB = {
-#    "TEST": 'nwcapture-test',
-#    "QA": 'nwcapture-qa',
-#    "PROD": 'nwcapture-prod-external'
-# }
-
-# OBSERVATIONS_DB = {
-#    "TEST": 'observations-test',
-#    "QA": 'observations-qa',
-#    "PROD": 'observations-prod-external'
-# }
-
 
 TRIGGER = {
     "TEST": ['aqts-capture-trigger-TEST-aqtsCaptureTrigger'],
@@ -50,67 +37,63 @@ DB resize functions
 """
 
 
-def disable_trigger_before_grow(event, context):
+def disable_trigger_before_resize(event, context):
+    if event.get("resize_action") is None:
+        raise Exception(f"No resize action in event {event}")
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
-    if db_instance_class == BIG_DB_SIZE:
-        raise Exception("Database has already grown")
+    if event.get("resize_action") == "GROW":
+        if db_instance_class == BIG_DB_SIZE:
+            raise Exception("Database has already grown")
+    elif event.get("resize_action") == "SHRINK":
+        if db_instance_class == SMALL_DB_SIZE:
+            raise Exception("Database has already shrunk")
+    else:
+        raise Exception(f"Unrecognized resize action {event}")
     disable_triggers(TRIGGER[STAGE])
 
 
-def disable_trigger_before_shrink(event, context):
+def enable_trigger_after_resize(event, context):
+    if event.get("resize_action") is None:
+        raise Exception(f"Invalid resize action, misconfigured event {event}")
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
-    if db_instance_class == SMALL_DB_SIZE:
-        raise Exception("Database has already shrunk")
-    disable_triggers(TRIGGER[STAGE])
-
-
-def enable_trigger_after_shrink(event, context):
-    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
-    if db_instance_class == BIG_DB_SIZE:
-        raise Exception("Database has not shrunk yet")
+    if event.get('resize_action') == 'GROW':
+        if db_instance_class == SMALL_DB_SIZE:
+            raise Exception("Database has not grown yet, keep waiting before enable trigger")
+    elif event.get('resize_action') == 'SHRINK':
+        if db_instance_class == BIG_DB_SIZE:
+            raise Exception("Database has not shrunk yet, keep waiting before enable trigger")
+    else:
+        raise Exception(f"Unrecognized resize action {event}")
     if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
         enable_triggers(TRIGGER[STAGE])
 
 
-def enable_trigger_after_grow(event, context):
-    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
-    if db_instance_class == SMALL_DB_SIZE:
-        raise Exception("Database has not grown yet")
-    if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
-        enable_triggers(TRIGGER[STAGE])
-
-
-# TODO run this with 'breaching' and 'ignore' on TEST
 def shrink_db(event, context):
     stage = os.environ['STAGE']
-    identifier = f"nwcapture-{stage.lower()}-instance1"
-    period = 300
-    total_time = 900
-    cpu_util = _get_cpu_utilization(identifier, period, total_time)
-    print(f"cpu_util is {cpu_util}")
+    threshold = int(os.environ['SHRINK_THRESHOLD'])
+    shrink_eval_time = int(os.environ['SHRINK_EVAL_TIME_IN_SECONDS'])
+    period = shrink_eval_time
+    total_time = shrink_eval_time
+    cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
     logger.info(f"shrink db cpu_util = {cpu_util}")
     time_to_shrink = True
     values = cpu_util['MetricDataResults'][0]['Values']
     for value in values:
-        if value > 25:
+        if value > threshold:
             time_to_shrink = False
     if time_to_shrink:
         logger.info(f"It's time to shrink the db {values}")
     else:
         logger.info(f"Not time to shrink the db {values}")
-    print(f"time to shrink is {time_to_shrink}")
-    response = rds_client.describe_db_instances(DBInstanceIdentifier=identifier)
+    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
-    print(f"db_instance_class = {db_instance_class}")
     if db_instance_class == SMALL_DB_SIZE:
         return "DB is already shrunk"
     else:
         response = rds_client.modify_db_instance(
-            DBInstanceIdentifier=identifier,
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
             ApplyImmediately=True
         )
@@ -118,58 +101,27 @@ def shrink_db(event, context):
 
 
 def execute_shrink_machine(event, context):
-    arn = os.environ['STATE_MACHINE_ARN']
-    payload = ""
-    return execute_state_machine(arn, payload)
+    arn = os.environ['SHRINK_STATE_MACHINE_ARN']
+    payload = {"resize_action": "SHRINK"}
+    return _execute_state_machine(arn, json.dumps(payload))
 
 
-def execute_state_machine(state_machine_arn, invocation_payload, region='us-west-2'):
-    """
-    Kicks off execution of a state machine in AWS Step Functions.
-
-    :param str state_machine_arn: Amazon Resource Number (ARN) for the step function to be triggered
-    :param str invocation_payload: JSON data to kick off the step function
-    :param str region: AWS region where the step function is deployed
-
-    """
-    sf = boto3.client('stepfunctions', region_name=region)
-    resp = sf.start_execution(
-        stateMachineArn=state_machine_arn,
-        input=invocation_payload
-    )
-    return resp
+def execute_grow_machine(event, context):
+    arn = os.environ['GROW_STATE_MACHINE_ARN']
+    payload = {"resize_action": "GROW"}
+    alarm_state = event["detail"]["state"]["value"]
+    if alarm_state == "ALARM":
+        _execute_state_machine(arn, json.dumps(payload))
 
 
 def grow_db(event, context):
     logger.info(event)
-    stage = os.environ['STAGE']
-    identifier = f"nwcapture-{stage.lower()}-instance1"
-    period = 300
-    total_time = 300
-    cpu_util = _get_cpu_utilization(identifier, period, total_time)
-    time_to_grow = True
-    values = cpu_util['MetricDataResults'][0]['Values']
-    for value in values:
-        if value < 70:
-            time_to_grow = False
-    if time_to_grow:
-        logger.info(f"It's time to grow the db {values}")
-    else:
-        logger.info(f"Not time to grow the db {values}")
-    logger.info(f"identifier {identifier} period {period} grow db cpu_util = {cpu_util}")
-
-    response = rds_client.describe_db_instances(DBInstanceIdentifier=identifier)
-    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
-    if db_instance_class == BIG_DB_SIZE:
-        return "DB is already at max size"
-    else:
-        disable_triggers(TRIGGER[stage])
-        response = rds_client.modify_db_instance(
-            DBInstanceIdentifier=identifier,
-            DBInstanceClass=BIG_DB_SIZE,
-            ApplyImmediately=True
-        )
-        return f"Growing DB, please stand by. {response}"
+    response = rds_client.modify_db_instance(
+        DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+        DBInstanceClass=BIG_DB_SIZE,
+        ApplyImmediately=True
+    )
+    return f"Growing DB, please stand by. {response}"
 
 
 def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):
@@ -211,3 +163,20 @@ def _is_cluster_available(cluster_id):
         return True
     else:
         raise Exception(f"DB {DEFAULT_DB_CLUSTER_IDENTIFIER} is not ready yet")
+
+
+def _execute_state_machine(state_machine_arn, invocation_payload, region='us-west-2'):
+    """
+    Kicks off execution of a state machine in AWS Step Functions.
+
+    :param str state_machine_arn: Amazon Resource Number (ARN) for the step function to be triggered
+    :param str invocation_payload: JSON data to kick off the step function
+    :param str region: AWS region where the step function is deployed
+
+    """
+    sf = boto3.client('stepfunctions', region_name=region)
+    resp = sf.start_execution(
+        stateMachineArn=state_machine_arn,
+        input=invocation_payload
+    )
+    return resp

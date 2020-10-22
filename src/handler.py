@@ -50,7 +50,6 @@ logger.setLevel(log_level)
 STAGE = os.getenv('STAGE', 'TEST')
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 secrets_client = boto3.client('secretsmanager', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 sqs_client = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
@@ -75,7 +74,6 @@ OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
 """
 DB stop and start functions
 """
-
 
 def start_capture_db(event, context):
     stage = os.getenv('STAGE')
@@ -264,7 +262,7 @@ def create_db_instance(event, context):
             {'Key': 'wma:criticality', 'Value': 'tbd'},
             {'Key': 'wma:environment', 'Value': stage},
             {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-            {'Key': 'wma:organization', 'Value': 'tbd'},
+            {'Key': 'wma:organization', 'Value': 'IOW'},
             {'Key': 'wma:role', 'Value': 'database'},
             {'Key': 'wma:system', 'Value': 'NWIS'},
             {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
@@ -309,54 +307,18 @@ def restore_db_cluster(event, context):
             vpc_security_group_id
         ],
         Tags=[
-            {
-                'Key': 'Name',
-                'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{STAGE}"
-            },
-            {
-                'Key': 'wma:applicationId',
-                'Value': 'NWISWEB-CAPTURE'
-            },
-            {
-                'Key': 'wma:contact',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:costCenter',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:criticality',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:environment',
-                'Value': 'qa'
-            },
-            {
-                'Key': 'wma:operationalHours',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:organization',
-                'Value': 'tbd'
-            },
-            {
-                'Key': 'wma:role',
-                'Value': 'database'
-            },
-            {
-                'Key': 'wma:system',
-                'Value': 'NWIS'
-            },
-            {
-                'Key': 'wma:subSystem',
-                'Value': 'NWISWeb-Capture'
-            },
-            {
-                'Key': 'taggingVersion',
-                'Value': '0.0.1'
-            }
+            {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{STAGE}"},
+            {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+            {'Key': 'wma:contact', 'Value': 'tbd'},
+            {'Key': 'wma:costCenter', 'Value': 'tbd'},
+            {'Key': 'wma:criticality', 'Value': 'tbd'},
+            {'Key': 'wma:environment', 'Value': 'qa'},
+            {'Key': 'wma:operationalHours','Value': 'tbd'},
+            {'Key': 'wma:organization', 'Value': 'IOW'},
+            {'Key': 'wma:role', 'Value': 'database'},
+            {'Key': 'wma:system', 'Value': 'NWIS'},
+            {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+            {'Key': 'taggingVersion', 'Value': '0.0.1'}
         ]
     )
 
@@ -409,7 +371,6 @@ def get_snapshot_identifier():
 """
 Miscellaneous functions
 """
-
 
 def _validate():
     if os.environ['STAGE'] != "QA":

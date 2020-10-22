@@ -3,8 +3,9 @@ import os
 from unittest import TestCase, mock
 
 from src import handler
+from src.db_resize_handler import BIG_DB_SIZE
 from src.handler import TRIGGER, STAGES, DB, run_etl_query, DEFAULT_DB_INSTANCE_IDENTIFIER, \
-    DEFAULT_DB_CLUSTER_IDENTIFIER, SMALL_DB_SIZE, BIG_DB_SIZE
+    DEFAULT_DB_CLUSTER_IDENTIFIER
 
 
 class TestHandler(TestCase):
@@ -229,7 +230,6 @@ class TestHandler(TestCase):
         with self.assertRaises(Exception) as context:
             handler.start_capture_db(self.initial_event, self.context)
 
-
     @mock.patch('src.handler.disable_triggers', autospec=True)
     @mock.patch('src.handler.rds_client')
     def test_delete_capture_db(self, mock_rds, mock_triggers):
@@ -261,7 +261,7 @@ class TestHandler(TestCase):
                 {'Key': 'wma:criticality', 'Value': 'tbd'},
                 {'Key': 'wma:environment', 'Value': 'qa'},
                 {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-                {'Key': 'wma:organization', 'Value': 'tbd'},
+                {'Key': 'wma:organization', 'Value': 'IOW'},
                 {'Key': 'wma:role', 'Value': 'database'},
                 {'Key': 'wma:system', 'Value': 'NWIS'},
                 {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
@@ -329,14 +329,13 @@ class TestHandler(TestCase):
                   {'Key': 'wma:criticality', 'Value': 'tbd'},
                   {'Key': 'wma:environment', 'Value': 'qa'},
                   {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-                  {'Key': 'wma:organization', 'Value': 'tbd'},
+                  {'Key': 'wma:organization', 'Value': 'IOW'},
                   {'Key': 'wma:role', 'Value': 'database'},
                   {'Key': 'wma:system', 'Value': 'NWIS'},
                   {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
                   {'Key': 'taggingVersion', 'Value': '0.0.1'}]
 
         )
-
 
     @mock.patch('src.handler.enable_triggers', autospec=True)
     @mock.patch('src.handler.RDS', autospec=True)
@@ -404,100 +403,3 @@ class TestHandler(TestCase):
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.stop_capture_db(self.initial_event, self.context)
-
-    @mock.patch('src.handler.rds_client')
-    @mock.patch('src.handler.disable_triggers')
-    def test_disable_trigger_before_shrink_exception_already_shrunk(self, mock_utils, mock_rds):
-        os.environ['STAGE'] = 'TEST'
-        mock_utils.return_value = True
-        mock_rds.describe_db_instances.return_value = {
-            "DBInstances": [{
-                "DBInstanceClass": SMALL_DB_SIZE
-            }]
-        }
-        with self.assertRaises(Exception) as context:
-            handler.disable_trigger_before_shrink({}, {})
-        mock_rds.describe_db_instances.assert_called_once_with(
-             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-        mock_utils.assert_not_called()
-
-    @mock.patch('src.handler.rds_client')
-    @mock.patch('src.handler.disable_triggers')
-    def test_disable_trigger_before_shrink_exception_ok(self, mock_utils, mock_rds):
-        os.environ['STAGE'] = 'TEST'
-        mock_utils.return_value = True
-        mock_rds.describe_db_instances.return_value = {
-            "DBInstances": [{
-                "DBInstanceClass": BIG_DB_SIZE
-            }]
-        }
-        handler.disable_trigger_before_shrink({}, {})
-        mock_rds.describe_db_instances.assert_called_once_with(
-            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-        mock_utils.assert_called_once_with(TRIGGER['TEST'])
-
-
-    @mock.patch('src.handler.rds_client')
-    @mock.patch('src.handler.disable_triggers')
-    def test_disable_trigger_before_grow_exception_already_grown(self, mock_utils, mock_rds):
-        os.environ['STAGE'] = 'TEST'
-        mock_utils.return_value = True
-        mock_rds.describe_db_instances.return_value = {
-            "DBInstances": [{
-                "DBInstanceClass": BIG_DB_SIZE
-            }]
-        }
-        with self.assertRaises(Exception) as context:
-            handler.disable_trigger_before_grow({}, {})
-        mock_rds.describe_db_instances.assert_called_once_with(
-             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-        mock_utils.assert_not_called()
-
-    @mock.patch('src.handler.rds_client')
-    @mock.patch('src.handler.disable_triggers')
-    def test_disable_trigger_before_grow_exception_ok(self, mock_utils, mock_rds):
-        os.environ['STAGE'] = 'TEST'
-        mock_utils.return_value = True
-        mock_rds.describe_db_instances.return_value = {
-            "DBInstances": [{
-                "DBInstanceClass": SMALL_DB_SIZE
-            }]
-        }
-        handler.disable_trigger_before_grow({}, {})
-        mock_rds.describe_db_instances.assert_called_once_with(
-            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-        mock_utils.assert_called_once_with(TRIGGER['TEST'])
-
-    @mock.patch('src.handler.cloudwatch_client')
-    @mock.patch('src.handler.rds_client')
-    @mock.patch('src.handler.disable_triggers')
-    def test_shrink_db(self, mock_utils, mock_rds, mock_cloudwatch):
-        os.environ['STAGE'] = 'TEST'
-        mock_utils.return_value = True
-        mock_rds.describe_db_instances.return_value = {
-            "DBInstances": [{
-                "DBInstanceClass": BIG_DB_SIZE
-            }]
-        }
-        handler.shrink_db({}, {})
-        mock_rds.modify_db_instance.assert_called_once_with(
-            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-            DBInstanceClass=SMALL_DB_SIZE,
-            ApplyImmediately=True)
-
-    @mock.patch('src.handler.cloudwatch_client')
-    @mock.patch('src.handler.rds_client')
-    @mock.patch('src.handler.disable_triggers')
-    def test_grow_db(self, mock_utils, mock_rds, mock_cloudwatch):
-        os.environ['STAGE'] = 'TEST'
-        mock_utils.return_value = True
-        mock_rds.describe_db_instances.return_value = {
-            "DBInstances": [{
-                "DBInstanceClass": SMALL_DB_SIZE
-            }]
-        }
-        handler.grow_db({}, {})
-        mock_rds.modify_db_instance.assert_called_once_with(
-            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-            DBInstanceClass=BIG_DB_SIZE,
-            ApplyImmediately=True)

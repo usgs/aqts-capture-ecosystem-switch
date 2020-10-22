@@ -82,7 +82,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     events:
       - schedule:
           rate: ${self:custom.startObservationSchedules.${self:provider.stage}}
@@ -111,7 +110,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     events:
       - schedule:
           rate: ${self:custom.startCaptureSchedules.${self:provider.stage}}
@@ -124,7 +122,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     events:
       - schedule:
           rate: ${self:custom.stopCaptureSchedules.${self:provider.stage}}
@@ -138,7 +135,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     events:
       - cloudwatchEvent:
           event:
@@ -148,100 +144,78 @@ functions:
               alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
     vpc: ${self:custom.vpc}
 
-  disableTriggerBeforeShrink:
-    handler: src.db_resizer.disable_trigger_before_shrink
+  disableTriggerBeforeResize:
+    handler: src.db_resize_handler.disable_trigger_before_resize
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
-
-  enableTriggerAfterShrink:
-    handler: src.db_resizer.enable_trigger_after_shrink
+  enableTriggerAfterResize:
+    handler: src.db_resize_handler.enable_trigger_after_resize
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
-  disableTriggerBeforeGrow:
-    handler: src.db_resizer.disable_trigger_before_grow
+  # The SHRINK_EVAL_TIME_IN_SECONDS should match the schedule
+  # The SHRINK_THRESHOLD is the percentage of cpu utilization
+  shrinkDb:
+    handler: src.db_resize_handler.shrink_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      SHRINK_THRESHOLD: 10
+      SHRINK_EVAL_TIME_IN_SECONDS: 3600
+      STAGE: ${self:provider.stage}
+      events:
+        - schedule:
+            rate: rate(1 hour)
+    vpc: ${self:custom.vpc}
+
+  growDb:
+    handler: src.db_resize_handler.grow_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
-    vpc: ${self:custom.vpc}
 
   executeShrinkMachine:
-    handler: src.db_resizer.execute_shrink_machine
+    handler: src.db_resize_handler.execute_shrink_machine
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-capture-ecosystem-switch-shrink-db-${self:provider.stage}
+      SHRINK_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-shrink-db-${self:provider.stage}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
     events:
       - schedule:
-          rate: rate(20 minutes)
+          rate: rate(1 hour)
           enabled: true
     vpc: ${self:custom.vpc}
 
-
-  enableTriggerAfterGrow:
-    handler: src.db_resizer.enable_trigger_after_grow
+  executeGrowMachine:
+    handler: src.db_resize_handler.execute_grow_machine
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      SHRINK_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-db-${self:provider.stage}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      MAX_RETRIES: 6
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-grow-db-alarm" ]
     vpc: ${self:custom.vpc}
-
-  shrinkDb:
-    handler: src.db_resizer.shrink_db
-    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      LOG_LEVEL: INFO
-      STAGE: ${self:provider.stage}
-      MAX_RETRIES: 1
-#      events:
-#        - schedule:
-#            rate: rate(10 minutes)
-#    events:
-#      - cloudwatchEvent:
-#          event:
-#            source:
-#              - 'aws.cloudwatch'
-#            detail:
-#              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-shrink-db-alarm" ]
-    vpc: ${self:custom.vpc}
-
-  growDb:
-    handler: src.db_resizer.grow_db
-    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      LOG_LEVEL: INFO
-      STAGE: ${self:provider.stage}
-      MAX_RETRIES: 1
-#    events:
-#      - schedule:
-#          rate: rate(10 minutes)
-#    events:
-#      - cloudwatchEvent:
-#          event:
-#            source:
-#              - 'aws.cloudwatch'
-#            detail:
-#              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-grow-db-alarm" ]
 
   restoreDbCluster:
     handler: src.handler.restore_db_cluster
@@ -250,7 +224,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
   modifyPostgresPassword:
@@ -260,7 +233,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
   createDbInstance:
@@ -270,7 +242,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
   modifySchemaOwnerPassword:
@@ -280,7 +251,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
 
   deleteCaptureDb:
@@ -290,9 +260,7 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
-      MAX_RETRIES: 6
     vpc: ${self:custom.vpc}
-
 
 stepFunctions:
   stateMachines:
@@ -321,18 +289,18 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 600
-                MaxAttempts: 10
+                MaxAttempts: 12
                 BackoffRate: 1
             Next: CreateDbInstance
           CreateDbInstance:
             Type: Task
             Resource:
-              Fn::GetAtt: [ createDbInstance, Arn ]
+              Fn::GetAtt: [createDbInstance, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 600
-                MaxAttempts: 10
+                MaxAttempts: 12
                 BackoffRate: 1
             Next: ModifySchemaOwnerPassword
           ModifySchemaOwnerPassword:
@@ -410,8 +378,8 @@ stepFunctions:
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 20
+                IntervalSeconds: 600
+                MaxAttempts: 12
                 BackoffRate: 1
             End: true
 
@@ -444,7 +412,7 @@ resources:
       Type: AWS::CloudWatch::Alarm
       Properties:
         AlarmName: ${self:service}-${self:provider.stage}-grow-db-alarm
-        AlarmDescription: Notify when the cpu utilization is above 75% for an hour
+        AlarmDescription: Notify when the cpu utilization is above 75% for five minutes
         Namespace: 'AWS/RDS'
         Dimensions:
           - Name: DBInstanceIdentifier
@@ -455,25 +423,6 @@ resources:
         Threshold: 75
         Period: 300
         EvaluationPeriods: 1
-        AlarmActions:
-          - Ref: snsTopic
-    shrinkDbAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-shrink-db-alarm
-        AlarmDescription: Notify when the cpu utilization is below 50% for an hour
-        Namespace: 'AWS/RDS'
-        Dimensions:
-          - Name: DBInstanceIdentifier
-            Value: arn:aws:rds:us-west-2:#{AWS::AccountId}:db:nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
-        MetricName: CPUUtilization
-        Statistic: Average
-        ComparisonOperator: LessThanOrEqualToThreshold
-        Threshold: 25
-        Period: 1800
-        EvaluationPeriods: 1
-        # TODO should be breaching?  Should be ignore?
-        TreatMissingData: missing
         AlarmActions:
           - Ref: snsTopic
 
