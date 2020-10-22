@@ -272,3 +272,14 @@ class TestDbResizeHandler(TestCase):
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,
             ApplyImmediately=True)
+
+    def test_validate_okay(self):
+        os.environ['STAGE'] = 'QA'
+        db_resize_handler._validate()
+        # If no exception is thrown, we passed
+
+    def test_validate_not_okay(self):
+        os.environ['STAGE'] = 'TEST'
+        with self.assertRaises(Exception) as context:
+            db_resize_handler._validate()
+        
