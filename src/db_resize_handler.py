@@ -79,6 +79,7 @@ def shrink_db(event, context):
     total_time = shrink_eval_time
     cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
     logger.info(f"shrink db cpu_util = {cpu_util}")
+    print(f"cpuutil={cpu_util}")
     time_to_shrink = True
     values = cpu_util['MetricDataResults'][0]['Values']
     for value in values:
@@ -88,17 +89,54 @@ def shrink_db(event, context):
         logger.info(f"It's time to shrink the db {values}")
     else:
         logger.info(f"Not time to shrink the db {values}")
+        return False
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == SMALL_DB_SIZE:
-        return "DB is already shrunk"
+        logger.info("DB is already shrunk")
+        return False
     else:
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
             ApplyImmediately=True
         )
-        return f"Shrinking DB, please stand by. {response}"
+        logger.info(f"Shrinking DB, please stand by. {response}")
+        return True
+
+
+def grow_db(event, context):
+    stage = os.environ['STAGE']
+    threshold = int(os.environ['GROW_THRESHOLD'])
+    grow_eval_time = int(os.environ['GROW_EVAL_TIME_IN_SECONDS'])
+    period = grow_eval_time
+    total_time = grow_eval_time
+    cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
+    logger.info(f"grow db cpu_util = {cpu_util}")
+    time_to_grow = True
+    values = cpu_util['MetricDataResults'][0]['Values']
+    for value in values:
+        if value < threshold:
+            time_to_grow = False
+    if time_to_grow:
+        logger.info(f"It's time to grow the db {values}")
+    else:
+        logger.info(f"Not time to grow the db {values}")
+        return False
+    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
+    if db_instance_class == BIG_DB_SIZE:
+        logger.info("DB is already grown")
+        return False
+    else:
+        response = rds_client.modify_db_instance(
+            DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
+            DBInstanceClass=BIG_DB_SIZE,
+            ApplyImmediately=True
+        )
+        logger.info(f"Growing the DB, please stand by. {response}")
+        return True
+
 
 
 def execute_shrink_machine(event, context):
@@ -113,17 +151,8 @@ def execute_grow_machine(event, context):
     alarm_state = event["detail"]["state"]["value"]
     if alarm_state == "ALARM":
         _execute_state_machine(arn, json.dumps(payload))
-
-
-def grow_db(event, context):
-    logger.info(event)
-    response = rds_client.modify_db_instance(
-        DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-        DBInstanceClass=BIG_DB_SIZE,
-        ApplyImmediately=True
-    )
-    return f"Growing DB, please stand by. {response}"
-
+        return True
+    return False
 
 def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):
     response = cloudwatch_client.get_metric_data(
