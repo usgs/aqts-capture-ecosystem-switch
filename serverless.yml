@@ -381,7 +381,7 @@ stepFunctions:
             InputPath: "$"
             Resource:
               Fn::GetAtt: [ disableTriggerBeforeResize, Arn ]
-            Next: WaitForGrowDb
+            Next: WaitForDisable
           WaitForDisable:
             Type: Wait
             Seconds: 120
