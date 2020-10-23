@@ -90,12 +90,13 @@ class TestHandler(TestCase):
             handler.stop_observations_db(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.handler.rds_client')
     @mock.patch('src.handler.run_etl_query')
     @mock.patch('src.handler.boto3.client', autospec=True)
-    def test_start_observations_db(self, mock_boto, mock_rds):
+    def test_start_observations_db(self, mock_boto, mock_etl, mock_rds):
         client = mock.Mock()
         mock_boto.return_value = client
-        mock_rds.return_value = False
+        mock_etl.return_value = False
         client.start_db_instance.return_value = True
         for stage in STAGES:
             os.environ['STAGE'] = stage

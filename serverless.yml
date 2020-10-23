@@ -206,7 +206,7 @@ functions:
       STAGE: ${self:provider.stage}
     events:
       - schedule:
-          rate: rate(1 hour)
+          rate: rate(15 minutes)
           enabled: true
     vpc: ${self:custom.vpc}
 
@@ -342,12 +342,24 @@ stepFunctions:
             InputPath: "$"
             Resource:
               Fn::GetAtt: [disableTriggerBeforeResize, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 20
+                BackoffRate: 1
             Next: ShrinkDb
           ShrinkDb:
             Type: Task
             InputPath: "$"
             Resource:
               Fn::GetAtt: [shrinkDb, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 20
+                BackoffRate: 1
             Next: EnableTriggerAfterResize
           EnableTriggerAfterResize:
             Type: Task
@@ -379,12 +391,24 @@ stepFunctions:
             InputPath: "$"
             Resource:
               Fn::GetAtt: [ disableTriggerBeforeResize, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 20
+                BackoffRate: 1
             Next: GrowDb
           GrowDb:
             Type: Task
             InputPath: "$"
             Resource:
               Fn::GetAtt: [ growDb, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 20
+                BackoffRate: 1
             Next: EnableTriggerAfterResize
           EnableTriggerAfterResize:
             Type: Task
@@ -394,8 +418,8 @@ stepFunctions:
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 600
-                MaxAttempts: 12
+                IntervalSeconds: 300
+                MaxAttempts: 20
                 BackoffRate: 1
             End: true
 

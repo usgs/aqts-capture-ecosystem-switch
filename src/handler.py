@@ -75,6 +75,7 @@ OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
 DB stop and start functions
 """
 
+
 def start_capture_db(event, context):
     stage = os.getenv('STAGE')
     if stage in STAGES:
@@ -120,7 +121,6 @@ def start_observations_db(event, context):
     stage = os.getenv('STAGE')
     if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
-    rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
     rds_client.start_db_instance(DBInstanceIdentifier=OBSERVATIONS_DB[stage])
     return {
         'statusCode': 200,
@@ -164,12 +164,7 @@ def run_etl_query(rds=None):
     shut the db down anyway.
     """
     if rds is None:
-        # TODO db host, db user, db address, db password ... get from secrets
-        db_host = os.environ['DB_HOST']
-        db_user = os.environ['DB_USER']
-        db_name = os.environ['DB_NAME']
-        db_password = os.environ['DB_PASSWORD']
-        rds = RDS(db_host, db_user, db_name, db_password)
+        rds = RDS(os.getenv('DB_HOST'), os.getenv('DB_USER'), os.getenv('DB_NAME'), os.getenv('DB_PASSWORD'))
     result = rds.execute_sql(OBSERVATIONS_ETL_IN_PROGRESS_SQL, (etl_start,))
     if result[0] > 0:
         logger.debug(f"Cannot shutdown down observations db because {result[0]} processes are running")
@@ -235,7 +230,7 @@ def delete_capture_db(event, context):
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             SkipFinalSnapshot=True
         )
-    except rds_client.exceptions.DBInstanceNotFoundFault as e:
+    except rds_client.exceptions.DBInstanceNotFoundFault:
         """
         We could be in a messed up state where the instance doesn't exist but the cluster does,
         due to vagaries of how long AWS takes to set up a cluster, so proceed
@@ -317,7 +312,7 @@ def restore_db_cluster(event, context):
             {'Key': 'wma:costCenter', 'Value': 'tbd'},
             {'Key': 'wma:criticality', 'Value': 'tbd'},
             {'Key': 'wma:environment', 'Value': 'qa'},
-            {'Key': 'wma:operationalHours','Value': 'tbd'},
+            {'Key': 'wma:operationalHours', 'Value': 'tbd'},
             {'Key': 'wma:organization', 'Value': 'IOW'},
             {'Key': 'wma:role', 'Value': 'database'},
             {'Key': 'wma:system', 'Value': 'NWIS'},
@@ -375,6 +370,7 @@ def get_snapshot_identifier():
 """
 Miscellaneous functions
 """
+
 
 def _validate():
     if os.environ['STAGE'] != "QA":

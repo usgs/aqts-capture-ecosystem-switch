@@ -20,17 +20,15 @@ DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
 ENGINE = 'aurora-postgresql'
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
-log_level = os.getenv('LOG_LEVEL', logging.ERROR)
-logger = logging.getLogger(__name__)
-logger.setLevel(log_level)
-
-STAGE = os.getenv('STAGE', 'TEST')
+SMALL_DB_SIZE = 'db.r5.2xlarge'
+BIG_DB_SIZE = 'db.r5.8xlarge'
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
-SMALL_DB_SIZE = 'db.r5.2xlarge'
-BIG_DB_SIZE = 'db.r5.8xlarge'
+log_level = os.getenv('LOG_LEVEL', logging.ERROR)
+logger = logging.getLogger(__name__)
+logger.setLevel(log_level)
 
 """
 DB resize functions
@@ -72,7 +70,6 @@ def enable_trigger_after_resize(event, context):
 
 
 def shrink_db(event, context):
-    stage = os.environ['STAGE']
     threshold = int(os.environ['SHRINK_THRESHOLD'])
     shrink_eval_time = int(os.environ['SHRINK_EVAL_TIME_IN_SECONDS'])
     period = shrink_eval_time
@@ -106,7 +103,6 @@ def shrink_db(event, context):
 
 
 def grow_db(event, context):
-    stage = os.environ['STAGE']
     threshold = int(os.environ['GROW_THRESHOLD'])
     grow_eval_time = int(os.environ['GROW_EVAL_TIME_IN_SECONDS'])
     period = grow_eval_time
@@ -138,7 +134,6 @@ def grow_db(event, context):
         return True
 
 
-
 def execute_shrink_machine(event, context):
     arn = os.environ['SHRINK_STATE_MACHINE_ARN']
     payload = {"resize_action": "SHRINK"}
@@ -153,6 +148,7 @@ def execute_grow_machine(event, context):
         _execute_state_machine(arn, json.dumps(payload))
         return True
     return False
+
 
 def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):
     response = cloudwatch_client.get_metric_data(
