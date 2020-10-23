@@ -342,36 +342,26 @@ stepFunctions:
             InputPath: "$"
             Resource:
               Fn::GetAtt: [disableTriggerBeforeResize, Arn]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 10
-                BackoffRate: 1
+            Next: WaitForDisable
+          WaitForDisable:
+            Type: Wait
+            Seconds: 120
             Next: ShrinkDb
           ShrinkDb:
             Type: Task
             InputPath: "$"
             Resource:
               Fn::GetAtt: [shrinkDb, Arn]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 10
-                BackoffRate: 1
+            Next: WaitForShrinkDb
+          WaitForShrinkDb:
+            Type: Wait
+            Seconds: 1200
             Next: EnableTriggerAfterResize
           EnableTriggerAfterResize:
             Type: Task
             InputPath: "$"
             Resource:
               Fn::GetAtt: [enableTriggerAfterResize, Arn]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 10
-                BackoffRate: 1
             End: true
 
     aqtsGrowDb:
@@ -391,24 +381,20 @@ stepFunctions:
             InputPath: "$"
             Resource:
               Fn::GetAtt: [ disableTriggerBeforeResize, Arn ]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 10
-                BackoffRate: 1
+            Next: WaitForGrowDb
+          WaitForDisable:
+            Type: Wait
+            Seconds: 120
             Next: GrowDb
           GrowDb:
             Type: Task
             InputPath: "$"
             Resource:
               Fn::GetAtt: [ growDb, Arn ]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 10
-                BackoffRate: 1
+            Next: WaitForGrowDb
+          WaitForGrowDb:
+            Type: Wait
+            Seconds: 1200
             Next: EnableTriggerAfterResize
           EnableTriggerAfterResize:
             Type: Task
