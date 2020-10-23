@@ -85,13 +85,11 @@ def shrink_db(event, context):
     if time_to_shrink:
         logger.info(f"It's time to shrink the db {values}")
     else:
-        logger.info(f"Not time to shrink the db {values}")
-        return False
+        raise Exception(f"Cannot shrink the db because it is too active {values}")
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == SMALL_DB_SIZE:
-        logger.info("DB is already shrunk")
-        return False
+        raise Exception(f"Cannot shrink the db because it already shrank")
     else:
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
@@ -99,7 +97,6 @@ def shrink_db(event, context):
             ApplyImmediately=True
         )
         logger.info(f"Shrinking DB, please stand by. {response}")
-        return True
 
 
 def grow_db(event, context):
@@ -117,13 +114,11 @@ def grow_db(event, context):
     if time_to_grow:
         logger.info(f"It's time to grow the db {values}")
     else:
-        logger.info(f"Not time to grow the db {values}")
-        return False
+        raise Exception(f"Cannot grow the db because it is too quiet {value}")
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == BIG_DB_SIZE:
-        logger.info("DB is already grown")
-        return False
+        raise Exception("DB is already grown")
     else:
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
@@ -131,7 +126,6 @@ def grow_db(event, context):
             ApplyImmediately=True
         )
         logger.info(f"Growing the DB, please stand by. {response}")
-        return True
 
 
 def execute_shrink_machine(event, context):

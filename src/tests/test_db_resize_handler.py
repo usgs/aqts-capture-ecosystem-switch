@@ -261,8 +261,8 @@ class TestDbResizeHandler(TestCase):
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": BIG_DB_SIZE}]}
         mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [90.0]}]}
-        result = db_resize_handler.shrink_db({}, {})
-        assert result is False
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.shrink_db({}, {})
         mock_rds.modify_db_instance.assert_not_called()
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
@@ -291,7 +291,8 @@ class TestDbResizeHandler(TestCase):
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": SMALL_DB_SIZE}]}
         mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [70.0]}]}
-        db_resize_handler.grow_db({}, {})
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.grow_db({}, {})
         mock_rds.modify_db_instance.assert_not_called()
 
 

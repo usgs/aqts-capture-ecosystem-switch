@@ -346,7 +346,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 300
-                MaxAttempts: 20
+                MaxAttempts: 10
                 BackoffRate: 1
             Next: ShrinkDb
           ShrinkDb:
@@ -358,7 +358,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 300
-                MaxAttempts: 20
+                MaxAttempts: 10
                 BackoffRate: 1
             Next: EnableTriggerAfterResize
           EnableTriggerAfterResize:
@@ -370,7 +370,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 300
-                MaxAttempts: 20
+                MaxAttempts: 10
                 BackoffRate: 1
             End: true
 
@@ -395,7 +395,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 300
-                MaxAttempts: 20
+                MaxAttempts: 10
                 BackoffRate: 1
             Next: GrowDb
           GrowDb:
@@ -407,7 +407,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 300
-                MaxAttempts: 20
+                MaxAttempts: 10
                 BackoffRate: 1
             Next: EnableTriggerAfterResize
           EnableTriggerAfterResize:
@@ -419,7 +419,7 @@ stepFunctions:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 300
-                MaxAttempts: 20
+                MaxAttempts: 10
                 BackoffRate: 1
             End: true
 
