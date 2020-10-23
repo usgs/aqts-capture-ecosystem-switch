@@ -206,7 +206,7 @@ functions:
       STAGE: ${self:provider.stage}
     events:
       - schedule:
-          rate: rate(15 minutes)
+          rate: rate(1 hour)
           enabled: true
     vpc: ${self:custom.vpc}
 
@@ -352,10 +352,12 @@ stepFunctions:
             InputPath: "$"
             Resource:
               Fn::GetAtt: [shrinkDb, Arn]
-            Next: WaitForShrinkDb
-          WaitForShrinkDb:
-            Type: Wait
-            Seconds: 1200
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 600
+                MaxAttempts: 12
+                BackoffRate: 1
             Next: EnableTriggerAfterResize
           EnableTriggerAfterResize:
             Type: Task
@@ -391,10 +393,12 @@ stepFunctions:
             InputPath: "$"
             Resource:
               Fn::GetAtt: [ growDb, Arn ]
-            Next: WaitForGrowDb
-          WaitForGrowDb:
-            Type: Wait
-            Seconds: 1200
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 600
+                MaxAttempts: 12
+                BackoffRate: 1
             Next: EnableTriggerAfterResize
           EnableTriggerAfterResize:
             Type: Task
