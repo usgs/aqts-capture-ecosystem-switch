@@ -450,7 +450,7 @@ resources:
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
-        Threshold: 20
+        Threshold: 15
         Period: 300
         EvaluationPeriods: 1
         AlarmActions:
