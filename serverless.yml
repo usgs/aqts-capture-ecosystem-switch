@@ -224,7 +224,7 @@ functions:
             source:
               - 'aws.cloudwatch'
             detail:
-              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-grow-db-alarm" ]
+              alarmName: [ "aqts-capture-raw-load-${self:provider.stage}-concurrency-alarm" ]
     vpc: ${self:custom.vpc}
 
   restoreDbCluster:
@@ -435,23 +435,6 @@ resources:
         ComparisonOperator: GreaterThanOrEqualToThreshold
         Threshold: 1
         Period: 60
-        EvaluationPeriods: 1
-        AlarmActions:
-          - Ref: snsTopic
-    growDbAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-grow-db-alarm
-        AlarmDescription: Notify when the cpu utilization is above 75% for five minutes
-        Namespace: 'AWS/RDS'
-        Dimensions:
-          - Name: DBInstanceIdentifier
-            Value: arn:aws:rds:us-west-2:#{AWS::AccountId}:db:nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
-        MetricName: CPUUtilization
-        Statistic: Average
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        Threshold: 15
-        Period: 300
         EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic

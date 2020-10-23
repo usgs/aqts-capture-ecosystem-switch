@@ -21,7 +21,7 @@ ENGINE = 'aurora-postgresql'
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
 SMALL_DB_SIZE = 'db.r5.large'
-BIG_DB_SIZE = 'db.r5.8xlarge'
+BIG_DB_SIZE = 'db.r5.4xlarge'
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
