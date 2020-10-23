@@ -76,6 +76,16 @@ custom:
     connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-${self:provider.stage}~true}
 
 functions:
+  # TODO REMOVE
+  CopyS3:
+    handler: src.handler.copy_s3
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    vpc: ${self:custom.vpc}
+
   StartObservationsDb:
     handler: src.handler.start_observations_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
@@ -426,7 +436,7 @@ resources:
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
-        Threshold: 75
+        Threshold: 20
         Period: 300
         EvaluationPeriods: 1
         AlarmActions:

@@ -379,3 +379,34 @@ Miscellaneous functions
 def _validate():
     if os.environ['STAGE'] != "QA":
         raise Exception("This lambda is currently only supported on the QA tier")
+
+
+# TODO REMOVE
+
+
+def copy_s3(event, context):
+    logger.info(event)
+    """
+    Copy files from the 'reference' bucket to the trigger bucket to simulate
+    a full run.
+    :param event:
+    :param context:
+    :return:
+    """
+    s3_client = boto3.client('s3', os.getenv('AWS_DEPLOYMENT_REGION'))
+    SRC_BUCKET = 'iow-retriever-capture-test'
+    DEST_BUCKET = 'iow-retriever-capture-qa'
+    resp = s3_client.list_objects_v2(Bucket=SRC_BUCKET)
+    keys = []
+    for obj in resp['Contents']:
+        keys.append(obj['Key'])
+
+    s3_resource = boto3.resource('s3')
+    for key in keys:
+        copy_source = {
+            'Bucket': SRC_BUCKET,
+            'Key': key
+        }
+        logger.info(f"key = {key}")
+        bucket = s3_resource.Bucket(DEST_BUCKET)
+        bucket.copy(copy_source, key)
