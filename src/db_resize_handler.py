@@ -37,16 +37,6 @@ DB resize functions
 def disable_trigger_before_resize(event, context):
     if event.get("resize_action") is None:
         raise Exception(f"No resize action in event {event}")
-    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
-    if event.get("resize_action") == "GROW":
-        if db_instance_class == BIG_DB_SIZE:
-            raise Exception("Database has already grown")
-    elif event.get("resize_action") == "SHRINK":
-        if db_instance_class == SMALL_DB_SIZE:
-            raise Exception("Database has already shrunk")
-    else:
-        raise Exception(f"Unrecognized resize action {event}")
     disable_triggers(TRIGGER[STAGE])
 
 
@@ -54,28 +44,19 @@ def enable_trigger_after_resize(event, context):
     if event.get("resize_action") is None:
         raise Exception(f"Invalid resize action, misconfigured event {event}")
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
-    db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
-    if event.get('resize_action') == 'GROW':
-        if db_instance_class == SMALL_DB_SIZE:
-            raise Exception("Database has not grown yet, keep waiting before enable trigger")
-    elif event.get('resize_action') == 'SHRINK':
-        if db_instance_class == BIG_DB_SIZE:
-            raise Exception("Database has not shrunk yet, keep waiting before enable trigger")
-    else:
-        raise Exception(f"Unrecognized resize action {event}")
     if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
         enable_triggers(TRIGGER[STAGE])
         return
 
 
 def shrink_db(event, context):
+    logger.info(event)
     threshold = int(os.environ['SHRINK_THRESHOLD'])
     shrink_eval_time = int(os.environ['SHRINK_EVAL_TIME_IN_SECONDS'])
     period = shrink_eval_time
     total_time = shrink_eval_time
     cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
     logger.info(f"shrink db cpu_util = {cpu_util}")
-    print(f"cpuutil={cpu_util}")
     time_to_shrink = True
     values = cpu_util['MetricDataResults'][0]['Values']
     for value in values:
@@ -99,6 +80,7 @@ def shrink_db(event, context):
 
 
 def grow_db(event, context):
+    logger.info(event)
     threshold = int(os.environ['GROW_THRESHOLD'])
     grow_eval_time = int(os.environ['GROW_EVAL_TIME_IN_SECONDS'])
     period = grow_eval_time
