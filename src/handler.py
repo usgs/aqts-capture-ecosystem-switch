@@ -390,12 +390,8 @@ def copy_s3(event, context):
     """
 
     s3_client = boto3.client('s3', os.getenv('AWS_DEPLOYMENT_REGION'))
-    SRC_BUCKET = 'iow-retriever-capture-test'
+    SRC_BUCKET = 'iow-retriever-capture-reference'
     DEST_BUCKET = 'iow-retriever-capture-qa'
-
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket(DEST_BUCKET)
-    bucket.objects.all().delete()
 
     resp = s3_client.list_objects_v2(Bucket=SRC_BUCKET)
     keys = []
