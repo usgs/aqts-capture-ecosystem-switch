@@ -3,7 +3,7 @@ from unittest import TestCase, mock
 
 from src import handler
 from src.handler import TRIGGER, STAGES, DB
-from src.utils import enable_triggers, disable_triggers, purge_queue, stop_db_cluster, start_db_cluster, \
+from src.utils import enable_lambda_trigger, disable_lambda_trigger, purge_queue, stop_db_cluster, start_db_cluster, \
     describe_db_clusters
 
 
@@ -58,48 +58,48 @@ class TestUtils(TestCase):
             handler.start_capture_db(self.initial_event, self.context)
 
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_enable_triggers(self, mock_boto):
+    def test_enable_lambda_trigger(self, mock_boto):
         client = mock.Mock()
         mock_boto.return_value = client
         client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         client.get_event_source_mapping.return_value = {"State": "Disabled"}
-        result = enable_triggers(["my_function_name"])
+        result = enable_lambda_trigger(["my_function_name"])
         assert result is True
         mock_boto.assert_called_with("lambda", "us-west-2")
         client.list_event_source_mappings.assert_called_with(FunctionName='my_function_name')
         client.update_event_source_mapping.assert_called_with(UUID='string', Enabled=True)
 
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_enable_triggers_already_enabled(self, mock_boto):
+    def test_enable_lambda_trigger_already_enabled(self, mock_boto):
         client = mock.Mock()
         mock_boto.return_value = client
         client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         client.get_event_source_mapping.return_value = {"State": "Enabled"}
-        result = enable_triggers(["my_function_name"])
+        result = enable_lambda_trigger(["my_function_name"])
         assert result is False
         mock_boto.assert_called_with("lambda", "us-west-2")
         client.list_event_source_mappings.assert_called_with(FunctionName='my_function_name')
         client.update_event_source_mapping.assert_not_called()
 
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_disable_triggers(self, mock_boto):
+    def test_disable_lambda_trigger(self, mock_boto):
         client = mock.Mock()
         mock_boto.return_value = client
         client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         client.get_event_source_mapping.return_value = {"State": "Enabled"}
-        result = disable_triggers(["my_function_name"])
+        result = disable_lambda_trigger(["my_function_name"])
         assert result is True
         mock_boto.assert_called_with("lambda", "us-west-2")
         client.list_event_source_mappings.assert_called_with(FunctionName='my_function_name')
         client.update_event_source_mapping.assert_called_with(UUID='string', Enabled=False)
 
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_disable_triggers_already_disabled(self, mock_boto):
+    def test_disable_lambda_trigger_already_disabled(self, mock_boto):
         client = mock.Mock()
         mock_boto.return_value = client
         client.list_event_source_mappings.return_value = self.mock_event_source_mapping
         client.get_event_source_mapping.return_value = {"State": "Disabled"}
-        result = disable_triggers(["my_function_name"])
+        result = disable_lambda_trigger(["my_function_name"])
         assert result is False
         mock_boto.assert_called_with("lambda", "us-west-2")
         client.list_event_source_mappings.assert_called_with(FunctionName='my_function_name')

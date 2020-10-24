@@ -4,7 +4,7 @@ import os
 
 import boto3
 from src.rds import RDS
-from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
+from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, stop_db_cluster, \
     purge_queue, stop_observations_db_instance, DEFAULT_DB_INSTANCE_CLASS
 import logging
 
@@ -142,7 +142,7 @@ def control_db_utilization(event, context):
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     if alarm_state == "ALARM":
         logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
-        disable_triggers(TRIGGER[stage])
+        disable_lambda_trigger(TRIGGER[stage])
     elif alarm_state == "OK":
         """
         We do NOT want to enable the trigger if the db is not up and running.
@@ -150,7 +150,7 @@ def control_db_utilization(event, context):
         active_dbs = describe_db_clusters('stop')
         if DB[stage] in active_dbs:
             logger.info(f"Enabling trigger {TRIGGER[stage]} for {DB[stage]} because error handler is okay")
-            enable_triggers(TRIGGER[stage])
+            enable_lambda_trigger(TRIGGER[stage])
 
 
 def run_etl_query(rds=None):
@@ -183,14 +183,14 @@ def _start_db(db, triggers, queue_name):
         if cluster_identifier == db:
             start_db_cluster(db)
             started = True
-            enable_triggers(triggers)
+            enable_lambda_trigger(triggers)
     return started
 
 
 def _stop_db(db, triggers):
     cluster_identifiers = describe_db_clusters("stop")
     stopped = False
-    disable_triggers(triggers)
+    disable_lambda_trigger(triggers)
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == db:
             stop_db_cluster(db)
@@ -239,7 +239,7 @@ def delete_capture_db(event, context):
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SkipFinalSnapshot=True
     )
-    disable_triggers(TRIGGER[os.environ['STAGE']])
+    disable_lambda_trigger(TRIGGER[os.environ['STAGE']])
 
 
 def create_db_instance(event, context):
@@ -352,7 +352,7 @@ def modify_schema_owner_password(event, context):
     queue_info = sqs_client.get_queue_url(QueueName=ERROR_QUEUE)
     sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
 
-    enable_triggers(TRIGGER[os.environ['STAGE']])
+    enable_lambda_trigger(TRIGGER[os.environ['STAGE']])
 
 
 def get_snapshot_identifier():

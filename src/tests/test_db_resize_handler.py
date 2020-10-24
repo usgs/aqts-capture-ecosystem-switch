@@ -13,7 +13,7 @@ class TestDbResizeHandler(TestCase):
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
-    @mock.patch('src.db_resize_handler.disable_triggers')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
     def test_shrink_db_okay(self, mock_utils, mock_rds, mock_cpu_util):
         os.environ['STAGE'] = 'TEST'
         os.environ['SHRINK_THRESHOLD'] = '10'
@@ -34,7 +34,7 @@ class TestDbResizeHandler(TestCase):
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
-    @mock.patch('src.db_resize_handler.disable_triggers')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
     def test_shrink_db_not_okay(self, mock_utils, mock_rds, mock_cpu_util):
         os.environ['STAGE'] = 'TEST'
         os.environ['SHRINK_THRESHOLD'] = '10'
@@ -48,7 +48,7 @@ class TestDbResizeHandler(TestCase):
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
-    @mock.patch('src.db_resize_handler.disable_triggers')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
     def test_grow_db_okay(self, mock_utils, mock_rds, mock_cpu_util):
         os.environ['STAGE'] = 'TEST'
         os.environ['GROW_THRESHOLD'] = '75'
@@ -69,7 +69,7 @@ class TestDbResizeHandler(TestCase):
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
-    @mock.patch('src.handler.disable_triggers')
+    @mock.patch('src.handler.disable_lambda_trigger')
     def test_grow_db_not_okay(self, mock_utils, mock_rds, mock_cpu_util):
         os.environ['STAGE'] = 'TEST'
         os.environ['GROW_THRESHOLD'] = '75'

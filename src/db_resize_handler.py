@@ -3,7 +3,7 @@ import json
 import os
 
 import boto3
-from src.utils import enable_triggers, disable_triggers
+from src.utils import enable_lambda_trigger, disable_lambda_trigger
 import logging
 
 TRIGGER = {
@@ -34,13 +34,13 @@ DB resize functions
 """
 
 
-def disable_trigger_manually(event, context):
-    disable_triggers(TRIGGER[STAGE])
+def disable_trigger(event, context):
+    disable_lambda_trigger(TRIGGER[STAGE])
 
 
-def enable_trigger_manually(event, context):
+def enable_trigger(event, context):
     if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
-        enable_triggers(TRIGGER[STAGE])
+        enable_lambda_trigger(TRIGGER[STAGE])
     else:
         logger.info(f"Cluster {DEFAULT_DB_CLUSTER_IDENTIFIER} was not available so we didnt enable the trigger")
 
@@ -70,7 +70,7 @@ def shrink_db(event, context):
         raise Exception("Cluster is not available")
     else:
         logger.info("Disabling the trigger!")
-        disable_triggers(TRIGGER[STAGE])
+        disable_lambda_trigger(TRIGGER[STAGE])
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
@@ -104,7 +104,7 @@ def grow_db(event, context):
         raise Exception("Cluster is not available")
     else:
         logger.info("Disabling the trigger!")
-        disable_triggers(TRIGGER[STAGE])
+        disable_lambda_trigger(TRIGGER[STAGE])
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,

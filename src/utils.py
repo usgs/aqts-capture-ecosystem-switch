@@ -53,7 +53,7 @@ def purge_queue(queue_names):
         sqs.purge_queue(QueueUrl=queue_info['QueueUrl'])
 
 
-def disable_triggers(function_names):
+def disable_lambda_trigger(function_names):
     my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
     return_value = False
     for function_name in function_names:
@@ -68,7 +68,7 @@ def disable_triggers(function_names):
     return return_value
 
 
-def enable_triggers(function_names):
+def enable_lambda_trigger(function_names):
     my_lambda = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
     return_value = False
     for function_name in function_names:
