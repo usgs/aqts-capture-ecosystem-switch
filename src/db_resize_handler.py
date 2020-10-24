@@ -3,7 +3,7 @@ import json
 import os
 
 import boto3
-from src.utils import enable_lambda_trigger, disable_lambda_trigger
+from src.utils import enable_lambda_trigger, disable_lambda_trigger, DEFAULT_DB_INSTANCE_CLASS
 import logging
 
 TRIGGER = {
@@ -19,8 +19,8 @@ DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
 ENGINE = 'aurora-postgresql'
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
-SMALL_DB_SIZE = 'db.r5.large'
-BIG_DB_SIZE = 'db.r5.4xlarge'
+SMALL_DB_SIZE = 'db.r5.xlarge'
+BIG_DB_SIZE = DEFAULT_DB_INSTANCE_CLASS
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
@@ -100,13 +100,13 @@ def grow_db(event, context):
 
 def execute_shrink_machine(event, context):
     arn = os.environ['SHRINK_STATE_MACHINE_ARN']
-    payload = {"resize_action": "SHRINK"}
+    payload = {}
     return _execute_state_machine(arn, json.dumps(payload))
 
 
 def execute_grow_machine(event, context):
     arn = os.environ['GROW_STATE_MACHINE_ARN']
-    payload = {"resize_action": "GROW"}
+    payload = {}
     alarm_state = event["detail"]["state"]["value"]
     if alarm_state == "ALARM":
         _execute_state_machine(arn, json.dumps(payload))
