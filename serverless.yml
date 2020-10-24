@@ -6,7 +6,7 @@ provider:
   stage: ${opt:stage, 'TEST'}
   runtime: python3.8
   memorySize: 128
-  timeout: 90
+  timeout: 300
   logRetentionInDays: 90
   deploymentBucket:
     name: ${opt:bucket, iow-cloud-applications}
@@ -185,7 +185,7 @@ functions:
       STAGE: ${self:provider.stage}
     events:
       - schedule:
-          rate: rate(1 hour)
+          rate: rate(30 minutes)
     vpc: ${self:custom.vpc}
 
   growDb:
@@ -215,7 +215,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      SHRINK_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-db-${self:provider.stage}
+      GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-db-${self:provider.stage}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
     events:
