@@ -5,7 +5,7 @@ import os
 import boto3
 from src.rds import RDS
 from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
-    purge_queue, stop_observations_db_instance
+    purge_queue, stop_observations_db_instance, DEFAULT_DB_INSTANCE_CLASS
 import logging
 
 STAGES = ['TEST', 'QA', 'PROD']
@@ -39,7 +39,6 @@ ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
 DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
 DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
-DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
 ENGINE = 'aurora-postgresql'
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 

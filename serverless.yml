@@ -180,12 +180,9 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
-      SHRINK_THRESHOLD: "10"
-      SHRINK_EVAL_TIME_IN_SECONDS: "3600"
+      SHRINK_THRESHOLD: 10
+      SHRINK_EVAL_TIME_IN_SECONDS: 3600
       STAGE: ${self:provider.stage}
-    events:
-      - schedule:
-          rate: rate(30 minutes)
     vpc: ${self:custom.vpc}
 
   growDb:
