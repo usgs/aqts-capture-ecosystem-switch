@@ -34,19 +34,15 @@ DB resize functions
 """
 
 
-def disable_trigger_before_resize(event, context):
-    if event.get("resize_action") is None:
-        raise Exception(f"No resize action in event {event}")
+def disable_trigger_manually(event, context):
     disable_triggers(TRIGGER[STAGE])
 
 
-def enable_trigger_after_resize(event, context):
-    if event.get("resize_action") is None:
-        raise Exception(f"Invalid resize action, misconfigured event {event}")
-    response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
+def enable_trigger_manually(event, context):
     if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
         enable_triggers(TRIGGER[STAGE])
-        return
+    else:
+        logger.info(f"Cluster {DEFAULT_DB_CLUSTER_IDENTIFIER} was not available so we didnt enable the trigger")
 
 
 def shrink_db(event, context):
@@ -70,7 +66,11 @@ def shrink_db(event, context):
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == SMALL_DB_SIZE:
         logger.info(f"Cannot shrink the db because it already shrank")
+    elif not _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
+        raise Exception("Cluster is not available")
     else:
+        logger.info("Disabling the trigger!")
+        disable_triggers(TRIGGER[STAGE])
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
@@ -100,7 +100,11 @@ def grow_db(event, context):
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == BIG_DB_SIZE:
         logger.info("DB is already grown")
+    elif not _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
+        raise Exception("Cluster is not available")
     else:
+        logger.info("Disabling the trigger!")
+        disable_triggers(TRIGGER[STAGE])
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,

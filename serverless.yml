@@ -6,7 +6,7 @@ provider:
   stage: ${opt:stage, 'TEST'}
   runtime: python3.8
   memorySize: 128
-  timeout: 300
+  timeout: 90
   logRetentionInDays: 90
   deploymentBucket:
     name: ${opt:bucket, iow-cloud-applications}
@@ -154,8 +154,8 @@ functions:
               alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
     vpc: ${self:custom.vpc}
 
-  disableTriggerBeforeResize:
-    handler: src.db_resize_handler.disable_trigger_before_resize
+  disableTrigger:
+    handler: src.db_resize_handler.disable_trigger
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -163,8 +163,10 @@ functions:
       STAGE: ${self:provider.stage}
     vpc: ${self:custom.vpc}
 
-  enableTriggerAfterResize:
-    handler: src.db_resize_handler.enable_trigger_after_resize
+
+
+  enableTrigger:
+    handler: src.db_resize_handler.enable_trigger
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -332,39 +334,27 @@ stepFunctions:
       name: aqts-ecosystem-switch-shrink-db-${self:provider.stage}
       definition:
         Comment: "AQTS Shrink Db"
-        StartAt: DisableTriggerBeforeResize
+        StartAt: ShrinkDb
         States:
-          DisableTriggerBeforeResize:
-            Type: Task
-            InputPath: "$"
-            Resource:
-              Fn::GetAtt: [disableTriggerBeforeResize, Arn]
-            Next: WaitForDisable
-          WaitForDisable:
-            Type: Wait
-            Seconds: 120
-            Next: ShrinkDb
           ShrinkDb:
             Type: Task
-            InputPath: "$"
             Resource:
               Fn::GetAtt: [shrinkDb, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 600
-                MaxAttempts: 12
+                IntervalSeconds: 120
+                MaxAttempts: 10
                 BackoffRate: 1
-            Next: EnableTriggerAfterResize
-          EnableTriggerAfterResize:
+            Next: EnableTrigger
+          EnableTrigger:
             Type: Task
-            InputPath: "$"
             Resource:
-              Fn::GetAtt: [enableTriggerAfterResize, Arn]
+              Fn::GetAtt: [enableTrigger, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 300
+                IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
             End: true
@@ -379,39 +369,27 @@ stepFunctions:
       name: aqts-ecosystem-switch-grow-db-${self:provider.stage}
       definition:
         Comment: "AQTS Grow Db"
-        StartAt: DisableTriggerBeforeResize
+        StartAt: GrowDb
         States:
-          DisableTriggerBeforeResize:
-            Type: Task
-            InputPath: "$"
-            Resource:
-              Fn::GetAtt: [ disableTriggerBeforeResize, Arn ]
-            Next: WaitForDisable
-          WaitForDisable:
-            Type: Wait
-            Seconds: 120
-            Next: GrowDb
           GrowDb:
             Type: Task
-            InputPath: "$"
             Resource:
               Fn::GetAtt: [ growDb, Arn ]
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 600
-                MaxAttempts: 12
+                IntervalSeconds: 120
+                MaxAttempts: 10
                 BackoffRate: 1
-            Next: EnableTriggerAfterResize
-          EnableTriggerAfterResize:
+            Next: EnableTrigger
+          EnableTrigger:
             Type: Task
-            InputPath: "$"
             Resource:
-              Fn::GetAtt: [ enableTriggerAfterResize, Arn ]
+              Fn::GetAtt: [ enableTrigger, Arn ]
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 300
+                IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
             End: true
