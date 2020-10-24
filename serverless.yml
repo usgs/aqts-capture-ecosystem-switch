@@ -223,7 +223,7 @@ functions:
             source:
               - 'aws.cloudwatch'
             detail:
-              alarmName: [ "aqts-capture-raw-load-${self:provider.stage}-concurrency-alarm" ]
+              alarmName: [ "aqts-capture-trigger-${self:provider.stage}-concurrency-alarm" ]
     vpc: ${self:custom.vpc}
 
   restoreDbCluster:
