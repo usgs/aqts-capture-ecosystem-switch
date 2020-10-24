@@ -11,6 +11,42 @@ class TestDbResizeHandler(TestCase):
     def setUp(self):
         pass
 
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_disable_trigger(self, mock_trigger):
+        db_resize_handler.disable_trigger({}, {})
+        mock_trigger.assert_called_once()
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.enable_lambda_trigger')
+    def test_enable_trigger(self, mock_trigger, mock_rds):
+        mock_rds.describe_db_clusters.return_value = {
+            'DBClusters': [
+                {
+                    'DBClusterIdentifier': DEFAULT_DB_CLUSTER_IDENTIFIER,
+                    'Status': 'available'
+                }
+            ]
+        }
+        mock_trigger.return_value = True
+        db_resize_handler.enable_trigger({}, {})
+        mock_trigger.assert_called_once()
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.enable_lambda_trigger')
+    def test_enable_trigger_not_ready(self, mock_trigger, mock_rds):
+        mock_rds.describe_db_clusters.return_value = {
+            'DBClusters': [
+                {
+                    'DBClusterIdentifier': DEFAULT_DB_CLUSTER_IDENTIFIER,
+                    'Status': 'starting'
+                }
+            ]
+        }
+        mock_trigger.return_value = False
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.enable_trigger({}, {})
+        mock_trigger.assert_not_called()
+
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')
@@ -35,7 +71,30 @@ class TestDbResizeHandler(TestCase):
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')
-    def test_shrink_db_not_okay(self, mock_utils, mock_rds, mock_cpu_util):
+    def test_shrink_db_not_available(self, mock_trigger, mock_rds, mock_cpu_util):
+        os.environ['STAGE'] = 'TEST'
+        os.environ['SHRINK_THRESHOLD'] = '10'
+        os.environ['SHRINK_EVAL_TIME_IN_SECONDS'] = '3600'
+        mock_trigger.return_value = True
+        mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [0.0]}]}
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": BIG_DB_SIZE}]}
+        mock_rds.describe_db_clusters.return_value = {
+            'DBClusters': [
+                {
+                    'DBClusterIdentifier': DEFAULT_DB_CLUSTER_IDENTIFIER,
+                    'Status': 'starting'
+                }
+            ]
+        }
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.shrink_db({}, {})
+        mock_rds.modify_db_instance.assert_not_called()
+
+
+    @mock.patch('src.db_resize_handler._get_cpu_utilization')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_shrink_db_too_busy(self, mock_utils, mock_rds, mock_cpu_util):
         os.environ['STAGE'] = 'TEST'
         os.environ['SHRINK_THRESHOLD'] = '10'
         os.environ['SHRINK_EVAL_TIME_IN_SECONDS'] = '3600'
@@ -70,13 +129,35 @@ class TestDbResizeHandler(TestCase):
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.handler.disable_lambda_trigger')
-    def test_grow_db_not_okay(self, mock_utils, mock_rds, mock_cpu_util):
+    def test_grow_db_too_busy(self, mock_utils, mock_rds, mock_cpu_util):
         os.environ['STAGE'] = 'TEST'
         os.environ['GROW_THRESHOLD'] = '75'
         os.environ['GROW_EVAL_TIME_IN_SECONDS'] = '3600'
         mock_utils.return_value = True
         mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": SMALL_DB_SIZE}]}
         mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [70.0]}]}
+        with self.assertRaises(Exception) as context:
+            db_resize_handler.grow_db({}, {})
+        mock_rds.modify_db_instance.assert_not_called()
+
+    @mock.patch('src.db_resize_handler._get_cpu_utilization')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_grow_db_not_available(self, mock_trigger, mock_rds, mock_cpu_util):
+        os.environ['STAGE'] = 'TEST'
+        os.environ['GROW_THRESHOLD'] = '10'
+        os.environ['GROW_EVAL_TIME_IN_SECONDS'] = '3600'
+        mock_trigger.return_value = True
+        mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [0.0]}]}
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": SMALL_DB_SIZE}]}
+        mock_rds.describe_db_clusters.return_value = {
+            'DBClusters': [
+                {
+                    'DBClusterIdentifier': DEFAULT_DB_CLUSTER_IDENTIFIER,
+                    'Status': 'starting'
+                }
+            ]
+        }
         with self.assertRaises(Exception) as context:
             db_resize_handler.grow_db({}, {})
         mock_rds.modify_db_instance.assert_not_called()

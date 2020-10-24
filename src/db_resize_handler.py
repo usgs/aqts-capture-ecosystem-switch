@@ -41,8 +41,6 @@ def disable_trigger(event, context):
 def enable_trigger(event, context):
     if _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
         enable_lambda_trigger(TRIGGER[STAGE])
-    else:
-        logger.info(f"Cluster {DEFAULT_DB_CLUSTER_IDENTIFIER} was not available so we didnt enable the trigger")
 
 
 def shrink_db(event, context):
@@ -67,6 +65,7 @@ def shrink_db(event, context):
     if db_instance_class == SMALL_DB_SIZE:
         logger.info(f"Cannot shrink the db because it already shrank")
     elif not _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
+        print("throwing exception because db not available")
         raise Exception("Cluster is not available")
     else:
         logger.info("Disabling the trigger!")
