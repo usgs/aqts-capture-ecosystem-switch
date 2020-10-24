@@ -90,7 +90,6 @@ class TestDbResizeHandler(TestCase):
             db_resize_handler.shrink_db({}, {})
         mock_rds.modify_db_instance.assert_not_called()
 
-
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')
@@ -176,9 +175,13 @@ class TestDbResizeHandler(TestCase):
         with self.assertRaises(KeyError) as context:
             db_resize_handler.execute_grow_machine({}, {})
 
+    @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.boto3', autospec=True)
-    def test_execute_grow_machine_alarm(self, mock_boto3):
+    def test_execute_grow_machine_alarm_needs_to_grow(self, mock_boto3, mock_cpu_util):
         os.environ['GROW_STATE_MACHINE_ARN'] = 'arn'
+        os.environ['GROW_THRESHOLD'] = '75'
+        os.environ['GROW_EVAL_TIME_IN_SECONDS'] = '300'
+        mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [80.0]}]}
         alarm_event = {
             "detail": {
                 "state": {

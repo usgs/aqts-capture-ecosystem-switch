@@ -80,6 +80,20 @@ def shrink_db(event, context):
 
 def grow_db(event, context):
     logger.info(event)
+    threshold = int(os.environ['GROW_THRESHOLD'])
+    grow_eval_time = int(os.environ['GROW_EVAL_TIME_IN_SECONDS'])
+    period = grow_eval_time
+    total_time = grow_eval_time
+    cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
+    time_to_grow = True
+    values = cpu_util['MetricDataResults'][0]['Values']
+    for value in values:
+        if value < threshold:
+            time_to_grow = False
+    if time_to_grow:
+        logger.info(f"It's time to grow the db {values}")
+    else:
+        raise Exception(f"Cannot grow the db because it is too quiet {values}")
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == BIG_DB_SIZE:
