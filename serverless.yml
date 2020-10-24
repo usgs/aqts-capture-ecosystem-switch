@@ -361,6 +361,12 @@ stepFunctions:
             InputPath: "$"
             Resource:
               Fn::GetAtt: [enableTriggerAfterResize, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 10
+                BackoffRate: 1
             End: true
 
     aqtsGrowDb:
