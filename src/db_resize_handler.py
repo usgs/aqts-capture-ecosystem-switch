@@ -19,7 +19,7 @@ DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
 ENGINE = 'aurora-postgresql'
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
-SMALL_DB_SIZE = 'db.r5.large'
+SMALL_DB_SIZE = 'db.r5.xlarge'
 BIG_DB_SIZE = DEFAULT_DB_INSTANCE_CLASS
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))

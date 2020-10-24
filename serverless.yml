@@ -172,7 +172,7 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
-      SHRINK_THRESHOLD: 3
+      SHRINK_THRESHOLD: 10
       SHRINK_EVAL_TIME_IN_SECONDS: 3600
       STAGE: ${self:provider.stage}
     vpc: ${self:custom.vpc}
@@ -183,7 +183,7 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
-      GROW_THRESHOLD: 10
+      GROW_THRESHOLD: 50
       GROW_EVAL_TIME_IN_SECONDS: 300
 
       STAGE: ${self:provider.stage}
@@ -216,7 +216,7 @@ functions:
             source:
               - 'aws.cloudwatch'
             detail:
-              alarmName: [ "aqts-capture-trigger-${self:provider.stage}-concurrency-alarm" ]
+              alarmName: [ "aqts-capture-raw-load-${self:provider.stage}-concurrency-alarm" ]
     vpc: ${self:custom.vpc}
 
   restoreDbCluster:
