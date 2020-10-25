@@ -175,3 +175,22 @@ def _execute_state_machine(state_machine_arn, invocation_payload, region='us-wes
         input=invocation_payload
     )
     return resp
+
+
+def copy_s3(event, context):
+    logger.info(event)
+    s3_client = boto3.client('s3', os.getenv('AWS_DEPLOYMENT_REGION'))
+    resp = s3_client.list_objects_v2(Bucket='iow-retriever-capture-test')
+    keys = []
+    for obj in resp['Contents']:
+        keys.append(obj['Key'])
+
+    s3_resource = boto3.resource('s3')
+    for key in keys:
+        copy_source = {
+            'Bucket': 'iow-retriever-capture-test',
+            'Key': key
+        }
+        logger.info(f"key = {key}")
+        bucket = s3_resource.Bucket('iow-retriever-capture-qa')
+        bucket.copy(copy_source, key)

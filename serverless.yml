@@ -6,7 +6,7 @@ provider:
   stage: ${opt:stage, 'TEST'}
   runtime: python3.8
   memorySize: 128
-  timeout: 900
+  timeout: 300
   logRetentionInDays: 90
   deploymentBucket:
     name: ${opt:bucket, iow-cloud-applications}
@@ -154,6 +154,14 @@ functions:
     vpc: ${self:custom.vpc}
 
 
+  copyS3:
+    handler: src.db_resize_handler.copy_s3
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    vpc: ${self:custom.vpc}
 
   enableTrigger:
     handler: src.db_resize_handler.enable_trigger
@@ -183,7 +191,7 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
-      GROW_THRESHOLD: 50
+      GROW_THRESHOLD: 20
       GROW_EVAL_TIME_IN_SECONDS: 300
 
       STAGE: ${self:provider.stage}
