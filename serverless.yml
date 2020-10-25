@@ -188,9 +188,12 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
     events:
-      - schedule:
-          rate: rate(1 hour)
-          enabled: true
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-low-cpu-alarm" ]
     vpc: ${self:custom.vpc}
 
   executeGrowMachine:
@@ -201,6 +204,13 @@ functions:
       GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-db-${self:provider.stage}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-high-cpu-alarm" ]
     vpc: ${self:custom.vpc}
 
   restoreDbCluster:
@@ -403,9 +413,8 @@ resources:
         AlarmDescription: Notify when the nwcapture rds cpu goes over the threshold
         Namespace: 'AWS/RDS'
         Dimensions:
-          - Name: FunctionName
-            Value:
-              Ref: ExecuteGrowMachineLambdaFunction
+          - Name: DbClusterIdentifier
+            Value: nwcapture-${self:custom.environments.${self:provider.stage}}
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
@@ -421,9 +430,8 @@ resources:
         AlarmDescription: Notify when the nwcapture rds cpu goes under the threshold
         Namespace: 'AWS/RDS'
         Dimensions:
-          - Name: FunctionName
-            Value:
-              Ref: ExecuteShrinkMachineLambdaFunction
+          - Name: DbInstanceIdentifier
+            Value: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: LessThanOrEqualToThreshold
