@@ -3,7 +3,7 @@ from unittest import TestCase, mock
 
 from src import db_resize_handler
 from src.db_resize_handler import SMALL_DB_SIZE, BIG_DB_SIZE, DEFAULT_DB_CLUSTER_IDENTIFIER
-from src.handler import TRIGGER, DEFAULT_DB_INSTANCE_IDENTIFIER
+from src.handler import DEFAULT_DB_INSTANCE_IDENTIFIER
 
 
 class TestDbResizeHandler(TestCase):

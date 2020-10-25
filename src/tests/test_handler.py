@@ -113,7 +113,8 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
     @mock.patch('src.handler.run_etl_query')
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_stop_observations_db_stop_quiet(self, mock_boto, mock_rds, mock_disable_lambda_trigger, mock_utils_stop_ob):
+    def test_stop_observations_db_stop_quiet(self, mock_boto, mock_rds, mock_disable_lambda_trigger,
+                                             mock_utils_stop_ob):
         mock_disable_lambda_trigger.return_value = True
         mock_utils_stop_ob.return_value = True
         mock_client = mock.Mock()
@@ -132,7 +133,8 @@ class TestHandler(TestCase):
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.enable_lambda_trigger', autospec=True)
-    def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_enable_lambda_trigger, mock_describe_db_clusters):
+    def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_enable_lambda_trigger,
+                                                                     mock_describe_db_clusters):
         mock_enable_lambda_trigger.return_value = True
         my_alarm = {
             "detail": {
@@ -155,7 +157,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.enable_lambda_trigger', autospec=True)
     def test_control_db_utilization_dont_enable_lambda_trigger_when_db_off(self, mock_enable_lambda_trigger,
-                                                                     mock_describe_db_clusters):
+                                                                           mock_describe_db_clusters):
         mock_enable_lambda_trigger.return_value = True
         my_alarm = {
             "detail": {

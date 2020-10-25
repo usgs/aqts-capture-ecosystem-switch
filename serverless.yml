@@ -153,16 +153,6 @@ functions:
       STAGE: ${self:provider.stage}
     vpc: ${self:custom.vpc}
 
-
-  copyS3:
-    handler: src.db_resize_handler.copy_s3
-    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      LOG_LEVEL: INFO
-      STAGE: ${self:provider.stage}
-    vpc: ${self:custom.vpc}
-
   enableTrigger:
     handler: src.db_resize_handler.enable_trigger
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
@@ -172,7 +162,7 @@ functions:
       STAGE: ${self:provider.stage}
     vpc: ${self:custom.vpc}
 
-  # The SHRINK_EVAL_TIME_IN_SECONDS should match the schedule
+  # The SHRINK_EVAL_TIME_IN_SECONDS should match the schedule in execute_shrink_machine
   # The SHRINK_THRESHOLD is the percentage of cpu utilization
   shrinkDb:
     handler: src.db_resize_handler.shrink_db
@@ -180,20 +170,18 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
-      SHRINK_THRESHOLD: 10
+      SHRINK_THRESHOLD: 5
       SHRINK_EVAL_TIME_IN_SECONDS: 3600
       STAGE: ${self:provider.stage}
     vpc: ${self:custom.vpc}
 
+  # The GROW_THRESHOLD is the percentage of cpu utilization
   growDb:
     handler: src.db_resize_handler.grow_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
-      GROW_THRESHOLD: 20
-      GROW_EVAL_TIME_IN_SECONDS: 300
-
       STAGE: ${self:provider.stage}
 
   executeShrinkMachine:
@@ -218,13 +206,6 @@ functions:
       GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-db-${self:provider.stage}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-    events:
-      - cloudwatchEvent:
-          event:
-            source:
-              - 'aws.cloudwatch'
-            detail:
-              alarmName: [ "aqts-capture-raw-load-${self:provider.stage}-concurrency-alarm" ]
     vpc: ${self:custom.vpc}
 
   restoreDbCluster:
@@ -420,6 +401,25 @@ resources:
         EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic
+    rdsCpuAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-cpu-alarm
+        AlarmDescription: Notify when the nwcapture rds cpu goes over the threshold
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: FunctionName
+            Value:
+              Ref: ExecuteGrowMachineLambdaFunction
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Threshold: 10
+        Period: 60
+        EvaluationPeriods: 5
+        AlarmActions:
+          - Ref: snsTopic
+
 
 plugins:
   - serverless-plugin-git-variables

@@ -80,20 +80,22 @@ def shrink_db(event, context):
 
 def grow_db(event, context):
     logger.info(event)
-    threshold = int(os.environ['GROW_THRESHOLD'])
-    grow_eval_time = int(os.environ['GROW_EVAL_TIME_IN_SECONDS'])
-    period = grow_eval_time
-    total_time = grow_eval_time
-    cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
-    time_to_grow = True
-    values = cpu_util['MetricDataResults'][0]['Values']
-    for value in values:
-        if value < threshold:
-            time_to_grow = False
-    if time_to_grow:
-        logger.info(f"It's time to grow the db {values}")
-    else:
-        raise Exception(f"Cannot grow the db because it is too quiet {values}")
+    # This is for cron based mechanism. If using alarm, not needed
+    # threshold = int(os.environ['GROW_THRESHOLD'])
+    # grow_eval_time = int(os.environ['GROW_EVAL_TIME_IN_SECONDS'])
+    # period = grow_eval_time
+    # total_time = grow_eval_time
+    # cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
+    # time_to_grow = True
+    # values = cpu_util['MetricDataResults'][0]['Values']
+    # for value in values:
+    #     if value < threshold:
+    #         time_to_grow = False
+    # if time_to_grow:
+    #     logger.info(f"It's time to grow the db {values}")
+    # else:
+    #     raise Exception(f"Cannot grow the db because it is too quiet {values}")
+
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == BIG_DB_SIZE:
@@ -175,22 +177,3 @@ def _execute_state_machine(state_machine_arn, invocation_payload, region='us-wes
         input=invocation_payload
     )
     return resp
-
-
-def copy_s3(event, context):
-    logger.info(event)
-    s3_client = boto3.client('s3', os.getenv('AWS_DEPLOYMENT_REGION'))
-    resp = s3_client.list_objects_v2(Bucket='iow-retriever-capture-test')
-    keys = []
-    for obj in resp['Contents']:
-        keys.append(obj['Key'])
-
-    s3_resource = boto3.resource('s3')
-    for key in keys:
-        copy_source = {
-            'Bucket': 'iow-retriever-capture-test',
-            'Key': key
-        }
-        logger.info(f"key = {key}")
-        bucket = s3_resource.Bucket('iow-retriever-capture-qa')
-        bucket.copy(copy_source, key)
