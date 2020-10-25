@@ -419,9 +419,9 @@ resources:
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
         Threshold: 50
-        Period: 60
-        Unit: Seconds
-        EvaluationPeriods: 5
+        Period: 300
+        Unit: Percent
+        EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic
     rdsLowCpuAlarm:
@@ -438,7 +438,7 @@ resources:
         ComparisonOperator: LessThanOrEqualToThreshold
         Threshold: 10
         Period: 300
-        Unit: Seconds
+        Unit: Percent
         EvaluationPeriods: 6
         AlarmActions:
           - Ref: snsTopic
