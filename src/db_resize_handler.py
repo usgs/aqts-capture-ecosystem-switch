@@ -45,22 +45,6 @@ def enable_trigger(event, context):
 
 def shrink_db(event, context):
     logger.info(event)
-    # for cron based
-    # threshold = int(os.environ['SHRINK_THRESHOLD'])
-    # shrink_eval_time = int(os.environ['SHRINK_EVAL_TIME_IN_SECONDS'])
-    # period = shrink_eval_time
-    # total_time = shrink_eval_time
-    # cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
-    # logger.info(f"shrink db cpu_util = {cpu_util}")
-    # time_to_shrink = True
-    # values = cpu_util['MetricDataResults'][0]['Values']
-    # for value in values:
-    #     if value > threshold:
-    #         time_to_shrink = False
-    # if time_to_shrink:
-    #     logger.info(f"It's time to shrink the db {values}")
-    # else:
-    #     raise Exception(f"Cannot shrink the db because it is too active {values}")
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == SMALL_DB_SIZE:
@@ -81,21 +65,6 @@ def shrink_db(event, context):
 
 def grow_db(event, context):
     logger.info(event)
-    # This is for cron based mechanism. If using alarm, not needed
-    # threshold = int(os.environ['GROW_THRESHOLD'])
-    # grow_eval_time = int(os.environ['GROW_EVAL_TIME_IN_SECONDS'])
-    # period = grow_eval_time
-    # total_time = grow_eval_time
-    # cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
-    # time_to_grow = True
-    # values = cpu_util['MetricDataResults'][0]['Values']
-    # for value in values:
-    #     if value < threshold:
-    #         time_to_grow = False
-    # if time_to_grow:
-    #     logger.info(f"It's time to grow the db {values}")
-    # else:
-    #     raise Exception(f"Cannot grow the db because it is too quiet {values}")
 
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])

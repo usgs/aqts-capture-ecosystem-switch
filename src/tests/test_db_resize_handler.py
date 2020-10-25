@@ -107,6 +107,17 @@ class TestDbResizeHandler(TestCase):
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_shrink_db_already_shrunk(self, mock_utils, mock_rds, mock_cpu_util):
+        os.environ['STAGE'] = 'TEST'
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": SMALL_DB_SIZE}]}
+        mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [0.0]}]}
+        db_resize_handler.shrink_db({}, {})
+        mock_rds.modify_db_instance.assert_not_called()
+
+    @mock.patch('src.db_resize_handler._get_cpu_utilization')
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
     def test_grow_db_okay(self, mock_utils, mock_rds, mock_cpu_util):
         os.environ['STAGE'] = 'TEST'
         os.environ['GROW_THRESHOLD'] = '75'
@@ -208,6 +219,34 @@ class TestDbResizeHandler(TestCase):
     def test_execute_shrink_machine_no_arn(self):
         with self.assertRaises(KeyError) as context:
             db_resize_handler.execute_shrink_machine({}, {})
+
+    @mock.patch('src.db_resize_handler._get_cpu_utilization')
+    @mock.patch('src.db_resize_handler.boto3', autospec=True)
+    def test_execute_shrink_machine_alarm_needs_to_shrink(self, mock_boto3, mock_cpu_util):
+        os.environ['SHRINK_STATE_MACHINE_ARN'] = 'arn'
+        mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [4.0]}]}
+        alarm_event = {
+            "detail": {
+                "state": {
+                    "value": "ALARM"
+                }
+            }
+        }
+        result = db_resize_handler.execute_shrink_machine(alarm_event, {})
+        assert result is True
+
+    @mock.patch('src.db_resize_handler.boto3', autospec=True)
+    def test_execute_shrink_machine_not_alarm(self, mock_boto3):
+        os.environ['SHRINK_STATE_MACHINE_ARN'] = 'arn'
+        alarm_event = {
+            "detail": {
+                "state": {
+                    "value": "INSUFFICIENT DATA"
+                }
+            }
+        }
+        result = db_resize_handler.execute_shrink_machine(alarm_event, {})
+        assert result is False
 
     @mock.patch('src.db_resize_handler.rds_client')
     def test_is_cluster_available_no(self, mock_rds):
