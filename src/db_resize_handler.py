@@ -45,21 +45,22 @@ def enable_trigger(event, context):
 
 def shrink_db(event, context):
     logger.info(event)
-    threshold = int(os.environ['SHRINK_THRESHOLD'])
-    shrink_eval_time = int(os.environ['SHRINK_EVAL_TIME_IN_SECONDS'])
-    period = shrink_eval_time
-    total_time = shrink_eval_time
-    cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
-    logger.info(f"shrink db cpu_util = {cpu_util}")
-    time_to_shrink = True
-    values = cpu_util['MetricDataResults'][0]['Values']
-    for value in values:
-        if value > threshold:
-            time_to_shrink = False
-    if time_to_shrink:
-        logger.info(f"It's time to shrink the db {values}")
-    else:
-        raise Exception(f"Cannot shrink the db because it is too active {values}")
+    # for cron based
+    # threshold = int(os.environ['SHRINK_THRESHOLD'])
+    # shrink_eval_time = int(os.environ['SHRINK_EVAL_TIME_IN_SECONDS'])
+    # period = shrink_eval_time
+    # total_time = shrink_eval_time
+    # cpu_util = _get_cpu_utilization(DEFAULT_DB_INSTANCE_IDENTIFIER, period, total_time)
+    # logger.info(f"shrink db cpu_util = {cpu_util}")
+    # time_to_shrink = True
+    # values = cpu_util['MetricDataResults'][0]['Values']
+    # for value in values:
+    #     if value > threshold:
+    #         time_to_shrink = False
+    # if time_to_shrink:
+    #     logger.info(f"It's time to shrink the db {values}")
+    # else:
+    #     raise Exception(f"Cannot shrink the db because it is too active {values}")
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == SMALL_DB_SIZE:
@@ -116,7 +117,11 @@ def grow_db(event, context):
 def execute_shrink_machine(event, context):
     arn = os.environ['SHRINK_STATE_MACHINE_ARN']
     payload = {}
-    return _execute_state_machine(arn, json.dumps(payload))
+    alarm_state = event["detail"]["state"]["value"]
+    if alarm_state == "ALARM":
+        _execute_state_machine(arn, json.dumps(payload))
+        return True
+    return False
 
 
 def execute_grow_machine(event, context):

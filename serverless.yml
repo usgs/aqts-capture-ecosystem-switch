@@ -162,20 +162,15 @@ functions:
       STAGE: ${self:provider.stage}
     vpc: ${self:custom.vpc}
 
-  # The SHRINK_EVAL_TIME_IN_SECONDS should match the schedule in execute_shrink_machine
-  # The SHRINK_THRESHOLD is the percentage of cpu utilization
   shrinkDb:
     handler: src.db_resize_handler.shrink_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
-      SHRINK_THRESHOLD: 5
-      SHRINK_EVAL_TIME_IN_SECONDS: 3600
       STAGE: ${self:provider.stage}
     vpc: ${self:custom.vpc}
 
-  # The GROW_THRESHOLD is the percentage of cpu utilization
   growDb:
     handler: src.db_resize_handler.grow_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
@@ -401,10 +396,10 @@ resources:
         EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic
-    rdsCpuAlarm:
+    rdsHighCpuAlarm:
       Type: AWS::CloudWatch::Alarm
       Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-cpu-alarm
+        AlarmName: ${self:service}-${self:provider.stage}-high-cpu-alarm
         AlarmDescription: Notify when the nwcapture rds cpu goes over the threshold
         Namespace: 'AWS/RDS'
         Dimensions:
@@ -414,9 +409,27 @@ resources:
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
-        Threshold: 10
+        Threshold: 50
         Period: 60
         EvaluationPeriods: 5
+        AlarmActions:
+          - Ref: snsTopic
+    rdsLowCpuAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-high-cpu-alarm
+        AlarmDescription: Notify when the nwcapture rds cpu goes over the threshold
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: FunctionName
+            Value:
+              Ref: ExecuteShrinkMachineLambdaFunction
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Threshold: 10
+        Period: 300
+        EvaluationPeriods: 6
         AlarmActions:
           - Ref: snsTopic
 
