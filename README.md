@@ -4,22 +4,30 @@
 
 AWS Lambda functions designed to turn off resources when not in use.
 
-## The nwcapture-test database
+## Stopping and starting the nwcapture dbs
 
-Is scheduled to turn on at 7 am and off at 6 pm, Monday through Friday central time.
+Invoke the relevant lambda function (for example, aqts-capture-ecosystem-switch-QA-StopCaptureDb) using any json payload.
 
-If you need to turn it on manually, use the StartCaptureDb lambda method.  If you need to turn it off, use the 
-StopCaptureDb lamba.
+## Stopping and starting the observation dbs
 
-## The nwcapture-qa database
+Invoke the relevant lambda function, but note that shutdown for the observation db is advice and not a command.  If the
+observation db is running an etl job, it will not shut down.
 
-If you need the nwcapture-qa database, you need to create it by running the 
-aqts-capture-ecosystem-switch-create-db-QA state machine.  
+## Creating the nwcapture-qa db
 
-When you are finished, you need to delete it with the DeleteCaptureDb lambda function manually.
+The nwcapture is created when needed.  Invoke the state machine aqts-capture-ecosystem-switch-create-db-QA and be 
+prepared to wait up to two hours.
 
-Note that creating the aurora cluster takes up to two hours.
+## Deleting the nwcapture-qa db
 
+When you are finished with the nwcapture-qa db, you should delete it.  Invoke the lambda function 
+aqts-capture-ecosystem-switch-deleteCaptureDb-QA
+
+## Resizing the nwcapture-qa db
+
+Don't attempt to run resize commands manually.  The current behavior is to increase the size of the db to the 
+maximum of db.r5.8xlarge after five minutes of being at more than 75% cpu utilization (via CloudWatch alarm).
+And to decrease the size of the db after one hour of cpu utilization less than 10% (via a cron job).
 
 ## What if I need to prevent automatic shutdown of nwcapture-test for a long running test?
 

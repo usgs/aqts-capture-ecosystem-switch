@@ -13,4 +13,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add (disabled) on/off schedule for PROD so ecosystem switch can be deployed to PROD
 - Add SNS top for ControlDbUtilization lambda function
 - Add create/delete functionality for nwcapture-qa
+- Add shrink db/grow db functionality based on CloudWatch high cpu and low cpu alarms (QA tier only)
 

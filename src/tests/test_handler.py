@@ -3,6 +3,7 @@ import os
 from unittest import TestCase, mock
 
 from src import handler
+from src.db_resize_handler import BIG_DB_SIZE
 from src.handler import TRIGGER, STAGES, DB, run_etl_query, DEFAULT_DB_INSTANCE_IDENTIFIER, \
     DEFAULT_DB_CLUSTER_IDENTIFIER
 
@@ -58,10 +59,10 @@ class TestHandler(TestCase):
             handler.start_capture_db(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.disable_triggers', autospec=True)
+    @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_stop_capture_db_nothing_to_stop(self, mock_boto, mock_disable_triggers):
-        mock_disable_triggers.return_value = True
+    def test_stop_capture_db_nothing_to_stop(self, mock_boto, mock_disable_lambda_trigger):
+        mock_disable_lambda_trigger.return_value = True
 
         for stage in STAGES:
             os.environ['STAGE'] = stage
@@ -89,12 +90,13 @@ class TestHandler(TestCase):
             handler.stop_observations_db(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
+    @mock.patch('src.handler.rds_client')
     @mock.patch('src.handler.run_etl_query')
     @mock.patch('src.handler.boto3.client', autospec=True)
-    def test_start_observations_db(self, mock_boto, mock_rds):
+    def test_start_observations_db(self, mock_boto, mock_etl, mock_rds):
         client = mock.Mock()
         mock_boto.return_value = client
-        mock_rds.return_value = False
+        mock_etl.return_value = False
         client.start_db_instance.return_value = True
         for stage in STAGES:
             os.environ['STAGE'] = stage
@@ -108,11 +110,12 @@ class TestHandler(TestCase):
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.stop_observations_db_instance')
-    @mock.patch('src.handler.disable_triggers', autospec=True)
+    @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
     @mock.patch('src.handler.run_etl_query')
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_stop_observations_db_stop_quiet(self, mock_boto, mock_rds, mock_disable_triggers, mock_utils_stop_ob):
-        mock_disable_triggers.return_value = True
+    def test_stop_observations_db_stop_quiet(self, mock_boto, mock_rds, mock_disable_lambda_trigger,
+                                             mock_utils_stop_ob):
+        mock_disable_lambda_trigger.return_value = True
         mock_utils_stop_ob.return_value = True
         mock_client = mock.Mock()
         mock_boto.return_value = mock_client
@@ -129,9 +132,10 @@ class TestHandler(TestCase):
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.enable_triggers', autospec=True)
-    def test_control_db_utilization_enable_triggers_when_db_on(self, mock_enable_triggers, mock_describe_db_clusters):
-        mock_enable_triggers.return_value = True
+    @mock.patch('src.handler.enable_lambda_trigger', autospec=True)
+    def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_enable_lambda_trigger,
+                                                                     mock_describe_db_clusters):
+        mock_enable_lambda_trigger.return_value = True
         my_alarm = {
             "detail": {
                 "state": {
@@ -143,7 +147,7 @@ class TestHandler(TestCase):
             os.environ['STAGE'] = stage
             mock_describe_db_clusters.return_value = DB[stage]
             handler.control_db_utilization(my_alarm, self.context)
-            mock_enable_triggers.assert_called_with(TRIGGER[stage])
+            mock_enable_lambda_trigger.assert_called_with(TRIGGER[stage])
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
@@ -151,10 +155,10 @@ class TestHandler(TestCase):
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.enable_triggers', autospec=True)
-    def test_control_db_utilization_dont_enable_triggers_when_db_off(self, mock_enable_triggers,
-                                                                     mock_describe_db_clusters):
-        mock_enable_triggers.return_value = True
+    @mock.patch('src.handler.enable_lambda_trigger', autospec=True)
+    def test_control_db_utilization_dont_enable_lambda_trigger_when_db_off(self, mock_enable_lambda_trigger,
+                                                                           mock_describe_db_clusters):
+        mock_enable_lambda_trigger.return_value = True
         my_alarm = {
             "detail": {
                 "state": {
@@ -166,16 +170,16 @@ class TestHandler(TestCase):
             os.environ['STAGE'] = stage
             mock_describe_db_clusters.return_value = "SomebodyElsesDb"
             handler.control_db_utilization(my_alarm, self.context)
-            mock_enable_triggers.assert_not_called()
+            mock_enable_lambda_trigger.assert_not_called()
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.disable_triggers', autospec=True)
-    def test_control_db_utilization_disable(self, mock_disable_triggers):
-        mock_disable_triggers.return_value = True
+    @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
+    def test_control_db_utilization_disable(self, mock_disable_lambda_trigger):
+        mock_disable_lambda_trigger.return_value = True
         my_alarm = {
             "detail": {
                 "state": {
@@ -186,17 +190,17 @@ class TestHandler(TestCase):
         for stage in STAGES:
             os.environ['STAGE'] = stage
             handler.control_db_utilization(my_alarm, self.context)
-            mock_disable_triggers.assert_called_with(TRIGGER[stage])
+            mock_disable_lambda_trigger.assert_called_with(TRIGGER[stage])
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
 
-    @mock.patch('src.handler.disable_triggers', autospec=True)
+    @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
     @mock.patch('src.handler.run_etl_query')
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_stop_observations_test_db_stop_quiet(self, mock_boto, mock_rds, mock_disable_triggers):
-        mock_disable_triggers.return_value = True
+    def test_stop_observations_test_db_stop_quiet(self, mock_boto, mock_rds, mock_disable_lambda_trigger):
+        mock_disable_lambda_trigger.return_value = True
         mock_client = mock.Mock()
         mock_boto.return_value = mock_client
         mock_rds.return_value = True
@@ -206,10 +210,10 @@ class TestHandler(TestCase):
         assert result['message'] == 'Stopped the TEST observations db.'
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.enable_triggers', autospec=True)
+    @mock.patch('src.handler.enable_lambda_trigger', autospec=True)
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_start_capture_db_something_to_start(self, mock_boto, mock_enable_triggers):
-        mock_enable_triggers.return_value = True
+    def test_start_capture_db_something_to_start(self, mock_boto, mock_enable_lambda_trigger):
+        mock_enable_lambda_trigger.return_value = True
         mock_client = mock.Mock()
         mock_boto.return_value = mock_client
         my_mock_db_clusters = self.mock_db_clusters
@@ -229,8 +233,7 @@ class TestHandler(TestCase):
         with self.assertRaises(Exception) as context:
             handler.start_capture_db(self.initial_event, self.context)
 
-
-    @mock.patch('src.handler.disable_triggers', autospec=True)
+    @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
     @mock.patch('src.handler.rds_client')
     def test_delete_capture_db(self, mock_rds, mock_triggers):
         os.environ['STAGE'] = 'QA'
@@ -250,7 +253,7 @@ class TestHandler(TestCase):
 
         mock_rds.create_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
-            DBInstanceClass='db.r5.8xlarge',
+            DBInstanceClass=BIG_DB_SIZE,
             DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             Engine='aurora-postgresql',
             Tags=[
@@ -272,6 +275,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.secrets_client')
     @mock.patch('src.handler.rds_client')
     def test_modify_postgres_password(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'QA'
         my_secret_string = json.dumps(
             {
                 "POSTGRES_PASSWORD": "Password123"
@@ -321,7 +325,7 @@ class TestHandler(TestCase):
             KmsKeyId='kms',
             VpcSecurityGroupIds=['vpc_id'],
 
-            Tags=[{'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-None'},
+            Tags=[{'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
                   {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
                   {'Key': 'wma:contact', 'Value': 'tbd'},
                   {'Key': 'wma:costCenter', 'Value': 'tbd'},
@@ -336,8 +340,7 @@ class TestHandler(TestCase):
 
         )
 
-
-    @mock.patch('src.handler.enable_triggers', autospec=True)
+    @mock.patch('src.handler.enable_lambda_trigger', autospec=True)
     @mock.patch('src.handler.RDS', autospec=True)
     @mock.patch('src.handler.sqs_client')
     @mock.patch('src.handler.secrets_client')
@@ -379,10 +382,10 @@ class TestHandler(TestCase):
         assert result is True
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.disable_triggers', autospec=True)
+    @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
     @mock.patch('src.utils.boto3.client', autospec=True)
-    def test_stop_capture_db_something_to_stop(self, mock_boto, mock_disable_triggers):
-        mock_disable_triggers.return_value = True
+    def test_stop_capture_db_something_to_stop(self, mock_boto, mock_disable_lambda_trigger):
+        mock_disable_lambda_trigger.return_value = True
         mock_client = mock.Mock()
         my_mock_db_clusters = self.mock_db_clusters
         mock_client.describe_db_clusters.return_value = my_mock_db_clusters

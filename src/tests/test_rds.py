@@ -24,6 +24,19 @@ class TestRDS(TestCase):
             connect_timeout=65
         )
 
+    @mock.patch('src.rds.connect')
+    def test_db_disconnect(self, mock_connection):
+        mock_connection.return_value.cursor.return_value = mock.Mock()
+        rds = RDS(self.host, self.user, self.database, self.password)
+        mock_connection.assert_called_with(
+            host='some-host',
+            database='some-database',
+            user='some-user',
+            password='some-password',
+            connect_timeout=65
+        )
+        rds.disconnect()
+
 
 if __name__ == '__main__':
     unittest.main()

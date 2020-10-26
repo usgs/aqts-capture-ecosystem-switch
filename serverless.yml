@@ -6,7 +6,7 @@ provider:
   stage: ${opt:stage, 'TEST'}
   runtime: python3.8
   memorySize: 128
-  timeout: 90
+  timeout: 300
   logRetentionInDays: 90
   deploymentBucket:
     name: ${opt:bucket, iow-cloud-applications}
@@ -28,6 +28,11 @@ custom:
   # The test database starts at 7 am central and stops at 6 pm central time, Monday through Friday.
   # The qa database stops at 6 pm central on Fridays
   # The production database never stops or starts according to a schedule, the lambdas exist only for manual use.
+  environments:
+    DEV: dev
+    TEST: test
+    QA: qa
+    PROD: prod
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
@@ -139,6 +144,75 @@ functions:
               alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
     vpc: ${self:custom.vpc}
 
+  disableTrigger:
+    handler: src.db_resize_handler.disable_trigger
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    vpc: ${self:custom.vpc}
+
+  enableTrigger:
+    handler: src.db_resize_handler.enable_trigger
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    vpc: ${self:custom.vpc}
+
+  shrinkDb:
+    handler: src.db_resize_handler.shrink_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    vpc: ${self:custom.vpc}
+
+  growDb:
+    handler: src.db_resize_handler.grow_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+
+  executeShrinkMachine:
+    handler: src.db_resize_handler.execute_shrink_machine
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      SHRINK_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-shrink-db-${self:provider.stage}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-low-cpu-alarm" ]
+    vpc: ${self:custom.vpc}
+
+  executeGrowMachine:
+    handler: src.db_resize_handler.execute_grow_machine
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-db-${self:provider.stage}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-high-cpu-alarm" ]
+    vpc: ${self:custom.vpc}
+
   restoreDbCluster:
     handler: src.handler.restore_db_cluster
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
@@ -184,7 +258,6 @@ functions:
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
-
 stepFunctions:
   stateMachines:
     aqtsCreateCaptureDb:
@@ -229,12 +302,82 @@ stepFunctions:
           ModifySchemaOwnerPassword:
             Type: Task
             Resource:
-              Fn::GetAtt: [modifySchemaOwnerPassword, Arn]
+              Fn::GetAtt: [ modifySchemaOwnerPassword, Arn ]
             Retry:
               - ErrorEquals:
                   - States.ALL
-                IntervalSeconds: 600
-                MaxAttempts: 12
+                IntervalSeconds: 60
+                MaxAttempts: 30
+                BackoffRate: 1
+            End: true
+
+    aqtsShrinkDb:
+      loggingConfig:
+        level: ALL
+        includeExecutionData: true
+        destinations:
+          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      name: aqts-ecosystem-switch-shrink-db-${self:provider.stage}
+      definition:
+        Comment: "AQTS Shrink Db"
+        StartAt: ShrinkDb
+        States:
+          ShrinkDb:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [shrinkDb, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
+                BackoffRate: 1
+            Next: EnableTrigger
+          EnableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [enableTrigger, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
+                BackoffRate: 1
+            End: true
+
+    aqtsGrowDb:
+      loggingConfig:
+        level: ALL
+        includeExecutionData: true
+        destinations:
+          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      name: aqts-ecosystem-switch-grow-db-${self:provider.stage}
+      definition:
+        Comment: "AQTS Grow Db"
+        StartAt: GrowDb
+        States:
+          GrowDb:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ growDb, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
+                BackoffRate: 1
+            Next: EnableTrigger
+          EnableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ enableTrigger, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
                 BackoffRate: 1
             End: true
 
@@ -263,6 +406,43 @@ resources:
         EvaluationPeriods: 1
         AlarmActions:
           - Ref: snsTopic
+    rdsHighCpuAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-high-cpu-alarm
+        AlarmDescription: Notify when the nwcapture rds cpu goes over the threshold
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Threshold: 50
+        Period: 300
+        Unit: Percent
+        EvaluationPeriods: 1
+        AlarmActions:
+          - Ref: snsTopic
+    rdsLowCpuAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-low-cpu-alarm
+        AlarmDescription: Notify when the nwcapture rds cpu goes under the threshold
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Threshold: 10
+        Period: 300
+        Unit: Percent
+        EvaluationPeriods: 6
+        AlarmActions:
+          - Ref: snsTopic
+
 
 plugins:
   - serverless-plugin-git-variables

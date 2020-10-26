@@ -1,7 +1,6 @@
 from psycopg2 import connect
 from psycopg2 import OperationalError, DataError, IntegrityError
 
-
 # allows for logging information
 import logging
 

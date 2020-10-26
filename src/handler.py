@@ -4,8 +4,8 @@ import os
 
 import boto3
 from src.rds import RDS
-from src.utils import enable_triggers, describe_db_clusters, start_db_cluster, disable_triggers, stop_db_cluster, \
-    purge_queue, stop_observations_db_instance
+from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, stop_db_cluster, \
+    purge_queue, stop_observations_db_instance, DEFAULT_DB_INSTANCE_CLASS
 import logging
 
 STAGES = ['TEST', 'QA', 'PROD']
@@ -39,7 +39,6 @@ ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
 DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
 DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
-DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
 ENGINE = 'aurora-postgresql'
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
@@ -47,7 +46,7 @@ log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
 
-STAGE = os.getenv('STAGE')
+STAGE = os.getenv('STAGE', 'TEST')
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 secrets_client = boto3.client('secretsmanager', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
@@ -70,6 +69,10 @@ def _get_etl_start():
 etl_start = _get_etl_start()
 OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
     "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED') and start_time > %s"
+
+"""
+DB stop and start functions
+"""
 
 
 def start_capture_db(event, context):
@@ -117,7 +120,6 @@ def start_observations_db(event, context):
     stage = os.getenv('STAGE')
     if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
-    rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
     rds_client.start_db_instance(DBInstanceIdentifier=OBSERVATIONS_DB[stage])
     return {
         'statusCode': 200,
@@ -140,7 +142,7 @@ def control_db_utilization(event, context):
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     if alarm_state == "ALARM":
         logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
-        disable_triggers(TRIGGER[stage])
+        disable_lambda_trigger(TRIGGER[stage])
     elif alarm_state == "OK":
         """
         We do NOT want to enable the trigger if the db is not up and running.
@@ -148,7 +150,7 @@ def control_db_utilization(event, context):
         active_dbs = describe_db_clusters('stop')
         if DB[stage] in active_dbs:
             logger.info(f"Enabling trigger {TRIGGER[stage]} for {DB[stage]} because error handler is okay")
-            enable_triggers(TRIGGER[stage])
+            enable_lambda_trigger(TRIGGER[stage])
 
 
 def run_etl_query(rds=None):
@@ -161,12 +163,7 @@ def run_etl_query(rds=None):
     shut the db down anyway.
     """
     if rds is None:
-        # TODO db host, db user, db address, db password ... get from secrets
-        db_host = os.environ['DB_HOST']
-        db_user = os.environ['DB_USER']
-        db_name = os.environ['DB_NAME']
-        db_password = os.environ['DB_PASSWORD']
-        rds = RDS(db_host, db_user, db_name, db_password)
+        rds = RDS(os.getenv('DB_HOST'), os.getenv('DB_USER'), os.getenv('DB_NAME'), os.getenv('DB_PASSWORD'))
     result = rds.execute_sql(OBSERVATIONS_ETL_IN_PROGRESS_SQL, (etl_start,))
     if result[0] > 0:
         logger.debug(f"Cannot shutdown down observations db because {result[0]} processes are running")
@@ -186,19 +183,24 @@ def _start_db(db, triggers, queue_name):
         if cluster_identifier == db:
             start_db_cluster(db)
             started = True
-            enable_triggers(triggers)
+            enable_lambda_trigger(triggers)
     return started
 
 
 def _stop_db(db, triggers):
     cluster_identifiers = describe_db_clusters("stop")
     stopped = False
-    disable_triggers(triggers)
+    disable_lambda_trigger(triggers)
     for cluster_identifier in cluster_identifiers:
         if cluster_identifier == db:
             stop_db_cluster(db)
             stopped = True
     return stopped
+
+
+"""
+DB create and delete functions
+"""
 
 
 def modify_postgres_password(event, context):
@@ -227,7 +229,7 @@ def delete_capture_db(event, context):
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             SkipFinalSnapshot=True
         )
-    except rds_client.exceptions.DBInstanceNotFoundFault as e:
+    except rds_client.exceptions.DBInstanceNotFoundFault:
         """
         We could be in a messed up state where the instance doesn't exist but the cluster does,
         due to vagaries of how long AWS takes to set up a cluster, so proceed
@@ -237,7 +239,7 @@ def delete_capture_db(event, context):
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SkipFinalSnapshot=True
     )
-    disable_triggers(TRIGGER[os.environ['STAGE']])
+    disable_lambda_trigger(TRIGGER[os.environ['STAGE']])
 
 
 def create_db_instance(event, context):
@@ -309,7 +311,7 @@ def restore_db_cluster(event, context):
             {'Key': 'wma:costCenter', 'Value': 'tbd'},
             {'Key': 'wma:criticality', 'Value': 'tbd'},
             {'Key': 'wma:environment', 'Value': 'qa'},
-            {'Key': 'wma:operationalHours','Value': 'tbd'},
+            {'Key': 'wma:operationalHours', 'Value': 'tbd'},
             {'Key': 'wma:organization', 'Value': 'IOW'},
             {'Key': 'wma:role', 'Value': 'database'},
             {'Key': 'wma:system', 'Value': 'NWIS'},
@@ -350,7 +352,7 @@ def modify_schema_owner_password(event, context):
     queue_info = sqs_client.get_queue_url(QueueName=ERROR_QUEUE)
     sqs_client.purge_queue(QueueUrl=queue_info['QueueUrl'])
 
-    enable_triggers(TRIGGER[os.environ['STAGE']])
+    enable_lambda_trigger(TRIGGER[os.environ['STAGE']])
 
 
 def get_snapshot_identifier():
@@ -362,6 +364,11 @@ def get_snapshot_identifier():
     if len(day) == 1:
         day = f"0{day}"
     return f"rds:nwcapture-prod-external-{two_days_ago.year}-{month}-{day}-10-08"
+
+
+"""
+Miscellaneous functions
+"""
 
 
 def _validate():
