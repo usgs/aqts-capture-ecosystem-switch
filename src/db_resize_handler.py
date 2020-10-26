@@ -50,7 +50,6 @@ def shrink_db(event, context):
     if db_instance_class == SMALL_DB_SIZE:
         logger.info(f"Cannot shrink the db because it already shrank")
     elif not _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
-        print("throwing exception because db not available")
         raise Exception("Cluster is not available")
     else:
         logger.info("Disabling the trigger!")
@@ -130,9 +129,10 @@ def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):
 
 
 def _validate():
-    if os.environ['STAGE'] != "QA":
-        raise Exception("This lambda is currently only supported on the QA tier")
-
+    """
+    If we are limiting resize functionality to specific tiers for any reason do it here.
+    """
+    return True
 
 def _is_cluster_available(cluster_id):
     response = rds_client.describe_db_clusters()

@@ -73,8 +73,6 @@ class TestDbResizeHandler(TestCase):
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')
     def test_shrink_db_not_available(self, mock_trigger, mock_rds, mock_cpu_util):
         os.environ['STAGE'] = 'TEST'
-        os.environ['SHRINK_THRESHOLD'] = '10'
-        os.environ['SHRINK_EVAL_TIME_IN_SECONDS'] = '3600'
         mock_trigger.return_value = True
         mock_cpu_util.return_value = {'MetricDataResults': [{'Values': [0.0]}]}
         mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": BIG_DB_SIZE}]}
@@ -176,11 +174,6 @@ class TestDbResizeHandler(TestCase):
         os.environ['STAGE'] = 'QA'
         db_resize_handler._validate()
         # If no exception is thrown, we passed
-
-    def test_validate_not_okay(self):
-        os.environ['STAGE'] = 'TEST'
-        with self.assertRaises(Exception) as context:
-            db_resize_handler._validate()
 
     def test_execute_grow_machine_no_arn(self):
         with self.assertRaises(KeyError) as context:
