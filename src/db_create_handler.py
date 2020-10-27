@@ -348,41 +348,41 @@ def modify_observation_passwords(event, context):
     db_name = secret_string['DATABASE_NAME']
     postgres_password = secret_string['POSTGRES_PASSWORD']
 
-    password_list = [{
-        "username": secret_string['WQP_SCHEMA_OWNER_USERNAME'],
-        "password": secret_string['WQP_SCHEMA_OWNER_PASSWORD']
-    }, {
-        "username": secret_string['WQP_READ_ONLY_USERNAME'],
-        "password": secret_string['WQP_READ_ONLY_PASSWORD']
-    }, {
-        "username": secret_string['ARS_SCHEMA_OWNER_USERNAME'],
-        "password": secret_string['ARS_SCHEMA_OWNER_PASSWORD']
-    }, {
-        "username": secret_string['DB_OWNER_USERNAME'],
-        "password": secret_string['DB_OWNER_PASSWORD']
-    }, {
-        "username": secret_string['NWIS_SCHEMA_OWNER_USERNAME'],
-        "password": secret_string['NWIS_SCHEMA_OWNER_PASSWORD']
-    }, {
-        "username": secret_string['EPA_SCHEMA_OWNER_USERNAME'],
-        "password": secret_string['EPA_SCHEMA_OWNER_PASSWORD']
-    }, {
-        "username": secret_string['WDFN_DB_READ_ONLY_USERNAME'],
-        "password": secret_string['WDFN_DB_READ_ONLY_PASSWORD']
-    }]
-
     # TODO remove this when using real qa db
     db_host = db_host.replace("observations-qa", "observations-qa-exp")
 
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
     logger.info("got rds ok")
-    sql = "alter user %s with password %s"
-    count = 0
-    for item in password_list:
-        print(f"run item {item}")
-        count = count + 1
-        rds.alter_permissions(sql, (item['username'], item['password'],))
-    return count
+    pwd = secret_string['DB_OWNER_PASSWORD']
+    sql = "alter user wqp_core with password %s"
+    rds.alter_permissions(sql, (pwd,))
+    logger.info("changed wqp_core password")
+
+    pwd = secret_string['WQP_READ_ONLY_PASSWORD']
+    sql = "alter user wqp_user with password %s"
+    rds.alter_permissions(sql, (pwd,))
+    logger.info("changed wqp_user password")
+
+    pwd = secret_string['ARS_SCHEMA_OWNER_PASSWORD']
+    sql = "alter user ars_owner with password %s"
+    rds.alter_permissions(sql, (pwd,))
+    logger.info("changed ars_owner password")
+
+    pwd = secret_string['NWIS_SCHEMA_OWNER_PASSWORD']
+    sql = "alter user nwis_ws_star_owner with password %s"
+    rds.alter_permissions(sql, (pwd,))
+    logger.info("changed nwis_ws_star_owner password")
+
+    pwd = secret_string['EPA_SCHEMA_OWNER_PASSWORD']
+    sql = "alter user epa_owner with password %s"
+    rds.alter_permissions(sql, (pwd,))
+    logger.info("changed epa_owner password")
+
+    pwd = secret_string['WDFN_DB_READ_ONLY_PASSWORD']
+    sql = "alter user wdfn_user with password %s"
+    rds.alter_permissions(sql, (pwd,))
+    logger.info("changed wdfn_user password")
+    return True
 
 
 def _get_observation_snapshot_identifier():

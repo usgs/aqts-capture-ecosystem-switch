@@ -321,5 +321,5 @@ class TestDbCreateHandler(TestCase):
             "SecretString": my_secret_string
         }
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
-        count = db_create_handler.modify_observation_passwords({}, {})
-        self.assertEqual(7, count)
+        result = db_create_handler.modify_observation_passwords({}, {})
+        assert result is True
