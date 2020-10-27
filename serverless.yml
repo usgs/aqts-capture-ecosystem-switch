@@ -241,7 +241,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   createObservationDb:
-    handler: src.db_create_handler.create_observation_db_
+    handler: src.db_create_handler.create_observation_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
