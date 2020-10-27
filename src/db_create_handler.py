@@ -371,6 +371,9 @@ def modify_observation_passwords(event, context):
         "password": secret_string['WDFN_DB_READ_ONLY_PASSWORD']
     }]
 
+    # TODO remove this when using real qa db
+    db_host = db_host.replace("observations-qa", "observations-qa-exp")
+
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
     logger.info("got rds ok")
     sql = "alter user %s with password %s"
