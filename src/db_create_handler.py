@@ -42,6 +42,7 @@ DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
 DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
 ENGINE = 'aurora-postgresql'
 NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
+OBSERVATION_REAL = f"WQP-EXTERNAL-{STAGE}"
 
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -280,11 +281,102 @@ def create_observation_db(event, context):
     logger.info(response)
 
 
+def copy_observation_db_snapshot(event, context):
+    logger.info(event)
+
+    original = secrets_client.get_secret_value(
+        SecretId='WQP-EXTERNAL-QA'
+    )
+    secret_string = json.loads(original['SecretString'])
+    kms_key = str(secret_string['KMS_KEY_ID'])
+    subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
+    vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
+    if not kms_key or not subgroup_name or not vpc_security_group_id:
+        raise Exception(f"Missing db configuration data {secret_string}")
+    my_snapshot_identifier = _get_observation_snapshot_identifier()
+    if event is not None:
+        if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
+            my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
+    response = rds_client.copy_db_snapshot(
+        SourceDBSnapshotIdentifier=my_snapshot_identifier,
+        TargetDBSnapshotIdentifier=f"{my_snapshot_identifier}_copy",
+        KmsKeyId=kms_key
+    )
+    logger.info(response)
+
+
 def delete_observation_db(event, context):
     rds_client.delete_db_instance(
         DBInstanceIdentifier='observations-qa-exp',
         SkipFinalSnapshot=True
     )
+
+
+def delete_copied_observation_snapshot(event, context):
+    rds_client.delete_db_snapshot(
+        DBSnapshotIdentifier=f"{_get_observation_snapshot_identifier()}_copy",
+        SkipFinalSnapshot=True
+    )
+
+
+def modify_observation_postgres_password(event, context):
+    logger.info("enter modify postgres password")
+    logger.info(event)
+    original = secrets_client.get_secret_value(
+        SecretId=OBSERVATION_REAL,
+    )
+    secret_string = json.loads(original['SecretString'])
+    postgres_password = secret_string['POSTGRES_PASSWORD']
+
+    rds_client.modify_db_instance(
+        DBInstanceIdentifier='observations-qa-exp',
+        ApplyImmediately=True,
+        MasterUserPassword=postgres_password
+    )
+
+
+def modify_observation_passwords(event, context):
+    logger.info(event)
+    original = secrets_client.get_secret_value(
+        SecretId=OBSERVATION_REAL,
+    )
+    secret_string = json.loads(original['SecretString'])
+    db_host = secret_string['DATABASE_ADDRESS']
+    db_name = secret_string['DATABASE_NAME']
+    postgres_password = secret_string['POSTGRES_PASSWORD']
+
+    password_list = [{
+        "username": secret_string['WQP_SCHEMA_OWNER_USERNAME'],
+        "password": secret_string['WQP_SCHEMA_OWNER_PASSWORD']
+    }, {
+        "username": secret_string['WQP_READ_ONLY_USERNAME'],
+        "password": secret_string['WQP_READ_ONLY_PASSWORD']
+    }, {
+        "username": secret_string['ARS_SCHEMA_OWNER_USERNAME'],
+        "password": secret_string['ARS_SCHEMA_OWNER_PASSWORD']
+    }, {
+        "username": secret_string['DB_OWNER_USERNAME'],
+        "password": secret_string['DB_OWNER_PASSWORD']
+    }, {
+        "username": secret_string['NWIS_SCHEMA_OWNER_USERNAME'],
+        "password": secret_string['NWIS_SCHEMA_OWNER_PASSWORD']
+    }, {
+        "username": secret_string['EPA_SCHEMA_OWNER_USERNAME'],
+        "password": secret_string['EPA_SCHEMA_OWNER_PASSWORD']
+    }, {
+        "username": secret_string['WDFN_DB_READ_ONLY_USERNAME'],
+        "password": secret_string['WDFN_DB_READ_ONLY_PASSWORD']
+    }]
+
+    rds = RDS(db_host, 'postgres', db_name, postgres_password)
+    logger.info("got rds ok")
+    sql = "alter user %s with password %s"
+    count = 0
+    for item in password_list:
+        print(f"run item {item}")
+        count = count + 1
+        rds.alter_permissions(sql, (item['username'], item['password'],))
+    return count
 
 
 def _get_observation_snapshot_identifier():
