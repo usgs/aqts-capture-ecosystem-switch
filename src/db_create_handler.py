@@ -289,4 +289,4 @@ def delete_observation_db(event, context):
 
 
 def _get_observation_snapshot_identifier():
-    return "observations-prod-external-2-2020-10-26-07-01"
+    return "rds:observations-prod-external-2-2020-10-26-07-01"
