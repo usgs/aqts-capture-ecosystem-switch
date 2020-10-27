@@ -231,6 +231,26 @@ functions:
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
+  modifyObservationPostgresPassword:
+    handler: src.db_create_handler.modify_observation_postgres_password
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+
+  modifyObservationPasswords:
+    handler: src.db_create_handler.modify_observation_passwords
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+
   createDbInstance:
     handler: src.db_create_handler.create_db_instance
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
