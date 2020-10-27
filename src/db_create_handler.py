@@ -252,15 +252,18 @@ def create_observation_db(event, context):
         if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
             my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
 
+    """
+    We need to use the copied snapshot, not the original, because the copied snapshot
+    has the correct kms key.
+    """
     response = rds_client.restore_db_instance_from_db_snapshot(
         DBInstanceIdentifier='observations-qa-exp',
-        DBSnapshotIdentifier=my_snapshot_identifier,
+        DBSnapshotIdentifier=f"{my_snapshot_identifier}_copy",
         DBInstanceClass='db.r5.2xlarge',
         Port=5432,
         DBSubnetGroupName=subgroup_name,
         MultiAZ=False,
         Engine='postgres',
-        # KmsKeyId=kms_key,
         VpcSecurityGroupIds=[
             vpc_security_group_id,
         ],

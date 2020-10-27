@@ -218,7 +218,7 @@ class TestDbCreateHandler(TestCase):
 
         mock_rds.restore_db_instance_from_db_snapshot.assert_called_once_with(
             DBInstanceIdentifier='observations-qa-exp',
-            DBSnapshotIdentifier='rds:observations-prod-external-2-2020-10-26-07-01', DBInstanceClass='db.r5.2xlarge',
+            DBSnapshotIdentifier='rds:observations-prod-external-2-2020-10-26-07-01_copy', DBInstanceClass='db.r5.2xlarge',
             Port=5432, DBSubnetGroupName='subgroup', MultiAZ=False, Engine='postgres', VpcSecurityGroupIds=['vpc_id'],
             Tags=[{'Key': 'Name', 'Value': 'OBSERVATIONS-RDS-TEST-EXP'},
                   {'Key': 'wma:applicationId', 'Value': 'OBSERVATIONS'}, {'Key': 'wma:contact', 'Value': 'tbd'},
