@@ -2,9 +2,9 @@ import json
 import os
 from unittest import TestCase, mock
 
-from src import handler, db_create_handler
+from src import db_create_handler
 from src.db_resize_handler import BIG_DB_SIZE
-from src.handler import TRIGGER, STAGES, DB, run_etl_query, DEFAULT_DB_INSTANCE_IDENTIFIER, \
+from src.handler import DEFAULT_DB_INSTANCE_IDENTIFIER, \
     DEFAULT_DB_CLUSTER_IDENTIFIER
 
 
@@ -180,7 +180,7 @@ class TestDbCreateHandler(TestCase):
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
     def test_copy_observation_db_snapshot(self, mock_rds, mock_secrets_client):
-        os.environ['STAGE'] = 'QA'
+        os.environ['STAGE'] = 'TEST'
         my_secret_string = json.dumps(
             {
                 "KMS_KEY_ID": "kms",
@@ -196,13 +196,13 @@ class TestDbCreateHandler(TestCase):
 
         mock_rds.copy_db_snapshot.assert_called_once_with(
             SourceDBSnapshotIdentifier='rds:observations-prod-external-2-2020-10-26-07-01',
-            TargetDBSnapshotIdentifier='rds:observations-prod-external-2-2020-10-26-07-01_copy',
+            TargetDBSnapshotIdentifier=f"observationSnapshotTESTTemp",
             KmsKeyId='kms')
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
     def test_create_observation_db(self, mock_rds, mock_secrets_client):
-        os.environ['STAGE'] = 'QA'
+        os.environ['STAGE'] = 'TEST'
         my_secret_string = json.dumps(
             {
                 "KMS_KEY_ID": "kms",
@@ -218,7 +218,7 @@ class TestDbCreateHandler(TestCase):
 
         mock_rds.restore_db_instance_from_db_snapshot.assert_called_once_with(
             DBInstanceIdentifier='observations-qa-exp',
-            DBSnapshotIdentifier='rds:observations-prod-external-2-2020-10-26-07-01_copy', DBInstanceClass='db.r5.2xlarge',
+            DBSnapshotIdentifier=f"observationSnapshotTESTTemp", DBInstanceClass='db.r5.2xlarge',
             Port=5432, DBSubnetGroupName='subgroup', MultiAZ=False, Engine='postgres', VpcSecurityGroupIds=['vpc_id'],
             Tags=[{'Key': 'Name', 'Value': 'OBSERVATIONS-RDS-TEST-EXP'},
                   {'Key': 'wma:applicationId', 'Value': 'OBSERVATIONS'}, {'Key': 'wma:contact', 'Value': 'tbd'},
@@ -252,7 +252,7 @@ class TestDbCreateHandler(TestCase):
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
     def test_delete_copied_observation_snapshot(self, mock_rds, mock_secrets_client):
-        os.environ['STAGE'] = 'QA'
+        os.environ['STAGE'] = 'TEST'
         my_secret_string = json.dumps(
             {
                 "KMS_KEY_ID": "kms",
@@ -267,7 +267,7 @@ class TestDbCreateHandler(TestCase):
         db_create_handler.delete_copied_observation_snapshot({}, {})
 
         mock_rds.delete_db_snapshot.assert_called_once_with(
-            DBSnapshotIdentifier='rds:observations-prod-external-2-2020-10-26-07-01_copy', SkipFinalSnapshot=True
+            DBSnapshotIdentifier=f"observationSnapshotTESTTemp", SkipFinalSnapshot=True
         )
 
     @mock.patch('src.db_create_handler.secrets_client')

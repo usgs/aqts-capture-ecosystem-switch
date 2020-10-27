@@ -258,7 +258,7 @@ def create_observation_db(event, context):
     """
     response = rds_client.restore_db_instance_from_db_snapshot(
         DBInstanceIdentifier='observations-qa-exp',
-        DBSnapshotIdentifier=f"{my_snapshot_identifier}_copy",
+        DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
         DBInstanceClass='db.r5.2xlarge',
         Port=5432,
         DBSubnetGroupName=subgroup_name,
@@ -302,7 +302,7 @@ def copy_observation_db_snapshot(event, context):
             my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
     response = rds_client.copy_db_snapshot(
         SourceDBSnapshotIdentifier=my_snapshot_identifier,
-        TargetDBSnapshotIdentifier=f"{my_snapshot_identifier}_copy",
+        TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
         KmsKeyId=kms_key
     )
     logger.info(response)
@@ -317,7 +317,7 @@ def delete_observation_db(event, context):
 
 def delete_copied_observation_snapshot(event, context):
     rds_client.delete_db_snapshot(
-        DBSnapshotIdentifier=f"{_get_observation_snapshot_identifier()}_copy",
+        DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
         SkipFinalSnapshot=True
     )
 
