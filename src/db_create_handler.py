@@ -259,7 +259,7 @@ def create_observation_db(event, context):
         Port=5432,
         DBSubnetGroupName=subgroup_name,
         MultiAZ=False,
-        Engine='PostgreSQL',
+        Engine='postgres',
         # KmsKeyId=kms_key,
         VpcSecurityGroupIds=[
             vpc_security_group_id,
