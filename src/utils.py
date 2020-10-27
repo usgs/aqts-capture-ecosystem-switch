@@ -6,7 +6,7 @@ log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
 
-DEFAULT_DB_INSTANCE_CLASS = 'db.r5.8xlarge'
+DEFAULT_DB_INSTANCE_CLASS = 'db.r5.4xlarge'
 
 
 def describe_db_clusters(action):

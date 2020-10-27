@@ -26,8 +26,8 @@ aqts-capture-ecosystem-switch-deleteCaptureDb-QA
 ## Resizing the nwcapture-qa db
 
 Don't attempt to run resize commands manually.  The current behavior is to increase the size of the db to the 
-maximum of db.r5.8xlarge after five minutes of being at more than 75% cpu utilization (via CloudWatch alarm).
-And to decrease the size of the db after one hour of cpu utilization less than 10% (via a cron job).
+maximum of db.r5.4xlarge after five minutes of being at more than 50% cpu utilization (via high cpu CloudWatch alarm).
+And to decrease the size of the db after 30 minutes of cpu utilization less than 10% (via low cpu CloudWatch alarm.
 
 ## What if I need to prevent automatic shutdown of nwcapture-test for a long running test?
 
