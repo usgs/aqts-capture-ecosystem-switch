@@ -214,7 +214,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   restoreDbCluster:
-    handler: src.handler.restore_db_cluster
+    handler: src.db_create_handler.restore_db_cluster
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -223,7 +223,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   modifyPostgresPassword:
-    handler: src.handler.modify_postgres_password
+    handler: src.db_create_handler.modify_postgres_password
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -232,7 +232,7 @@ functions:
     vpc: ${self:custom.vpc}
 
   createDbInstance:
-    handler: src.handler.create_db_instance
+    handler: src.db_create_handler.create_db_instance
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -240,8 +240,18 @@ functions:
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
+  createObservationDb:
+    handler: src.db_create_handler.create_observation_db_
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+
   modifySchemaOwnerPassword:
-    handler: src.handler.modify_schema_owner_password
+    handler: src.db_create_handler.modify_schema_owner_password
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -250,7 +260,16 @@ functions:
     vpc: ${self:custom.vpc}
 
   deleteCaptureDb:
-    handler: src.handler.delete_capture_db
+    handler: src.db_create_handler.delete_capture_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+  deleteObservationDb:
+    handler: src.db_create_handler.delete_observation_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
@@ -267,7 +286,7 @@ stepFunctions:
         destinations:
           - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
-      name: aqts-capture-ecosystem-switch-create-db-${self:provider.stage}
+      name: aqts-capture-ecosystem-switch-create-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS CreateCaptureDb"
         StartAt: RestoreDbCluster
