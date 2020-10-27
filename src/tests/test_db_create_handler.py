@@ -246,11 +246,11 @@ class TestDbCreateHandler(TestCase):
         db_create_handler.delete_observation_db({}, {})
 
         mock_rds.delete_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='observations-qa-exp', SkipFinalSnapshot=True
+            DBInstanceIdentifier='observations-qa-exp'
         )
 
         mock_rds.delete_db_snapshot.assert_called_once_with(
-            DBSnapshotIdentifier=f"observationSnapshotTESTTemp", SkipFinalSnapshot=True
+            DBSnapshotIdentifier=f"observationSnapshotTESTTemp"
         )
 
 

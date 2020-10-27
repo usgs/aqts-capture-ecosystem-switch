@@ -311,13 +311,11 @@ def copy_observation_db_snapshot(event, context):
 def delete_observation_db(event, context):
 
     rds_client.delete_db_instance(
-        DBInstanceIdentifier='observations-qa-exp',
-        SkipFinalSnapshot=True
+        DBInstanceIdentifier='observations-qa-exp'
     )
 
     rds_client.delete_db_snapshot(
-        DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
-        SkipFinalSnapshot=True
+        DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp"
     )
 
 
