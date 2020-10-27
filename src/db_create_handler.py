@@ -253,7 +253,6 @@ def create_observation_db(event, context):
 
     response = rds_client.restore_db_instance_from_db_snapshot(
         DBInstanceIdentifier='observations-qa-exp',
-        DBName='observations-qa-exp',
         DBSnapshotIdentifier=my_snapshot_identifier,
         DBInstanceClass='db.r5.2xlarge',
         Port=5432,
