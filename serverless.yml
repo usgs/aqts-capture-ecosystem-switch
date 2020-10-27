@@ -231,7 +231,7 @@ functions:
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
-  modifyObservationPostgresPassword:
+  modifyObPostgresPassword:
     handler: src.db_create_handler.modify_observation_postgres_password
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
