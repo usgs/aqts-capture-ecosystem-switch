@@ -249,26 +249,10 @@ class TestDbCreateHandler(TestCase):
             DBInstanceIdentifier='observations-qa-exp', SkipFinalSnapshot=True
         )
 
-    @mock.patch('src.db_create_handler.secrets_client')
-    @mock.patch('src.db_create_handler.rds_client')
-    def test_delete_copied_observation_snapshot(self, mock_rds, mock_secrets_client):
-        os.environ['STAGE'] = 'TEST'
-        my_secret_string = json.dumps(
-            {
-                "KMS_KEY_ID": "kms",
-                "DB_SUBGROUP_NAME": "subgroup",
-                "VPC_SECURITY_GROUP_ID": "vpc_id"
-            }
-        )
-        mock_secret_payload = {
-            "SecretString": my_secret_string
-        }
-        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
-        db_create_handler.delete_copied_observation_snapshot({}, {})
-
         mock_rds.delete_db_snapshot.assert_called_once_with(
             DBSnapshotIdentifier=f"observationSnapshotTESTTemp", SkipFinalSnapshot=True
         )
+
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
