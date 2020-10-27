@@ -310,9 +310,12 @@ def copy_observation_db_snapshot(event, context):
 
 def delete_observation_db(event, context):
 
-    rds_client.delete_db_instance(
-        DBInstanceIdentifier='observations-qa-exp'
-    )
+    try:
+        rds_client.delete_db_instance(
+            DBInstanceIdentifier='observations-qa-exp'
+        )
+    except rds_client.exceptions.DBInstanceNotFoundFault:
+        logger.info("observations db was already deleted, skipping")
 
     rds_client.delete_db_snapshot(
         DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp"
