@@ -325,10 +325,10 @@ def copy_observation_db_snapshot(event, context):
 
 
 def delete_observation_db(event, context):
-
     try:
         rds_client.delete_db_instance(
-            DBInstanceIdentifier='observations-qa-exp'
+            DBInstanceIdentifier='observations-qa-exp',
+            SkipFinalSnapshot=True
         )
     except rds_client.exceptions.DBInstanceNotFoundFault:
         logger.info("observations db was already deleted, skipping")
@@ -403,10 +403,22 @@ def modify_observation_passwords(event, context):
 
 def _get_observation_snapshot_identifier():
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
-    month = str(two_days_ago.month)
+    date_str = _get_date_string(two_days_ago)
+    response = rds_client.describe_db_snapshots()
+    for snapshot in response['DBSnapshots']:
+        if date_str in snapshot['DBSnapshotIdentifier'] \
+                and "rds:observations-prod-external-2" in snapshot['DBSnapshotIdentifier']:
+            return snapshot['DBSnapshotIdentifier']
+        else:
+            logger.info(f"date_str {date_str} not in snapshot_identifier {snapshot['DBSnapshotIdentifier']}")
+    raise Exception("DB Snapshot not found for date_str {date_str}")
+
+
+def _get_date_string(my_datetime):
+    month = str(my_datetime.month)
     if len(month) == 1:
         month = f"0{month}"
-    day = str(two_days_ago.day)
+    day = str(my_datetime.day)
     if len(day) == 1:
         day = f"0{day}"
-    return f"rds:observations-prod-external-2-{two_days_ago.year}-{month}-{day}-07-00"
+    return f"{my_datetime.year}-{month}-{day}"
