@@ -9,7 +9,7 @@ import logging
 TRIGGER = {
     "TEST": ['aqts-capture-trigger-TEST-aqtsCaptureTrigger'],
     "QA": ['aqts-capture-trigger-QA-aqtsCaptureTrigger'],
-    "PROD": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
+    "PROD-EXTERNAL": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
 }
 
 STAGE = os.getenv('STAGE', 'TEST')

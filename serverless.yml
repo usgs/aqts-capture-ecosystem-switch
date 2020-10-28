@@ -32,7 +32,7 @@ custom:
     DEV: dev
     TEST: test
     QA: qa
-    PROD-EXTERNAL: prod
+    PROD-EXTERNAL: prod-external
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
