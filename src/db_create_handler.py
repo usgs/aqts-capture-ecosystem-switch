@@ -8,29 +8,29 @@ from src.utils import enable_lambda_trigger, disable_lambda_trigger, \
     DEFAULT_DB_INSTANCE_CLASS
 import logging
 
-STAGES = ['TEST', 'QA', 'PROD']
+STAGES = ['TEST', 'QA', 'PROD-EXTERNAL']
 DB = {
     "TEST": 'nwcapture-test',
     "QA": 'nwcapture-qa',
-    "PROD": 'nwcapture-prod-external'
+    "PROD-EXTERNAL": 'nwcapture-prod-external'
 }
 
 OBSERVATIONS_DB = {
     "TEST": 'observations-test',
     "QA": 'observations-qa',
-    "PROD": 'observations-prod-external'
+    "PROD-EXTERNAL": 'observations-prod-external'
 }
 
 SQS = {
     "TEST": ['aqts-capture-trigger-queue-TEST', 'aqts-capture-error-queue-TEST'],
     "QA": ['aqts-capture-trigger-queue-QA', 'aqts-capture-error-queue-QA'],
-    "PROD": ['aqts-capture-trigger-queue-PROD-EXTERNAL']
+    "PROD-EXTERNAL": ['aqts-capture-trigger-queue-PROD-EXTERNAL']
 }
 
 TRIGGER = {
     "TEST": ['aqts-capture-trigger-TEST-aqtsCaptureTrigger'],
     "QA": ['aqts-capture-trigger-QA-aqtsCaptureTrigger'],
-    "PROD": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
+    "PROD-EXTERNAL": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
 }
 
 STAGE = os.getenv('STAGE', 'TEST')
@@ -80,6 +80,7 @@ DB create and delete functions
 
 
 def modify_postgres_password(event, context):
+    _validate()
     logger.info("enter modify postgres password")
     logger.info(event)
     original = secrets_client.get_secret_value(
@@ -98,6 +99,7 @@ def modify_postgres_password(event, context):
 
 
 def delete_capture_db(event, context):
+    _validate()
     try:
         rds_client.delete_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
@@ -117,6 +119,7 @@ def delete_capture_db(event, context):
 
 
 def create_db_instance(event, context):
+    _validate()
     logger.info("enter create db instance")
     logger.info(event)
     stage = os.environ['STAGE'].lower()
@@ -142,6 +145,7 @@ def create_db_instance(event, context):
 
 
 def restore_db_cluster(event, context):
+    _validate()
     logger.info("enter restore db cluster")
     logger.info(event)
 
@@ -190,6 +194,7 @@ def restore_db_cluster(event, context):
 
 
 def modify_schema_owner_password(event, context):
+    _validate()
     logger.info(event)
     """
     We don't know the password for 'capture_owner' on the production db,
@@ -229,6 +234,7 @@ def get_snapshot_identifier():
 
 
 def create_observation_db(event, context):
+    _validate()
     logger.info(event)
 
     original = secrets_client.get_secret_value(
@@ -278,6 +284,7 @@ def create_observation_db(event, context):
 
 
 def copy_observation_db_snapshot(event, context):
+    _validate()
     logger.info(event)
 
     original = secrets_client.get_secret_value(
@@ -304,6 +311,7 @@ def copy_observation_db_snapshot(event, context):
 
 
 def delete_observation_db(event, context):
+    _validate()
     try:
         rds_client.delete_db_instance(
             DBInstanceIdentifier=f"observations-{STAGE.lower()}",
@@ -318,6 +326,7 @@ def delete_observation_db(event, context):
 
 
 def modify_observation_postgres_password(event, context):
+    _validate()
     logger.info("enter modify postgres password")
     logger.info(event)
     original = secrets_client.get_secret_value(
@@ -334,6 +343,7 @@ def modify_observation_postgres_password(event, context):
 
 
 def modify_observation_passwords(event, context):
+    _validate()
     logger.info(event)
     original = secrets_client.get_secret_value(
         SecretId=OBSERVATION_REAL,
@@ -388,3 +398,8 @@ def _get_observation_snapshot_identifier():
                 and "rds:observations-prod-external-2" in snapshot['DBSnapshotIdentifier']:
             return snapshot['DBSnapshotIdentifier']
     raise Exception(f"DB Snapshot not found for date_str {date_str} {response['DBSnapshots']}")
+
+
+def _validate():
+    if os.getenv('CAN_DELETE_DB') is None or os.getenv('CAN_DELETE_DB') == 'false':
+        raise Exception("Cannot create or delete the db on this tier")

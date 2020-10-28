@@ -49,6 +49,7 @@ class TestDbCreateHandler(TestCase):
     @mock.patch('src.db_create_handler.rds_client')
     def test_delete_capture_db(self, mock_rds, mock_triggers):
         os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'true'
         db_create_handler.delete_capture_db({}, {})
         mock_triggers.return_value = True
         mock_rds.delete_db_instance.assert_called_once_with(
@@ -58,9 +59,21 @@ class TestDbCreateHandler(TestCase):
             DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             SkipFinalSnapshot=True)
 
+    @mock.patch('src.db_create_handler.disable_lambda_trigger', autospec=True)
+    @mock.patch('src.db_create_handler.rds_client')
+    def test_delete_capture_db_invalid_tier(self, mock_rds, mock_triggers):
+        os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        with self.assertRaises(Exception) as context:
+            db_create_handler.delete_capture_db({}, {})
+        mock_triggers.return_value = True
+        mock_rds.delete_db_instance.assert_not_called()
+        mock_rds.delete_db_cluster.assert_not_called()
+
     @mock.patch('src.db_create_handler.rds_client')
     def test_create_db_instance_default(self, mock_rds):
         os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'true'
         db_create_handler.create_db_instance({}, {})
 
         mock_rds.create_db_instance.assert_called_once_with(
@@ -84,10 +97,19 @@ class TestDbCreateHandler(TestCase):
             ]
         )
 
+    @mock.patch('src.db_create_handler.rds_client')
+    def test_create_db_instance_default_invalid_tier(self, mock_rds):
+        os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        with self.assertRaises(Exception) as context:
+            db_create_handler.create_db_instance({}, {})
+        mock_rds.create_db_instance.assert_not_called()
+
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
     def test_modify_postgres_password(self, mock_rds, mock_secrets_client):
         os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'true'
         my_secret_string = json.dumps(
             {
                 "POSTGRES_PASSWORD": "Password123"
@@ -106,8 +128,23 @@ class TestDbCreateHandler(TestCase):
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
+    def test_modify_postgres_password_invalid_tier(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        my_secret_string = json.dumps({"POSTGRES_PASSWORD": "Password123"})
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        with self.assertRaises(Exception) as context:
+            db_create_handler.modify_postgres_password({}, {})
+        mock_rds.modify_db_cluster.assert_not_called()
+
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
     def test_restore_db_cluster(self, mock_rds, mock_secrets_client):
         os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'true'
         my_secret_string = json.dumps(
             {
                 "KMS_KEY_ID": "kms",
@@ -152,6 +189,26 @@ class TestDbCreateHandler(TestCase):
 
         )
 
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
+    def test_restore_db_cluster_invalid_tier(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        my_secret_string = json.dumps(
+            {
+                "KMS_KEY_ID": "kms",
+                "DB_SUBGROUP_NAME": "subgroup",
+                "VPC_SECURITY_GROUP_ID": "vpc_id"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        with self.assertRaises(Exception) as context:
+            db_create_handler.restore_db_cluster({}, {})
+        mock_rds.restore_db_cluster_from_snapshot.assert_not_called()
+
     @mock.patch('src.db_create_handler.enable_lambda_trigger', autospec=True)
     @mock.patch('src.db_create_handler.RDS', autospec=True)
     @mock.patch('src.db_create_handler.sqs_client')
@@ -159,6 +216,7 @@ class TestDbCreateHandler(TestCase):
     @mock.patch('src.db_create_handler.rds_client')
     def test_modify_schema_owner_password(self, mock_rds, mock_secrets_client, mock_sqs_client,
                                           mock_db, mock_triggers):
+        os.environ['CAN_DELETE_DB'] = 'true'
         os.environ['STAGE'] = 'QA'
         mock_triggers.return_value = True
         my_secret_string = json.dumps(
@@ -177,9 +235,37 @@ class TestDbCreateHandler(TestCase):
         db_create_handler.modify_schema_owner_password({}, {})
         self.assertEqual(mock_sqs_client.purge_queue.call_count, 2)
 
+    @mock.patch('src.db_create_handler.enable_lambda_trigger', autospec=True)
+    @mock.patch('src.db_create_handler.RDS', autospec=True)
+    @mock.patch('src.db_create_handler.sqs_client')
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
+    def test_modify_schema_owner_password_invalid_tier(self, mock_rds, mock_secrets_client, mock_sqs_client,
+                                                       mock_db, mock_triggers):
+        os.environ['CAN_DELETE_DB'] = 'false'
+        os.environ['STAGE'] = 'QA'
+        mock_triggers.return_value = True
+        my_secret_string = json.dumps(
+            {
+                "DATABASE_ADDRESS": "address",
+                "DATABASE_NAME": "name",
+                "VPC_SECURITY_GROUP_ID": "vpc_id",
+                "POSTGRES_PASSWORD": "Password123",
+                "SCHEMA_OWNER_PASSWORD": "Password123"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        with self.assertRaises(Exception) as context:
+            db_create_handler.modify_schema_owner_password({}, {})
+        self.assertEqual(mock_sqs_client.purge_queue.call_count, 0)
+
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
     def test_copy_observation_db_snapshot(self, mock_rds, mock_secrets_client):
+        os.environ['CAN_DELETE_DB'] = 'true'
         os.environ['STAGE'] = 'TEST'
         my_secret_string = json.dumps(
             {
@@ -212,8 +298,40 @@ class TestDbCreateHandler(TestCase):
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
+    def test_copy_observation_db_snapshot_invalid_tier(self, mock_rds, mock_secrets_client):
+        os.environ['CAN_DELETE_DB'] = 'false'
+        os.environ['STAGE'] = 'TEST'
+        my_secret_string = json.dumps(
+            {
+                "KMS_KEY_ID": "kms",
+                "DB_SUBGROUP_NAME": "subgroup",
+                "VPC_SECURITY_GROUP_ID": "vpc_id"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+        date_str = _get_date_string(two_days_ago)
+        mock_rds.describe_db_snapshots.return_value = {
+            'DBSnapshots': [
+                {
+                    "DBInstanceIdentifier": 'observations-prod-external-2',
+                    "DBSnapshotIdentifier": f"rds:observations-prod-external-2-{date_str}"
+
+                }
+            ]
+        }
+        with self.assertRaises(Exception) as context:
+            db_create_handler.copy_observation_db_snapshot({}, {})
+        mock_rds.copy_db_snapshot.assert_not_called()
+
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
     def test_create_observation_db(self, mock_rds, mock_secrets_client):
         os.environ['STAGE'] = 'TEST'
+        os.environ['CAN_DELETE_DB'] = 'true'
         my_secret_string = json.dumps(
             {
                 "KMS_KEY_ID": "kms",
@@ -253,8 +371,40 @@ class TestDbCreateHandler(TestCase):
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
+    def test_create_observation_db_invalid_tier(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'TEST'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        my_secret_string = json.dumps(
+            {
+                "KMS_KEY_ID": "kms",
+                "DB_SUBGROUP_NAME": "subgroup",
+                "VPC_SECURITY_GROUP_ID": "vpc_id"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+        date_str = _get_date_string(two_days_ago)
+        mock_rds.describe_db_snapshots.return_value = {
+            'DBSnapshots': [
+                {
+                    "DBInstanceIdentifier": 'observations-prod-external-2',
+                    "DBSnapshotIdentifier": f"rds:observations-prod-external-2-{date_str}"
+
+                }
+            ]
+        }
+        with self.assertRaises(Exception) as context:
+            db_create_handler.create_observation_db({}, {})
+        mock_rds.restore_db_instance_from_db_snapshot.assert_not_called()
+
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
     def test_delete_observation_db(self, mock_rds, mock_secrets_client):
         os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'true'
         my_secret_string = json.dumps(
             {
                 "KMS_KEY_ID": "kms",
@@ -279,8 +429,30 @@ class TestDbCreateHandler(TestCase):
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
+    def test_delete_observation_db_invalid_tier(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        my_secret_string = json.dumps(
+            {
+                "KMS_KEY_ID": "kms",
+                "DB_SUBGROUP_NAME": "subgroup",
+                "VPC_SECURITY_GROUP_ID": "vpc_id"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        with self.assertRaises(Exception) as context:
+            db_create_handler.delete_observation_db({}, {})
+        mock_rds.delete_db_instance.assert_not_called()
+        mock_rds.delete_db_snapshot.assert_not_called()
+
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
     def test_modify_observation_postgres_password(self, mock_rds, mock_secrets_client):
         os.environ['STAGE'] = 'TEST'
+        os.environ['CAN_DELETE_DB'] = 'true'
         my_secret_string = json.dumps(
             {
                 "POSTGRES_PASSWORD": "Password123"
@@ -296,13 +468,31 @@ class TestDbCreateHandler(TestCase):
             DBInstanceIdentifier='observations-test', ApplyImmediately=True, MasterUserPassword='Password123'
         )
 
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
+    def test_modify_observation_postgres_password_invalid_tier(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'TEST'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        my_secret_string = json.dumps(
+            {
+                "POSTGRES_PASSWORD": "Password123"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        with self.assertRaises(Exception) as context:
+            db_create_handler.modify_observation_postgres_password({}, {})
+        mock_rds.modify_db_instance.assert_not_called()
+
     @mock.patch('src.db_create_handler.RDS', autospec=True)
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
     def test_modify_observation_passwords(self, mock_rds, mock_secrets_client,
                                           mock_db):
         os.environ['STAGE'] = 'TEST'
-
+        os.environ['CAN_DELETE_DB'] = 'true'
         my_secret_string = json.dumps(
             {
                 "WQP_SCHEMA_OWNER_USERNAME": "name",
@@ -330,6 +520,41 @@ class TestDbCreateHandler(TestCase):
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
         result = db_create_handler.modify_observation_passwords({}, {})
         assert result is True
+
+    @mock.patch('src.db_create_handler.RDS', autospec=True)
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
+    def test_modify_observation_passwords_invalid_tier(self, mock_rds, mock_secrets_client,
+                                                       mock_db):
+        os.environ['STAGE'] = 'TEST'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        my_secret_string = json.dumps(
+            {
+                "WQP_SCHEMA_OWNER_USERNAME": "name",
+                "WQP_SCHEMA_OWNER_PASSWORD": "Password123",
+                "WQP_READ_ONLY_USERNAME": "name",
+                "WQP_READ_ONLY_PASSWORD": "Password123",
+                "ARS_SCHEMA_OWNER_USERNAME": "name",
+                "ARS_SCHEMA_OWNER_PASSWORD": "Password123",
+                "EPA_SCHEMA_OWNER_USERNAME": "name",
+                "EPA_SCHEMA_OWNER_PASSWORD": "Password123",
+                "NWIS_SCHEMA_OWNER_USERNAME": "name",
+                "NWIS_SCHEMA_OWNER_PASSWORD": "Password123",
+                "DB_OWNER_USERNAME": "name",
+                "DB_OWNER_PASSWORD": "Password123",
+                "WDFN_DB_READ_ONLY_USERNAME": "name",
+                "WDFN_DB_READ_ONLY_PASSWORD": "Password123",
+                "DATABASE_ADDRESS": "blah",
+                "DATABASE_NAME": "blah",
+                "POSTGRES_PASSWORD": "blah"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        with self.assertRaises(Exception) as context:
+            db_create_handler.modify_observation_passwords({}, {})
 
     def test_get_date_string(self):
         jan_1 = datetime.datetime(2020, 1, 1)

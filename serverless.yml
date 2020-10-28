@@ -33,6 +33,11 @@ custom:
     TEST: test
     QA: qa
     PROD-EXTERNAL: prod-external
+  canDeleteDb:
+    DEV: true
+    TEST: false
+    QA: true
+    PROD-EXTERNAL: false
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
@@ -218,6 +223,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -227,6 +233,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -236,6 +243,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -245,6 +253,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -254,6 +263,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -266,6 +276,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -275,6 +286,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -284,6 +296,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -293,6 +306,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -302,6 +316,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
