@@ -128,7 +128,7 @@ functions:
           enabled: ${self:custom.stopCaptureDbScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
-  ControlDbUtilization:
+  ControlDbUtil:
     handler: src.handler.control_db_utilization
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
@@ -179,7 +179,7 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
 
-  executeShrinkMachine:
+  executeShrink:
     handler: src.db_resize_handler.execute_shrink_machine
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
@@ -196,7 +196,7 @@ functions:
               alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-low-cpu-alarm" ]
     vpc: ${self:custom.vpc}
 
-  executeGrowMachine:
+  executeGrow:
     handler: src.db_resize_handler.execute_grow_machine
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
@@ -222,7 +222,7 @@ functions:
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
-  modifyPostgresPassword:
+  modifyPostgres:
     handler: src.handler.modify_postgres_password
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
@@ -240,7 +240,7 @@ functions:
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
-  modifySchemaOwnerPassword:
+  modifySchemaOwner:
     handler: src.handler.modify_schema_owner_password
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
@@ -276,11 +276,11 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [restoreDbCluster, Arn]
-            Next: ModifyPostgresPassword
-          ModifyPostgresPassword:
+            Next: ModifyPostgres
+          ModifyPostgres:
             Type: Task
             Resource:
-              Fn::GetAtt: [modifyPostgresPassword, Arn]
+              Fn::GetAtt: [modifyPostgres, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
@@ -298,11 +298,11 @@ stepFunctions:
                 IntervalSeconds: 600
                 MaxAttempts: 12
                 BackoffRate: 1
-            Next: ModifySchemaOwnerPassword
-          ModifySchemaOwnerPassword:
+            Next: ModifySchemaOwner
+          ModifySchemaOwner:
             Type: Task
             Resource:
-              Fn::GetAtt: [ modifySchemaOwnerPassword, Arn ]
+              Fn::GetAtt: [ modifySchemaOwner, Arn ]
             Retry:
               - ErrorEquals:
                   - States.ALL
@@ -397,7 +397,7 @@ resources:
         Dimensions:
           - Name: FunctionName
             Value:
-              Ref: ControlDbUtilizationLambdaFunction
+              Ref: ControlDbUtilLambdaFunction
         MetricName: ConcurrentExecutions
         Statistic: Maximum
         ComparisonOperator: GreaterThanOrEqualToThreshold
