@@ -55,16 +55,19 @@ rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2')
 sqs_client = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
 
+def _get_date_string(my_datetime):
+    month = str(my_datetime.month)
+    if len(month) == 1:
+        month = f"0{month}"
+    day = str(my_datetime.day)
+    if len(day) == 1:
+        day = f"0{day}"
+    return f"{my_datetime.year}-{month}-{day}"
+
+
 def _get_etl_start():
-    four_days_ago = datetime.datetime.now() - datetime.timedelta(4)
-    my_month = str(four_days_ago.month)
-    if len(my_month) == 1:
-        my_month = f"0{my_month}"
-    my_day = str(four_days_ago.day)
-    if len(my_day) == 1:
-        my_day = f"0{my_day}"
-    my_etl_start = f"{four_days_ago.year}-{my_month}-{my_day}"
-    return my_etl_start
+    two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+    return _get_date_string(two_days_ago)
 
 
 etl_start = _get_etl_start()
@@ -152,10 +155,6 @@ def restore_db_cluster(event, context):
     if not kms_key or not subgroup_name or not vpc_security_group_id:
         raise Exception(f"Missing db configuration data {secret_string}")
     my_snapshot_identifier = get_snapshot_identifier()
-    if event is not None:
-        if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
-            my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
-
     rds_client.restore_db_cluster_from_snapshot(
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SnapshotIdentifier=my_snapshot_identifier,
@@ -225,13 +224,8 @@ def modify_schema_owner_password(event, context):
 
 def get_snapshot_identifier():
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
-    month = str(two_days_ago.month)
-    if len(month) == 1:
-        month = f"0{month}"
-    day = str(two_days_ago.day)
-    if len(day) == 1:
-        day = f"0{day}"
-    return f"rds:nwcapture-prod-external-{two_days_ago.year}-{month}-{day}-10-08"
+    date_str = _get_date_string(two_days_ago)
+    return f"rds:nwcapture-prod-external-{date_str}-10-08"
 
 
 def create_observation_db(event, context):
@@ -256,7 +250,7 @@ def create_observation_db(event, context):
     has the correct kms key.
     """
     response = rds_client.restore_db_instance_from_db_snapshot(
-        DBInstanceIdentifier='observations-qa-exp',
+        DBInstanceIdentifier=f"observations-{STAGE.lower()}",
         DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
         DBInstanceClass='db.r5.2xlarge',
         Port=5432,
@@ -267,7 +261,7 @@ def create_observation_db(event, context):
             vpc_security_group_id,
         ],
         Tags=[
-            {'Key': 'Name', 'Value': f"OBSERVATIONS-RDS-{STAGE}-EXP"},
+            {'Key': 'Name', 'Value': f"OBSERVATIONS-RDS-{STAGE}"},
             {'Key': 'wma:applicationId', 'Value': 'OBSERVATIONS'},
             {'Key': 'wma:contact', 'Value': 'tbd'},
             {'Key': 'wma:costCenter', 'Value': 'tbd'},
@@ -302,32 +296,17 @@ def copy_observation_db_snapshot(event, context):
 
     need_to_retry = False
 
-    try:
-        response = rds_client.copy_db_snapshot(
-            SourceDBSnapshotIdentifier=my_snapshot_identifier,
-            TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
-            KmsKeyId=kms_key
-        )
-    except rds_client.exceptions.DBSnapshotNotFoundFault:
-        need_to_retry = True
-
-    if need_to_retry:
-        """
-        The snapshot is taken once a day at a certain time, which unfortunately
-        is sometime 7:00 am and sometimes 7:01 am
-        """
-        my_snapshot_identifier = my_snapshot_identifier.replace("07-00", "07-01")
-        response = rds_client.copy_db_snapshot(
-            SourceDBSnapshotIdentifier=my_snapshot_identifier,
-            TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
-            KmsKeyId=kms_key
-        )
+    response = rds_client.copy_db_snapshot(
+        SourceDBSnapshotIdentifier=my_snapshot_identifier,
+        TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
+        KmsKeyId=kms_key
+    )
 
 
 def delete_observation_db(event, context):
     try:
         rds_client.delete_db_instance(
-            DBInstanceIdentifier='observations-qa-exp',
+            DBInstanceIdentifier=f"observations-{STAGE.lower()}",
             SkipFinalSnapshot=True
         )
     except rds_client.exceptions.DBInstanceNotFoundFault:
@@ -348,7 +327,7 @@ def modify_observation_postgres_password(event, context):
     postgres_password = secret_string['POSTGRES_PASSWORD']
 
     rds_client.modify_db_instance(
-        DBInstanceIdentifier='observations-qa-exp',
+        DBInstanceIdentifier=f"observations-{STAGE.lower()}",
         ApplyImmediately=True,
         MasterUserPassword=postgres_password
     )
@@ -363,9 +342,6 @@ def modify_observation_passwords(event, context):
     db_host = secret_string['DATABASE_ADDRESS']
     db_name = secret_string['DATABASE_NAME']
     postgres_password = secret_string['POSTGRES_PASSWORD']
-
-    # TODO remove this when using real qa db
-    db_host = db_host.replace("observations-qa", "observations-qa-exp")
 
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
     logger.info("got rds ok")
@@ -412,13 +388,3 @@ def _get_observation_snapshot_identifier():
                 and "rds:observations-prod-external-2" in snapshot['DBSnapshotIdentifier']:
             return snapshot['DBSnapshotIdentifier']
     raise Exception(f"DB Snapshot not found for date_str {date_str} {response['DBSnapshots']}")
-
-
-def _get_date_string(my_datetime):
-    month = str(my_datetime.month)
-    if len(month) == 1:
-        month = f"0{month}"
-    day = str(my_datetime.day)
-    if len(day) == 1:
-        day = f"0{day}"
-    return f"{my_datetime.year}-{month}-{day}"

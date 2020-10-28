@@ -1,9 +1,10 @@
 import json
 import os
+import datetime
 from unittest import TestCase, mock
 
 from src import db_create_handler
-from src.db_create_handler import _get_observation_snapshot_identifier
+from src.db_create_handler import _get_observation_snapshot_identifier, _get_date_string
 from src.db_resize_handler import BIG_DB_SIZE
 from src.handler import DEFAULT_DB_INSTANCE_IDENTIFIER, \
     DEFAULT_DB_CLUSTER_IDENTIFIER
@@ -13,10 +14,8 @@ class TestDbCreateHandler(TestCase):
     queue_url = 'https://sqs.us-south-10.amazonaws.com/887501/some-queue-name'
     sns_arn = 'arn:aws:sns:us-south-23:5746521541:fake-notification'
     region = 'us-south-10'
-    max_retries = 6
     mock_env_vars = {
-        'AWS_DEPLOYMENT_REGION': region,
-        'MAX_RETRIES': str(max_retries)
+        'AWS_DEPLOYMENT_REGION': region
     }
     mock_db_cluster_identifiers = {'nwcapture-test', 'nwcapture-qa'}
     mock_db_clusters = {
@@ -193,6 +192,17 @@ class TestDbCreateHandler(TestCase):
             "SecretString": my_secret_string
         }
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+        date_str = _get_date_string(two_days_ago)
+        mock_rds.describe_db_snapshots.return_value = {
+            'DBSnapshots': [
+                {
+                    "DBInstanceIdentifier": 'observations-prod-external-2',
+                    "DBSnapshotIdentifier": f"rds:observations-prod-external-2-{date_str}"
+
+                }
+            ]
+        }
         db_create_handler.copy_observation_db_snapshot({}, {})
 
         mock_rds.copy_db_snapshot.assert_called_once_with(
@@ -215,13 +225,25 @@ class TestDbCreateHandler(TestCase):
             "SecretString": my_secret_string
         }
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+        date_str = _get_date_string(two_days_ago)
+        mock_rds.describe_db_snapshots.return_value = {
+            'DBSnapshots': [
+                {
+                    "DBInstanceIdentifier": 'observations-prod-external-2',
+                    "DBSnapshotIdentifier": f"rds:observations-prod-external-2-{date_str}"
+
+                }
+            ]
+        }
+
         db_create_handler.create_observation_db({}, {})
 
         mock_rds.restore_db_instance_from_db_snapshot.assert_called_once_with(
-            DBInstanceIdentifier='observations-qa-exp',
+            DBInstanceIdentifier='observations-test',
             DBSnapshotIdentifier=f"observationSnapshotTESTTemp", DBInstanceClass='db.r5.2xlarge',
             Port=5432, DBSubnetGroupName='subgroup', MultiAZ=False, Engine='postgres', VpcSecurityGroupIds=['vpc_id'],
-            Tags=[{'Key': 'Name', 'Value': 'OBSERVATIONS-RDS-TEST-EXP'},
+            Tags=[{'Key': 'Name', 'Value': 'OBSERVATIONS-RDS-TEST'},
                   {'Key': 'wma:applicationId', 'Value': 'OBSERVATIONS'}, {'Key': 'wma:contact', 'Value': 'tbd'},
                   {'Key': 'wma:costCenter', 'Value': 'tbd'}, {'Key': 'wma:criticality', 'Value': 'tbd'},
                   {'Key': 'wma:environment', 'Value': 'test'}, {'Key': 'wma:operationalHours', 'Value': 'tbd'},
@@ -247,18 +269,18 @@ class TestDbCreateHandler(TestCase):
         db_create_handler.delete_observation_db({}, {})
 
         mock_rds.delete_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='observations-qa-exp'
+            DBInstanceIdentifier='observations-test',
+            SkipFinalSnapshot=True
         )
 
         mock_rds.delete_db_snapshot.assert_called_once_with(
             DBSnapshotIdentifier=f"observationSnapshotTESTTemp"
         )
 
-
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
     def test_modify_observation_postgres_password(self, mock_rds, mock_secrets_client):
-        os.environ['STAGE'] = 'QA'
+        os.environ['STAGE'] = 'TEST'
         my_secret_string = json.dumps(
             {
                 "POSTGRES_PASSWORD": "Password123"
@@ -271,7 +293,7 @@ class TestDbCreateHandler(TestCase):
 
         db_create_handler.modify_observation_postgres_password({}, {})
         mock_rds.modify_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='observations-qa-exp', ApplyImmediately=True, MasterUserPassword='Password123'
+            DBInstanceIdentifier='observations-test', ApplyImmediately=True, MasterUserPassword='Password123'
         )
 
     @mock.patch('src.db_create_handler.RDS', autospec=True)
@@ -279,7 +301,7 @@ class TestDbCreateHandler(TestCase):
     @mock.patch('src.db_create_handler.rds_client')
     def test_modify_observation_passwords(self, mock_rds, mock_secrets_client,
                                           mock_db):
-        os.environ['STAGE'] = 'QA'
+        os.environ['STAGE'] = 'TEST'
 
         my_secret_string = json.dumps(
             {
@@ -308,3 +330,8 @@ class TestDbCreateHandler(TestCase):
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
         result = db_create_handler.modify_observation_passwords({}, {})
         assert result is True
+
+    def test_get_date_string(self):
+        jan_1 = datetime.datetime(2020, 1, 1)
+        date_str = db_create_handler._get_date_string(jan_1)
+        assert date_str == "2020-01-01"
