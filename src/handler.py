@@ -9,29 +9,29 @@ from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_clus
     purge_queue, stop_observations_db_instance, DEFAULT_DB_INSTANCE_CLASS
 import logging
 
-STAGES = ['TEST', 'QA', 'PROD']
+STAGES = ['TEST', 'QA', 'PROD-EXTERNAL']
 DB = {
     "TEST": 'nwcapture-test',
     "QA": 'nwcapture-qa',
-    "PROD": 'nwcapture-prod-external'
+    "PROD-EXTERNAL": 'nwcapture-prod-external'
 }
 
 OBSERVATIONS_DB = {
     "TEST": 'observations-test',
     "QA": 'observations-qa',
-    "PROD": 'observations-prod-external'
+    "PROD-EXTERNAL": 'observations-prod-external'
 }
 
 SQS = {
     "TEST": ['aqts-capture-trigger-queue-TEST', 'aqts-capture-error-queue-TEST'],
     "QA": ['aqts-capture-trigger-queue-QA', 'aqts-capture-error-queue-QA'],
-    "PROD": ['aqts-capture-trigger-queue-PROD-EXTERNAL']
+    "PROD-EXTERNAL": ['aqts-capture-trigger-queue-PROD-EXTERNAL']
 }
 
 TRIGGER = {
     "TEST": ['aqts-capture-trigger-TEST-aqtsCaptureTrigger'],
     "QA": ['aqts-capture-trigger-QA-aqtsCaptureTrigger'],
-    "PROD": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
+    "PROD-EXTERNAL": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
 }
 
 STAGE = os.getenv('STAGE', 'TEST')
