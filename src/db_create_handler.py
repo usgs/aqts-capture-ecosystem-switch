@@ -409,4 +409,4 @@ def _get_observation_snapshot_identifier():
     day = str(two_days_ago.day)
     if len(day) == 1:
         day = f"0{day}"
-    return f"rds:observations-prod-external-{two_days_ago.year}-{month}-{day}-07-00"
+    return f"rds:observations-prod-external-2-{two_days_ago.year}-{month}-{day}-07-00"
