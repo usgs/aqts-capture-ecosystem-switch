@@ -4,9 +4,8 @@ import os
 
 import boto3
 from src.rds import RDS
-from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
-    stop_db_cluster, \
-    purge_queue, stop_observations_db_instance, DEFAULT_DB_INSTANCE_CLASS
+from src.utils import enable_lambda_trigger, disable_lambda_trigger, \
+    DEFAULT_DB_INSTANCE_CLASS
 import logging
 
 STAGES = ['TEST', 'QA', 'PROD']
@@ -300,12 +299,29 @@ def copy_observation_db_snapshot(event, context):
     if event is not None:
         if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
             my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
-    response = rds_client.copy_db_snapshot(
-        SourceDBSnapshotIdentifier=my_snapshot_identifier,
-        TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
-        KmsKeyId=kms_key
-    )
-    logger.info(response)
+
+    need_to_retry = False
+
+    try:
+        response = rds_client.copy_db_snapshot(
+            SourceDBSnapshotIdentifier=my_snapshot_identifier,
+            TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
+            KmsKeyId=kms_key
+        )
+    except rds_client.exceptions.DBSnapshotNotFoundFault:
+        need_to_retry = True
+
+    if need_to_retry:
+        """
+        The snapshot is taken once a day at a certain time, which unfortunately
+        is sometime 7:00 am and sometimes 7:01 am
+        """
+        my_snapshot_identifier = my_snapshot_identifier.replace("07-00", "07-01")
+        response = rds_client.copy_db_snapshot(
+            SourceDBSnapshotIdentifier=my_snapshot_identifier,
+            TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
+            KmsKeyId=kms_key
+        )
 
 
 def delete_observation_db(event, context):
@@ -386,4 +402,11 @@ def modify_observation_passwords(event, context):
 
 
 def _get_observation_snapshot_identifier():
-    return "rds:observations-prod-external-2-2020-10-26-07-01"
+    two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+    month = str(two_days_ago.month)
+    if len(month) == 1:
+        month = f"0{month}"
+    day = str(two_days_ago.day)
+    if len(day) == 1:
+        day = f"0{day}"
+    return f"rds:observations-prod-external-{two_days_ago.year}-{month}-{day}-07-00"

@@ -3,6 +3,7 @@ import os
 from unittest import TestCase, mock
 
 from src import db_create_handler
+from src.db_create_handler import _get_observation_snapshot_identifier
 from src.db_resize_handler import BIG_DB_SIZE
 from src.handler import DEFAULT_DB_INSTANCE_IDENTIFIER, \
     DEFAULT_DB_CLUSTER_IDENTIFIER
@@ -195,7 +196,7 @@ class TestDbCreateHandler(TestCase):
         db_create_handler.copy_observation_db_snapshot({}, {})
 
         mock_rds.copy_db_snapshot.assert_called_once_with(
-            SourceDBSnapshotIdentifier='rds:observations-prod-external-2-2020-10-26-07-01',
+            SourceDBSnapshotIdentifier=_get_observation_snapshot_identifier(),
             TargetDBSnapshotIdentifier=f"observationSnapshotTESTTemp",
             KmsKeyId='kms')
 
