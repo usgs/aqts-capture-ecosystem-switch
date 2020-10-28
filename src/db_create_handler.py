@@ -404,7 +404,9 @@ def modify_observation_passwords(event, context):
 def _get_observation_snapshot_identifier():
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
     date_str = _get_date_string(two_days_ago)
-    response = rds_client.describe_db_snapshots()
+    response = rds_client.describe_db_snapshots(
+        DBInstanceIdentifier='observations-prod-external-2',
+        SnapshotType='automated')
     for snapshot in response['DBSnapshots']:
         if date_str in snapshot['DBSnapshotIdentifier'] \
                 and "rds:observations-prod-external-2" in snapshot['DBSnapshotIdentifier']:
