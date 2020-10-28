@@ -409,9 +409,7 @@ def _get_observation_snapshot_identifier():
         if date_str in snapshot['DBSnapshotIdentifier'] \
                 and "rds:observations-prod-external-2" in snapshot['DBSnapshotIdentifier']:
             return snapshot['DBSnapshotIdentifier']
-        else:
-            logger.info(f"date_str {date_str} not in snapshot_identifier {snapshot['DBSnapshotIdentifier']}")
-    raise Exception("DB Snapshot not found for date_str {date_str}")
+    raise Exception(f"DB Snapshot not found for date_str {date_str} {response['DBSnapshots']}")
 
 
 def _get_date_string(my_datetime):
