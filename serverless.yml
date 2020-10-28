@@ -32,41 +32,41 @@ custom:
     DEV: dev
     TEST: test
     QA: qa
-    PROD: prod
+    PROD-EXTERNAL: prod
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
-    PROD: cron(0 12 ? * MON *)
+    PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopObservationSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
-    PROD: cron(0 23 ? * FRI *)
+    PROD-EXTERNAL: cron(0 23 ? * FRI *)
   startCaptureSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
-    PROD: cron(0 12 ? * MON *)
+    PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopCaptureSchedules:
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
-    PROD: cron(0 23 ? * FRI *)
+    PROD-EXTERNAL: cron(0 23 ? * FRI *)
   # No scheduling enabled for prod.  For qa, only Friday stops are scheduled.  For test, both stop and
   # starts are scheduled.
   startCaptureDbScheduleEnabled:
     TEST: true
     QA: false
-    PROD: false
+    PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
     TEST: true
     QA: false
-    PROD: false
+    PROD-EXTERNAL: false
   stopCaptureDbScheduleEnabled:
     TEST: true
     QA: false
-    PROD: false
+    PROD-EXTERNAL: false
   stopObservationDbScheduleEnabled:
     TEST: true
     QA: true
-    PROD: false
+    PROD-EXTERNAL: false
 
   exportGitVariables: false
   vpc:
