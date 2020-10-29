@@ -13,6 +13,13 @@ pipeline {
         pollSCM('H/5 * * * *')
     }
     stages {
+        stage('Set Build Description') {
+            steps {
+                script {
+                    currentBuild.description = "Deploy to ${env.DEPLOY_STAGE}"
+                }
+            }
+        }
         stage('run build the zip file for lambda') {
             agent {
                 dockerfile {

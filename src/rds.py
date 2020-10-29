@@ -11,10 +11,6 @@ logger.setLevel(logging.INFO)
 class RDS:
 
     def __init__(self, db_host, db_user, db_name, db_password, connect_timeout=65):
-        """
-        connect to the database resource.
-        wait for 50 seconds before giving up on getting a connection
-        """
         self.connection_parameters = {
             'host': db_host,
             'database': db_name,

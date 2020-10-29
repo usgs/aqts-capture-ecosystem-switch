@@ -6,7 +6,7 @@ provider:
   stage: ${opt:stage, 'TEST'}
   runtime: python3.8
   memorySize: 128
-  timeout: 300
+  timeout: 90
   logRetentionInDays: 90
   deploymentBucket:
     name: ${opt:bucket, iow-cloud-applications}
@@ -33,6 +33,11 @@ custom:
     TEST: test
     QA: qa
     PROD-EXTERNAL: prod-external
+  canDeleteDb:
+    DEV: true
+    TEST: false
+    QA: true
+    PROD-EXTERNAL: false
   startObservationSchedules:
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
@@ -214,46 +219,104 @@ functions:
     vpc: ${self:custom.vpc}
 
   restoreDbCluster:
-    handler: src.handler.restore_db_cluster
+    handler: src.db_create_handler.restore_db_cluster
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
   modifyPostgres:
-    handler: src.handler.modify_postgres_password
+    handler: src.db_create_handler.modify_postgres_password
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
   createDbInstance:
-    handler: src.handler.create_db_instance
+    handler: src.db_create_handler.create_db_instance
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
   modifySchemaOwner:
-    handler: src.handler.modify_schema_owner_password
+    handler: src.db_create_handler.modify_schema_owner_password
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
   deleteCaptureDb:
-    handler: src.handler.delete_capture_db
+    handler: src.db_create_handler.delete_capture_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+
+  # For observations db
+
+  modifyObPostgres:
+    handler: src.db_create_handler.modify_observation_postgres_password
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+  modifyObPasswords:
+    handler: src.db_create_handler.modify_observation_passwords
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+  createObservationDb:
+    handler: src.db_create_handler.create_observation_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+  copyObDbSnapshot:
+    handler: src.db_create_handler.copy_observation_db_snapshot
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+    vpc: ${self:custom.vpc}
+
+  deleteObservationDb:
+    handler: src.db_create_handler.delete_observation_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
@@ -267,7 +330,7 @@ stepFunctions:
         destinations:
           - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
-      name: aqts-capture-ecosystem-switch-create-db-${self:provider.stage}
+      name: aqts-capture-ecosystem-switch-create-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS CreateCaptureDb"
         StartAt: RestoreDbCluster
@@ -311,14 +374,14 @@ stepFunctions:
                 BackoffRate: 1
             End: true
 
-    aqtsShrinkDb:
+    aqtsShrinkCaptureDb:
       loggingConfig:
         level: ALL
         includeExecutionData: true
         destinations:
           - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
-      name: aqts-ecosystem-switch-shrink-db-${self:provider.stage}
+      name: aqts-ecosystem-switch-shrink-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Shrink Db"
         StartAt: ShrinkDb
@@ -346,14 +409,14 @@ stepFunctions:
                 BackoffRate: 1
             End: true
 
-    aqtsGrowDb:
+    aqtsGrowCaptureDb:
       loggingConfig:
         level: ALL
         includeExecutionData: true
         destinations:
           - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
-      name: aqts-ecosystem-switch-grow-db-${self:provider.stage}
+      name: aqts-ecosystem-switch-grow-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Grow Db"
         StartAt: GrowDb
@@ -378,6 +441,63 @@ stepFunctions:
                   - States.ALL
                 IntervalSeconds: 120
                 MaxAttempts: 10
+                BackoffRate: 1
+            End: true
+
+    aqtsCreateObDb:
+      loggingConfig:
+        level: ALL
+        includeExecutionData: true
+        destinations:
+          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      name: aqts-capture-ecosystem-switch-create-obs-db-${self:provider.stage}
+      definition:
+        Comment: "AQTS CreateObservationsDb"
+        StartAt: CopyObsSnapshot
+        States:
+          CopyObsSnapshot:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ copyObDbSnapshot, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 24
+                BackoffRate: 1
+            Next: CreateObservationDb
+          CreateObservationDb:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ createObservationDb, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 24
+                BackoffRate: 1
+            Next: ModifyObPostgres
+          ModifyObPostgres:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ modifyObPostgres, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 24
+                BackoffRate: 1
+            Next: ModifyObPasswords
+          ModifyObPasswords:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ modifyObPasswords, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 300
+                MaxAttempts: 24
                 BackoffRate: 1
             End: true
 
