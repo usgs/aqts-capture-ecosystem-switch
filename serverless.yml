@@ -541,7 +541,7 @@ resources:
         Threshold: 50
         Period: 300
         Unit: Percent
-        EvaluationPeriods: 1
+        EvaluationPeriods: 2
         AlarmActions:
           - Ref: snsTopic
     rdsLowCpuAlarm:
