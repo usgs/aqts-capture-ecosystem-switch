@@ -478,7 +478,7 @@ stepFunctions:
                 MaxAttempts: 24
                 BackoffRate: 1
             Next: ModifyObPostgres
-          ModifyObPostgresPassword:
+          ModifyObPostgres:
             Type: Task
             Resource:
               Fn::GetAtt: [ modifyObPostgres, Arn ]
@@ -489,7 +489,7 @@ stepFunctions:
                 MaxAttempts: 24
                 BackoffRate: 1
             Next: ModifyObPasswords
-          ModifyObservationPasswords:
+          ModifyObPasswords:
             Type: Task
             Resource:
               Fn::GetAtt: [ modifyObPasswords, Arn ]
