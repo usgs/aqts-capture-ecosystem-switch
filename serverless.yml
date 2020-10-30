@@ -303,6 +303,7 @@ functions:
     handler: src.db_create_handler.create_observation_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
+      LAST_OB_DB_SNAPSHOT: ${self:custom.observationsDb.connectInfo.LAST_OB_DB_SNAPSHOT}
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
@@ -313,6 +314,8 @@ functions:
     handler: src.db_create_handler.copy_observation_db_snapshot
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
+      # If we are on the dev tier the snapshots need to be manually copied.  See README
+      DEV_TIER_SNAPSHOT: ''
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
@@ -366,11 +369,11 @@ functions:
 stepFunctions:
   stateMachines:
     aqtsCreateCaptureDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
+      #loggingConfig:
+      #  level: ALL
+      #  includeExecutionData: true
+      #  destinations:
+      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-capture-ecosystem-switch-create-capture-db-${self:provider.stage}
       definition:
@@ -417,11 +420,11 @@ stepFunctions:
             End: true
 
     aqtsShrinkCaptureDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
+      #loggingConfig:
+      #  level: ALL
+      #  includeExecutionData: true
+      #  destinations:
+      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-ecosystem-switch-shrink-capture-db-${self:provider.stage}
       definition:
@@ -452,11 +455,11 @@ stepFunctions:
             End: true
 
     aqtsGrowCaptureDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
+      # loggingConfig:
+      #  level: ALL
+      #  includeExecutionData: true
+      #  destinations:
+      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-ecosystem-switch-grow-capture-db-${self:provider.stage}
       definition:
@@ -487,11 +490,12 @@ stepFunctions:
             End: true
 
     aqtsCreateObDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
+      #loggingConfig:
+      #  level: ALL
+      #  includeExecutionData: true
+      #  destinations:
+      #    destinations:
+      #      - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-capture-ecosystem-switch-create-obs-db-${self:provider.stage}
       definition:

@@ -388,6 +388,10 @@ def modify_observation_passwords(event, context):
 
 
 def _get_observation_snapshot_identifier():
+    # In the dev account we don't have a list of automatic backups
+    # See README
+    if os.getenv('LAST_OB_DB_SNAPSHOT') is not None:
+        return os.getenv('LAST_OB_DB_SNAPSHOT')
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
     date_str = _get_date_string(two_days_ago)
     response = rds_client.describe_db_snapshots(
