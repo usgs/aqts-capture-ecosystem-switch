@@ -303,7 +303,6 @@ functions:
     handler: src.db_create_handler.create_observation_db
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
-      LAST_OB_DB_SNAPSHOT: ${self:custom.observationsDb.connectInfo.LAST_OB_DB_SNAPSHOT}
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
@@ -315,7 +314,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       # If we are on the dev tier the snapshots need to be manually copied.  See README
-      DEV_TIER_SNAPSHOT: ''
+      LAST_OB_DB_SNAPSHOT: ${self:custom.observationsDb.connectInfo.LAST_OB_DB_SNAPSHOT}
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
