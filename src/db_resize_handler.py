@@ -157,6 +157,7 @@ def _execute_state_machine(state_machine_arn, invocation_payload, region='us-wes
 
 
 def shrink_observations_db(event, context):
+    _validate_observations_resize()
     alarm_state = event["detail"]["state"]["value"]
     if alarm_state == "ALARM":
         logger.info(event)
@@ -176,6 +177,7 @@ def shrink_observations_db(event, context):
 
 
 def grow_observations_db(event, context):
+    _validate_observations_resize()
     alarm_state = event["detail"]["state"]["value"]
     if alarm_state == "ALARM":
         logger.info(event)
@@ -192,3 +194,10 @@ def grow_observations_db(event, context):
                 ApplyImmediately=True
             )
             logger.info(f"Growing observations DB, please stand by. {response}")
+
+
+def _validate_observations_resize():
+    if os.environ['STAGE'] in ('DEV', 'TEST', 'QA'):
+        return
+    raise Exception(f"Cannot resize the observations db on tier {os.environ['STAGE']}")
+
