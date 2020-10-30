@@ -2,7 +2,8 @@ import os
 from unittest import TestCase, mock
 
 from src import db_resize_handler
-from src.db_resize_handler import SMALL_DB_SIZE, BIG_DB_SIZE, DEFAULT_DB_CLUSTER_IDENTIFIER
+from src.db_resize_handler import SMALL_DB_SIZE, BIG_DB_SIZE, DEFAULT_DB_CLUSTER_IDENTIFIER, BIG_OB_DB_SIZE, \
+    SMALL_OB_DB_SIZE
 from src.handler import DEFAULT_DB_INSTANCE_IDENTIFIER
 
 
@@ -266,3 +267,105 @@ class TestDbResizeHandler(TestCase):
         }
         result = db_resize_handler._is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER)
         assert result is True
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_shrink_ob_db_okay(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        alarm_event = {
+            "detail": {
+                "state": {
+                    "value": "ALARM"
+                }
+            }
+        }
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": BIG_OB_DB_SIZE}]}
+        db_resize_handler.shrink_observations_db(alarm_event, {})
+        mock_rds.modify_db_instance.assert_called_once_with(
+            DBInstanceIdentifier='observations-test-instance1',
+            DBInstanceClass=SMALL_OB_DB_SIZE,
+            ApplyImmediately=True)
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_shrink_ob_db_not_in_alarm(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        alarm_event = {
+            "detail": {
+                "state": {
+                    "value": "OK"
+                }
+            }
+        }
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": BIG_OB_DB_SIZE}]}
+        db_resize_handler.shrink_observations_db(alarm_event, {})
+        mock_rds.modify_db_instance.assert_not_called()
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_shrink_ob_db_not_already_shrunk(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        alarm_event = {
+            "detail": {
+                "state": {
+                    "value": "ALARM"
+                }
+            }
+        }
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": SMALL_OB_DB_SIZE}]}
+        db_resize_handler.shrink_observations_db(alarm_event, {})
+        mock_rds.modify_db_instance.assert_not_called()
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_grow_ob_db_ok(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        alarm_event = {
+            "detail": {
+                "state": {
+                    "value": "ALARM"
+                }
+            }
+        }
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": SMALL_OB_DB_SIZE}]}
+        db_resize_handler.grow_observations_db(alarm_event, {})
+        mock_rds.modify_db_instance.assert_called_once_with(
+            DBInstanceIdentifier='observations-test-instance1',
+            DBInstanceClass=BIG_OB_DB_SIZE,
+            ApplyImmediately=True)
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_grow_ob_db_not_in_alarm(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        alarm_event = {
+            "detail": {
+                "state": {
+                    "value": "OK"
+                }
+            }
+        }
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": SMALL_OB_DB_SIZE}]}
+        db_resize_handler.grow_observations_db(alarm_event, {})
+        mock_rds.modify_db_instance.assert_not_called()
+
+    @mock.patch('src.db_resize_handler.rds_client')
+    @mock.patch('src.db_resize_handler.disable_lambda_trigger')
+    def test_shrink_ob_db_not_already_grown(self, mock_utils, mock_rds):
+        os.environ['STAGE'] = 'TEST'
+        alarm_event = {
+            "detail": {
+                "state": {
+                    "value": "ALARM"
+                }
+            }
+        }
+        mock_utils.return_value = True
+        mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": BIG_OB_DB_SIZE}]}
+        db_resize_handler.grow_observations_db(alarm_event, {})
+        mock_rds.modify_db_instance.assert_not_called()

@@ -562,6 +562,42 @@ resources:
         EvaluationPeriods: 6
         AlarmActions:
           - Ref: snsTopic
+    obsHighCpuAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-obs-high-cpu-alarm
+        AlarmDescription: Notify when the observations rds cpu goes over the threshold
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value: observations-${self:custom.environments.${self:provider.stage}}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Threshold: 50
+        Period: 300
+        Unit: Percent
+        EvaluationPeriods: 2
+        AlarmActions:
+          - Ref: snsTopic
+    obsLowCpuAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-obs-low-cpu-alarm
+        AlarmDescription: Notify when the observations rds cpu goes under the threshold
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Threshold: 10
+        Period: 300
+        Unit: Percent
+        EvaluationPeriods: 6
+        AlarmActions:
+          - Ref: snsTopic
 
 
 plugins:
