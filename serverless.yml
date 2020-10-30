@@ -588,7 +588,7 @@ resources:
         Namespace: 'AWS/RDS'
         Dimensions:
           - Name: DBInstanceIdentifier
-            Value: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+            Value: observations-${self:custom.environments.${self:provider.stage}}-instance1
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: LessThanOrEqualToThreshold
