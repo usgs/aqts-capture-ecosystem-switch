@@ -321,6 +321,40 @@ functions:
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
+
+  shrinkObsDb:
+    handler: src.db_resize_handler.shrink_observations_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-obs-low-cpu-alarm" ]
+    vpc: ${self:custom.vpc}
+
+  growObsDb:
+    handler: src.db_resize_handler.grow_observations_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-obs-high-cpu-alarm" ]
+    vpc: ${self:custom.vpc}
+
+
 stepFunctions:
   stateMachines:
     aqtsCreateCaptureDb:
