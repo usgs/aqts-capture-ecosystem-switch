@@ -238,7 +238,7 @@ def create_observation_db(event, context):
     logger.info(event)
 
     original = secrets_client.get_secret_value(
-        SecretId='WQP-EXTERNAL-QA'
+        SecretId=OBSERVATION_REAL
     )
     secret_string = json.loads(original['SecretString'])
     kms_key = str(secret_string['KMS_KEY_ID'])
@@ -288,7 +288,7 @@ def copy_observation_db_snapshot(event, context):
     logger.info(event)
 
     original = secrets_client.get_secret_value(
-        SecretId='WQP-EXTERNAL-QA'
+        SecretId=OBSERVATION_REAL
     )
     secret_string = json.loads(original['SecretString'])
     kms_key = str(secret_string['KMS_KEY_ID'])
