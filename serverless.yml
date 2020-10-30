@@ -570,7 +570,7 @@ resources:
         Namespace: 'AWS/RDS'
         Dimensions:
           - Name: DBInstanceIdentifier
-            Value: observations-${self:custom.environments.${self:provider.stage}}-instance1
+            Value: observations-${self:custom.environments.${self:provider.stage}}
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
@@ -588,7 +588,7 @@ resources:
         Namespace: 'AWS/RDS'
         Dimensions:
           - Name: DBInstanceIdentifier
-            Value: observations-${self:custom.environments.${self:provider.stage}}-instance1
+            Value: observations-${self:custom.environments.${self:provider.stage}}
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: LessThanOrEqualToThreshold

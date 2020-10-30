@@ -160,7 +160,7 @@ def shrink_observations_db(event, context):
     alarm_state = event["detail"]["state"]["value"]
     if alarm_state == "ALARM":
         logger.info(event)
-        ob_id = f"observations-{STAGE.lower()}-instance1"
+        ob_id = f"observations-{STAGE.lower()}"
         response = rds_client.describe_db_instances(DBInstanceIdentifier=ob_id)
         db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
         if db_instance_class == SMALL_OB_DB_SIZE:
@@ -179,7 +179,7 @@ def grow_observations_db(event, context):
     alarm_state = event["detail"]["state"]["value"]
     if alarm_state == "ALARM":
         logger.info(event)
-        ob_id = f"observations-{STAGE.lower()}-instance1"
+        ob_id = f"observations-{STAGE.lower()}"
         response = rds_client.describe_db_instances(DBInstanceIdentifier=ob_id)
         db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
         if db_instance_class == BIG_OB_DB_SIZE:

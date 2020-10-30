@@ -283,7 +283,7 @@ class TestDbResizeHandler(TestCase):
         mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": BIG_OB_DB_SIZE}]}
         db_resize_handler.shrink_observations_db(alarm_event, {})
         mock_rds.modify_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='observations-test-instance1',
+            DBInstanceIdentifier='observations-test',
             DBInstanceClass=SMALL_OB_DB_SIZE,
             ApplyImmediately=True)
 
@@ -334,7 +334,7 @@ class TestDbResizeHandler(TestCase):
         mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": SMALL_OB_DB_SIZE}]}
         db_resize_handler.grow_observations_db(alarm_event, {})
         mock_rds.modify_db_instance.assert_called_once_with(
-            DBInstanceIdentifier='observations-test-instance1',
+            DBInstanceIdentifier='observations-test',
             DBInstanceClass=BIG_OB_DB_SIZE,
             ApplyImmediately=True)
 
