@@ -35,7 +35,7 @@ custom:
     PROD-EXTERNAL: prod-external
   canDeleteDb:
     DEV: true
-    TEST: false
+    TEST: true
     QA: true
     PROD-EXTERNAL: false
   startObservationSchedules:
