@@ -235,7 +235,7 @@ def get_snapshot_identifier():
 
 def create_observation_db(event, context):
     _validate()
-    logger.info(event)
+    logger.info(f"event {event}")
 
     original = secrets_client.get_secret_value(
         SecretId=OBSERVATION_REAL
@@ -244,9 +244,11 @@ def create_observation_db(event, context):
     kms_key = str(secret_string['KMS_KEY_ID'])
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
+
     if not kms_key or not subgroup_name or not vpc_security_group_id:
         raise Exception(f"Missing db configuration data {secret_string}")
     my_snapshot_identifier = _get_observation_snapshot_identifier()
+    logger.info(f"my snapshot identified {my_snapshot_identifier}")
     if event is not None:
         if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
             my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
@@ -255,6 +257,7 @@ def create_observation_db(event, context):
     We need to use the copied snapshot, not the original, because the copied snapshot
     has the correct kms key.
     """
+    logger.info(f"about to call restore_db_instance_from_db_snapshot subgroup_name {subgroup_name} vpc_id = {vpc_security_group_id}")
     response = rds_client.restore_db_instance_from_db_snapshot(
         DBInstanceIdentifier=f"observations-{STAGE.lower()}",
         DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
@@ -280,7 +283,7 @@ def create_observation_db(event, context):
         ]
 
     )
-    logger.info(response)
+    logger.info(f"response is {response}")
 
 
 def copy_observation_db_snapshot(event, context):
