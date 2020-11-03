@@ -68,8 +68,7 @@ class TestDbResizeHandler(TestCase):
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
-            ApplyImmediately=True,
-            Tags=CAPTURE_INSTANCE_TAGS)
+            ApplyImmediately=True)
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
@@ -135,8 +134,7 @@ class TestDbResizeHandler(TestCase):
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,
-            ApplyImmediately=True,
-            Tags=CAPTURE_INSTANCE_TAGS)
+            ApplyImmediately=True)
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
@@ -288,8 +286,7 @@ class TestDbResizeHandler(TestCase):
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier='observations-test',
             DBInstanceClass=SMALL_OB_DB_SIZE,
-            ApplyImmediately=True,
-            Tags=OBSERVATION_INSTANCE_TAGS)
+            ApplyImmediately=True)
 
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')
@@ -340,8 +337,7 @@ class TestDbResizeHandler(TestCase):
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier='observations-test',
             DBInstanceClass=BIG_OB_DB_SIZE,
-            ApplyImmediately=True,
-            Tags=OBSERVATION_INSTANCE_TAGS)
+            ApplyImmediately=True)
 
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')
