@@ -103,7 +103,6 @@ def enable_lambda_trigger(function_names):
         response = my_lambda.list_event_source_mappings(FunctionName=function_name)
         for item in response['EventSourceMappings']:
             response = my_lambda.get_event_source_mapping(UUID=item['UUID'])
-            print(response)
             if response['State'] in ('Disabled', 'Disabling', 'Updating', 'Creating'):
                 my_lambda.update_event_source_mapping(UUID=item['UUID'], Enabled=True)
                 response = my_lambda.get_event_source_mapping(UUID=item['UUID'])
