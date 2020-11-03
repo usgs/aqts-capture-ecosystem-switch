@@ -141,6 +141,15 @@ functions:
           enabled: ${self:custom.stopCaptureDbScheduleEnabled.${self:provider.stage}}
     vpc: ${self:custom.vpc}
 
+  troubleshoot:
+    handler: src.handler.troubleshoot
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    vpc: ${self:custom.vpc}
+
   ControlDbUtil:
     handler: src.handler.control_db_utilization
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role

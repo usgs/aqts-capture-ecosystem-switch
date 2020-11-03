@@ -199,6 +199,25 @@ def _stop_db(db, triggers):
     return stopped
 
 
+def troubleshoot(event, context):
+    if event['action'].lower() == 'start_capture_db':
+        print("action is start_capture_db")
+        cluster_identifiers = describe_db_clusters("start")
+        print(f"we called descripe db cluster {cluster_identifiers}")
+        for cluster_identifier in cluster_identifiers:
+            if cluster_identifier == DB[STAGE]:
+                start_db_cluster(DB[STAGE])
+    elif event['action'].lower() == 'stop_capture_db':
+        print("action is stop_capture_db")
+        cluster_identifiers = describe_db_clusters("stop")
+        for cluster_identifier in cluster_identifiers:
+            if cluster_identifier == DB[STAGE]:
+                stop_db_cluster(DB[STAGE])
+    else:
+        print("raising exception")
+        raise Exception("action must be specified and must be 'start_capture_db' or 'stop_capture_db'")
+
+
 """
 Miscellaneous functions
 """

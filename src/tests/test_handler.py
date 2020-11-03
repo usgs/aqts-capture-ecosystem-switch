@@ -274,3 +274,43 @@ class TestHandler(TestCase):
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.stop_capture_db(self.initial_event, self.context)
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_troubleshoot_stop(self, mock_boto):
+        mock_client = mock.Mock()
+        my_mock_db_clusters = self.mock_db_clusters
+        mock_client.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_boto.return_value = mock_client
+        stage = 'TEST'
+        my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = DB[stage]
+        my_mock_db_clusters['DBClusters'][0]['Status'] = 'available'
+        mock_client.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_client.start_db_cluster.return_value = {DB[stage]}
+        os.environ['STAGE'] = stage
+        handler.troubleshoot({"action": "stop_capture_db"}, self.context)
+        mock_client.describe_db_clusters.assert_called_once()
+        mock_client.stop_db_cluster.assert_called_once_with(DBClusterIdentifier='nwcapture-test')
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_troubleshoot_start(self, mock_boto):
+        mock_client = mock.Mock()
+        my_mock_db_clusters = self.mock_db_clusters
+        mock_client.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_boto.return_value = mock_client
+        stage = 'TEST'
+        my_mock_db_clusters['DBClusters'][0]['DBClusterIdentifier'] = DB[stage]
+        my_mock_db_clusters['DBClusters'][0]['Status'] = 'stopped'
+        mock_client.describe_db_clusters.return_value = my_mock_db_clusters
+        mock_client.start_db_cluster.return_value = {DB[stage]}
+        os.environ['STAGE'] = stage
+        handler.troubleshoot({"action": "start_capture_db"}, self.context)
+        mock_client.describe_db_clusters.assert_called_once()
+        mock_client.start_db_cluster.assert_called_once_with(DBClusterIdentifier='nwcapture-test')
+
+
+    @mock.patch('src.handler.rds_client')
+    def test_troubleshoot_start_bad_actions(self, mock_rds):
+        with self.assertRaises(Exception) as context:
+            handler.troubleshoot({}, self.context)
+        with self.assertRaises(Exception) as context:
+            handler.troubleshoot({"action": "unknown"}, self.context)

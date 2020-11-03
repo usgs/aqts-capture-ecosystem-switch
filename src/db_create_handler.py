@@ -274,7 +274,6 @@ def copy_observation_db_snapshot(event, context):
         KmsKeyId=kms_key
     )
 
-
 def delete_observation_db(event, context):
     _validate()
     try:
