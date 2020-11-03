@@ -3,7 +3,8 @@ import json
 import os
 
 import boto3
-from src.utils import enable_lambda_trigger, disable_lambda_trigger, DEFAULT_DB_INSTANCE_CLASS
+from src.utils import enable_lambda_trigger, disable_lambda_trigger, DEFAULT_DB_INSTANCE_CLASS, CAPTURE_INSTANCE_TAGS, \
+    OBSERVATION_INSTANCE_TAGS
 import logging
 
 TRIGGER = {
@@ -21,6 +22,8 @@ NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 
 SMALL_DB_SIZE = 'db.r5.xlarge'
 BIG_DB_SIZE = DEFAULT_DB_INSTANCE_CLASS
+BIG_OB_DB_SIZE = 'db.r5.2xlarge'
+SMALL_OB_DB_SIZE = 'db.r5.large'
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
@@ -57,7 +60,8 @@ def shrink_db(event, context):
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
-            ApplyImmediately=True
+            ApplyImmediately=True,
+            Tags=CAPTURE_INSTANCE_TAGS
         )
         logger.info(f"Shrinking DB, please stand by. {response}")
 
@@ -77,7 +81,8 @@ def grow_db(event, context):
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,
-            ApplyImmediately=True
+            ApplyImmediately=True,
+            Tags=CAPTURE_INSTANCE_TAGS
         )
         logger.info(f"Growing the DB, please stand by. {response}")
 
@@ -134,6 +139,7 @@ def _validate():
     """
     return True
 
+
 def _is_cluster_available(cluster_id):
     response = rds_client.describe_db_clusters()
     all_dbs = response['DBClusters']
@@ -151,3 +157,51 @@ def _execute_state_machine(state_machine_arn, invocation_payload, region='us-wes
         input=invocation_payload
     )
     return resp
+
+
+def shrink_observations_db(event, context):
+    _validate_observations_resize()
+    alarm_state = event["detail"]["state"]["value"]
+    if alarm_state == "ALARM":
+        logger.info(event)
+        ob_id = f"observations-{STAGE.lower()}"
+        response = rds_client.describe_db_instances(DBInstanceIdentifier=ob_id)
+        db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
+        if db_instance_class == SMALL_OB_DB_SIZE:
+            logger.info(f"Cannot shrink the observations db because it already shrank")
+        else:
+            logger.info("Disabling the trigger!")
+            response = rds_client.modify_db_instance(
+                DBInstanceIdentifier=ob_id,
+                DBInstanceClass=SMALL_OB_DB_SIZE,
+                ApplyImmediately=True,
+                Tags=OBSERVATION_INSTANCE_TAGS
+            )
+            logger.info(f"Shrinking observations DB, please stand by. {response}")
+
+
+def grow_observations_db(event, context):
+    _validate_observations_resize()
+    alarm_state = event["detail"]["state"]["value"]
+    if alarm_state == "ALARM":
+        logger.info(event)
+        ob_id = f"observations-{STAGE.lower()}"
+        response = rds_client.describe_db_instances(DBInstanceIdentifier=ob_id)
+        db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
+        if db_instance_class == BIG_OB_DB_SIZE:
+            logger.info(f"Cannot grow the observations db because it already shrank")
+        else:
+            logger.info("Disabling the trigger!")
+            response = rds_client.modify_db_instance(
+                DBInstanceIdentifier=ob_id,
+                DBInstanceClass=BIG_OB_DB_SIZE,
+                ApplyImmediately=True,
+                Tags=OBSERVATION_INSTANCE_TAGS
+            )
+            logger.info(f"Growing observations DB, please stand by. {response}")
+
+
+def _validate_observations_resize():
+    if os.environ['STAGE'] in ('DEV', 'TEST', 'QA'):
+        return
+    raise Exception(f"Cannot resize the observations db on tier {os.environ['STAGE']}")

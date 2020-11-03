@@ -5,7 +5,7 @@ import os
 import boto3
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, disable_lambda_trigger, \
-    DEFAULT_DB_INSTANCE_CLASS
+    DEFAULT_DB_INSTANCE_CLASS, CAPTURE_INSTANCE_TAGS, OBSERVATION_INSTANCE_TAGS
 import logging
 
 STAGES = ['TEST', 'QA', 'PROD-EXTERNAL']
@@ -53,6 +53,7 @@ cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION'
 secrets_client = boto3.client('secretsmanager', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 sqs_client = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+
 
 
 def _get_date_string(my_datetime):
@@ -128,19 +129,7 @@ def create_db_instance(event, context):
         DBInstanceClass=DEFAULT_DB_INSTANCE_CLASS,
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         Engine=ENGINE,
-        Tags=[
-            {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{stage.upper()}"},
-            {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
-            {'Key': 'wma:contact', 'Value': 'tbd'},
-            {'Key': 'wma:costCenter', 'Value': 'tbd'},
-            {'Key': 'wma:criticality', 'Value': 'tbd'},
-            {'Key': 'wma:environment', 'Value': stage},
-            {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-            {'Key': 'wma:organization', 'Value': 'IOW'},
-            {'Key': 'wma:role', 'Value': 'database'},
-            {'Key': 'wma:system', 'Value': 'NWIS'},
-            {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
-            {'Key': 'taggingVersion', 'Value': '0.0.1'}]
+        Tags=CAPTURE_INSTANCE_TAGS
     )
 
 
@@ -156,8 +145,6 @@ def restore_db_cluster(event, context):
     kms_key = str(secret_string['KMS_KEY_ID'])
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
-    if not kms_key or not subgroup_name or not vpc_security_group_id:
-        raise Exception(f"Missing db configuration data {secret_string}")
     my_snapshot_identifier = get_snapshot_identifier()
     rds_client.restore_db_cluster_from_snapshot(
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
@@ -235,26 +222,24 @@ def get_snapshot_identifier():
 
 def create_observation_db(event, context):
     _validate()
-    logger.info(event)
+    logger.info(f"event {event}")
 
     original = secrets_client.get_secret_value(
-        SecretId='WQP-EXTERNAL-QA'
+        SecretId=OBSERVATION_REAL
     )
     secret_string = json.loads(original['SecretString'])
     kms_key = str(secret_string['KMS_KEY_ID'])
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
-    if not kms_key or not subgroup_name or not vpc_security_group_id:
-        raise Exception(f"Missing db configuration data {secret_string}")
     my_snapshot_identifier = _get_observation_snapshot_identifier()
-    if event is not None:
-        if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
-            my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
+    logger.info(f"my snapshot identified {my_snapshot_identifier}")
 
     """
     We need to use the copied snapshot, not the original, because the copied snapshot
     has the correct kms key.
     """
+    logger.info(
+        f"about to call restore_db_instance_from_db_snapshot subgroup_name {subgroup_name} vpc_id = {vpc_security_group_id}")
     response = rds_client.restore_db_instance_from_db_snapshot(
         DBInstanceIdentifier=f"observations-{STAGE.lower()}",
         DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
@@ -266,21 +251,10 @@ def create_observation_db(event, context):
         VpcSecurityGroupIds=[
             vpc_security_group_id,
         ],
-        Tags=[
-            {'Key': 'Name', 'Value': f"OBSERVATIONS-RDS-{STAGE}"},
-            {'Key': 'wma:applicationId', 'Value': 'OBSERVATIONS'},
-            {'Key': 'wma:contact', 'Value': 'tbd'},
-            {'Key': 'wma:costCenter', 'Value': 'tbd'},
-            {'Key': 'wma:criticality', 'Value': 'tbd'},
-            {'Key': 'wma:environment', 'Value': f"{STAGE.lower()}"},
-            {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-            {'Key': 'wma:organization', 'Value': 'IOW'},
-            {'Key': 'wma:role', 'Value': 'database'},
-            {'Key': 'taggingVersion', 'Value': '0.0.1'}
-        ]
+        Tags=OBSERVATION_INSTANCE_TAGS
 
     )
-    logger.info(response)
+    logger.info(f"response is {response}")
 
 
 def copy_observation_db_snapshot(event, context):
@@ -288,22 +262,13 @@ def copy_observation_db_snapshot(event, context):
     logger.info(event)
 
     original = secrets_client.get_secret_value(
-        SecretId='WQP-EXTERNAL-QA'
+        SecretId=OBSERVATION_REAL
     )
     secret_string = json.loads(original['SecretString'])
     kms_key = str(secret_string['KMS_KEY_ID'])
-    subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
-    vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
-    if not kms_key or not subgroup_name or not vpc_security_group_id:
-        raise Exception(f"Missing db configuration data {secret_string}")
     my_snapshot_identifier = _get_observation_snapshot_identifier()
-    if event is not None:
-        if event.get("db_config") is not None and event['db_config'].get('snapshot_identifier') is not None:
-            my_snapshot_identifier = event['db_config'].get("snapshot_identifier")
 
-    need_to_retry = False
-
-    response = rds_client.copy_db_snapshot(
+    rds_client.copy_db_snapshot(
         SourceDBSnapshotIdentifier=my_snapshot_identifier,
         TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
         KmsKeyId=kms_key
@@ -388,6 +353,10 @@ def modify_observation_passwords(event, context):
 
 
 def _get_observation_snapshot_identifier():
+    # In the dev account we don't have a list of automatic backups
+    # See README
+    if os.getenv('LAST_OB_DB_SNAPSHOT') is not None:
+        return os.getenv('LAST_OB_DB_SNAPSHOT')
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
     date_str = _get_date_string(two_days_ago)
     response = rds_client.describe_db_snapshots(

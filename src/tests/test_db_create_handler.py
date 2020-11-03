@@ -8,6 +8,7 @@ from src.db_create_handler import _get_observation_snapshot_identifier, _get_dat
 from src.db_resize_handler import BIG_DB_SIZE
 from src.handler import DEFAULT_DB_INSTANCE_IDENTIFIER, \
     DEFAULT_DB_CLUSTER_IDENTIFIER
+from src.utils import CAPTURE_INSTANCE_TAGS, OBSERVATION_INSTANCE_TAGS
 
 
 class TestDbCreateHandler(TestCase):
@@ -72,7 +73,7 @@ class TestDbCreateHandler(TestCase):
 
     @mock.patch('src.db_create_handler.rds_client')
     def test_create_db_instance_default(self, mock_rds):
-        os.environ['STAGE'] = 'QA'
+        os.environ['STAGE'] = 'TEST'
         os.environ['CAN_DELETE_DB'] = 'true'
         db_create_handler.create_db_instance({}, {})
 
@@ -81,20 +82,7 @@ class TestDbCreateHandler(TestCase):
             DBInstanceClass=BIG_DB_SIZE,
             DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
             Engine='aurora-postgresql',
-            Tags=[
-                {'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-QA'},
-                {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
-                {'Key': 'wma:contact', 'Value': 'tbd'},
-                {'Key': 'wma:costCenter', 'Value': 'tbd'},
-                {'Key': 'wma:criticality', 'Value': 'tbd'},
-                {'Key': 'wma:environment', 'Value': 'qa'},
-                {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-                {'Key': 'wma:organization', 'Value': 'IOW'},
-                {'Key': 'wma:role', 'Value': 'database'},
-                {'Key': 'wma:system', 'Value': 'NWIS'},
-                {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
-                {'Key': 'taggingVersion', 'Value': '0.0.1'}
-            ]
+            Tags=CAPTURE_INSTANCE_TAGS
         )
 
     @mock.patch('src.db_create_handler.rds_client')
@@ -199,6 +187,23 @@ class TestDbCreateHandler(TestCase):
                 "KMS_KEY_ID": "kms",
                 "DB_SUBGROUP_NAME": "subgroup",
                 "VPC_SECURITY_GROUP_ID": "vpc_id"
+            }
+        )
+        mock_secret_payload = {
+            "SecretString": my_secret_string
+        }
+        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        with self.assertRaises(Exception) as context:
+            db_create_handler.restore_db_cluster({}, {})
+        mock_rds.restore_db_cluster_from_snapshot.assert_not_called()
+
+    @mock.patch('src.db_create_handler.secrets_client')
+    @mock.patch('src.db_create_handler.rds_client')
+    def test_restore_db_cluster_invalid_secrets(self, mock_rds, mock_secrets_client):
+        os.environ['STAGE'] = 'QA'
+        os.environ['CAN_DELETE_DB'] = 'false'
+        my_secret_string = json.dumps(
+            {
             }
         )
         mock_secret_payload = {
@@ -361,12 +366,7 @@ class TestDbCreateHandler(TestCase):
             DBInstanceIdentifier='observations-test',
             DBSnapshotIdentifier=f"observationSnapshotTESTTemp", DBInstanceClass='db.r5.2xlarge',
             Port=5432, DBSubnetGroupName='subgroup', MultiAZ=False, Engine='postgres', VpcSecurityGroupIds=['vpc_id'],
-            Tags=[{'Key': 'Name', 'Value': 'OBSERVATIONS-RDS-TEST'},
-                  {'Key': 'wma:applicationId', 'Value': 'OBSERVATIONS'}, {'Key': 'wma:contact', 'Value': 'tbd'},
-                  {'Key': 'wma:costCenter', 'Value': 'tbd'}, {'Key': 'wma:criticality', 'Value': 'tbd'},
-                  {'Key': 'wma:environment', 'Value': 'test'}, {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-                  {'Key': 'wma:organization', 'Value': 'IOW'}, {'Key': 'wma:role', 'Value': 'database'},
-                  {'Key': 'taggingVersion', 'Value': '0.0.1'}]
+            Tags=OBSERVATION_INSTANCE_TAGS
         )
 
     @mock.patch('src.db_create_handler.secrets_client')

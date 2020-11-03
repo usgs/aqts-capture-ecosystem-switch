@@ -35,40 +35,48 @@ custom:
     PROD-EXTERNAL: prod-external
   canDeleteDb:
     DEV: true
-    TEST: false
+    TEST: true
     QA: true
     PROD-EXTERNAL: false
   startObservationSchedules:
+    DEV: cron(0 12 ? * MON *)
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
     PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopObservationSchedules:
+    DEV: cron(0 23 ? * FRI *)
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
     PROD-EXTERNAL: cron(0 23 ? * FRI *)
   startCaptureSchedules:
+    DEV: cron(0 12 ? * MON *)
     TEST: cron(0 12 ? * MON-FRI *)
     QA: cron(0 12 ? * MON *)
     PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopCaptureSchedules:
+    DEV: cron(0 23 ? * FRI *)
     TEST: cron(0 23 ? * MON-FRI *)
     QA: cron(0 23 ? * FRI *)
     PROD-EXTERNAL: cron(0 23 ? * FRI *)
   # No scheduling enabled for prod.  For qa, only Friday stops are scheduled.  For test, both stop and
   # starts are scheduled.
   startCaptureDbScheduleEnabled:
+    DEV: false
     TEST: true
     QA: false
     PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
+    DEV: false
     TEST: true
     QA: false
     PROD-EXTERNAL: false
   stopCaptureDbScheduleEnabled:
+    DEV: false
     TEST: true
     QA: false
     PROD-EXTERNAL: false
   stopObservationDbScheduleEnabled:
+    DEV: true
     TEST: true
     QA: true
     PROD-EXTERNAL: false
@@ -305,6 +313,8 @@ functions:
     handler: src.db_create_handler.copy_observation_db_snapshot
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
+      # If we are on the dev tier the snapshots need to be manually copied.  See README
+      LAST_OB_DB_SNAPSHOT: ${self:custom.observationsDb.connectInfo.LAST_OB_DB_SNAPSHOT}
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
@@ -321,14 +331,48 @@ functions:
       LOG_LEVEL: INFO
     vpc: ${self:custom.vpc}
 
+
+  shrinkObsDb:
+    handler: src.db_resize_handler.shrink_observations_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-obs-low-cpu-alarm" ]
+    vpc: ${self:custom.vpc}
+
+  growObsDb:
+    handler: src.db_resize_handler.grow_observations_db
+    role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-obs-high-cpu-alarm" ]
+    vpc: ${self:custom.vpc}
+
+
 stepFunctions:
   stateMachines:
     aqtsCreateCaptureDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      #loggingConfig:
+      #  level: ALL
+      #  includeExecutionData: true
+      #  destinations:
+      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-capture-ecosystem-switch-create-capture-db-${self:provider.stage}
       definition:
@@ -375,11 +419,11 @@ stepFunctions:
             End: true
 
     aqtsShrinkCaptureDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      #loggingConfig:
+      #  level: ALL
+      #  includeExecutionData: true
+      #  destinations:
+      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-ecosystem-switch-shrink-capture-db-${self:provider.stage}
       definition:
@@ -410,11 +454,11 @@ stepFunctions:
             End: true
 
     aqtsGrowCaptureDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      # loggingConfig:
+      #  level: ALL
+      #  includeExecutionData: true
+      #  destinations:
+      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-ecosystem-switch-grow-capture-db-${self:provider.stage}
       definition:
@@ -445,11 +489,12 @@ stepFunctions:
             End: true
 
     aqtsCreateObDb:
-      loggingConfig:
-        level: ALL
-        includeExecutionData: true
-        destinations:
-          - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-test:*
+      #loggingConfig:
+      #  level: ALL
+      #  includeExecutionData: true
+      #  destinations:
+      #    destinations:
+      #      - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
       name: aqts-capture-ecosystem-switch-create-obs-db-${self:provider.stage}
       definition:
@@ -553,6 +598,42 @@ resources:
         Dimensions:
           - Name: DBInstanceIdentifier
             Value: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Threshold: 10
+        Period: 300
+        Unit: Percent
+        EvaluationPeriods: 6
+        AlarmActions:
+          - Ref: snsTopic
+    obsHighCpuAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-obs-high-cpu-alarm
+        AlarmDescription: Notify when the observations rds cpu goes over the threshold
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value: observations-${self:custom.environments.${self:provider.stage}}
+        MetricName: CPUUtilization
+        Statistic: Average
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Threshold: 50
+        Period: 300
+        Unit: Percent
+        EvaluationPeriods: 2
+        AlarmActions:
+          - Ref: snsTopic
+    obsLowCpuAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-obs-low-cpu-alarm
+        AlarmDescription: Notify when the observations rds cpu goes under the threshold
+        Namespace: 'AWS/RDS'
+        Dimensions:
+          - Name: DBInstanceIdentifier
+            Value: observations-${self:custom.environments.${self:provider.stage}}
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: LessThanOrEqualToThreshold
