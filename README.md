@@ -83,3 +83,16 @@ aqts-capture-ecosystem-switch-<STAGE>-executeGrow
 
 1. AWS Console->Event Bridge->Events->Rules->aqts-capture-ecosystem-switch-sw-stoptest->Disable
 2. Remember to enable again when your test is concluded.
+
+## Advanced troubleshooting
+
+If you need to turn the capture database off and on independent of the trigger, you can do so using the
+```troubleshoot``` lambda function.  Provide a payload in one of the following two formats:
+
+```
+{ "action": "start_capture_db"}
+{ "action": "stop_capture_db"}
+```
+
+Note that stopping and starting the database without disabling and re-enabling the trigger is likely to
+lead to an increase in errors reported and in the size of the error queue.  
