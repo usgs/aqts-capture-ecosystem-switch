@@ -5,6 +5,7 @@ from src import db_resize_handler
 from src.db_resize_handler import SMALL_DB_SIZE, BIG_DB_SIZE, DEFAULT_DB_CLUSTER_IDENTIFIER, BIG_OB_DB_SIZE, \
     SMALL_OB_DB_SIZE
 from src.handler import DEFAULT_DB_INSTANCE_IDENTIFIER
+from src.utils import OBSERVATION_INSTANCE_TAGS, CAPTURE_INSTANCE_TAGS
 
 
 class TestDbResizeHandler(TestCase):
@@ -67,7 +68,8 @@ class TestDbResizeHandler(TestCase):
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
-            ApplyImmediately=True)
+            ApplyImmediately=True,
+            Tags=CAPTURE_INSTANCE_TAGS)
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
@@ -133,7 +135,8 @@ class TestDbResizeHandler(TestCase):
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,
-            ApplyImmediately=True)
+            ApplyImmediately=True,
+            Tags=CAPTURE_INSTANCE_TAGS)
 
     @mock.patch('src.db_resize_handler._get_cpu_utilization')
     @mock.patch('src.db_resize_handler.rds_client')
@@ -285,7 +288,8 @@ class TestDbResizeHandler(TestCase):
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier='observations-test',
             DBInstanceClass=SMALL_OB_DB_SIZE,
-            ApplyImmediately=True)
+            ApplyImmediately=True,
+            Tags=OBSERVATION_INSTANCE_TAGS)
 
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')
@@ -336,7 +340,8 @@ class TestDbResizeHandler(TestCase):
         mock_rds.modify_db_instance.assert_called_once_with(
             DBInstanceIdentifier='observations-test',
             DBInstanceClass=BIG_OB_DB_SIZE,
-            ApplyImmediately=True)
+            ApplyImmediately=True,
+            Tags=OBSERVATION_INSTANCE_TAGS)
 
     @mock.patch('src.db_resize_handler.rds_client')
     @mock.patch('src.db_resize_handler.disable_lambda_trigger')

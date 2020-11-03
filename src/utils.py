@@ -8,6 +8,34 @@ logger.setLevel(log_level)
 
 DEFAULT_DB_INSTANCE_CLASS = 'db.r5.4xlarge'
 
+STAGE = os.getenv('STAGE', 'TEST')
+
+CAPTURE_INSTANCE_TAGS = [
+    {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{STAGE}"},
+    {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+    {'Key': 'wma:contact', 'Value': 'tbd'},
+    {'Key': 'wma:costCenter', 'Value': 'tbd'},
+    {'Key': 'wma:criticality', 'Value': 'tbd'},
+    {'Key': 'wma:environment', 'Value': STAGE.lower()},
+    {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+    {'Key': 'wma:organization', 'Value': 'IOW'},
+    {'Key': 'wma:role', 'Value': 'database'},
+    {'Key': 'wma:system', 'Value': 'NWIS'},
+    {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+    {'Key': 'taggingVersion', 'Value': '0.0.1'}]
+
+OBSERVATION_INSTANCE_TAGS = [
+    {'Key': 'Name', 'Value': f"OBSERVATIONS-RDS-{STAGE}"},
+    {'Key': 'wma:applicationId', 'Value': 'OBSERVATIONS'},
+    {'Key': 'wma:contact', 'Value': 'tbd'},
+    {'Key': 'wma:costCenter', 'Value': 'tbd'},
+    {'Key': 'wma:criticality', 'Value': 'tbd'},
+    {'Key': 'wma:environment', 'Value': f"{STAGE.lower()}"},
+    {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+    {'Key': 'wma:organization', 'Value': 'IOW'},
+    {'Key': 'wma:role', 'Value': 'database'},
+    {'Key': 'taggingVersion', 'Value': '0.0.1'}
+]
 
 def describe_db_clusters(action):
     # Get all the instances

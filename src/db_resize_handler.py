@@ -3,7 +3,8 @@ import json
 import os
 
 import boto3
-from src.utils import enable_lambda_trigger, disable_lambda_trigger, DEFAULT_DB_INSTANCE_CLASS
+from src.utils import enable_lambda_trigger, disable_lambda_trigger, DEFAULT_DB_INSTANCE_CLASS, CAPTURE_INSTANCE_TAGS, \
+    OBSERVATION_INSTANCE_TAGS
 import logging
 
 TRIGGER = {
@@ -59,7 +60,8 @@ def shrink_db(event, context):
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
-            ApplyImmediately=True
+            ApplyImmediately=True,
+            Tags=CAPTURE_INSTANCE_TAGS
         )
         logger.info(f"Shrinking DB, please stand by. {response}")
 
@@ -79,7 +81,8 @@ def grow_db(event, context):
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,
-            ApplyImmediately=True
+            ApplyImmediately=True,
+            Tags=CAPTURE_INSTANCE_TAGS
         )
         logger.info(f"Growing the DB, please stand by. {response}")
 
@@ -171,7 +174,8 @@ def shrink_observations_db(event, context):
             response = rds_client.modify_db_instance(
                 DBInstanceIdentifier=ob_id,
                 DBInstanceClass=SMALL_OB_DB_SIZE,
-                ApplyImmediately=True
+                ApplyImmediately=True,
+                Tags=OBSERVATION_INSTANCE_TAGS
             )
             logger.info(f"Shrinking observations DB, please stand by. {response}")
 
@@ -191,7 +195,8 @@ def grow_observations_db(event, context):
             response = rds_client.modify_db_instance(
                 DBInstanceIdentifier=ob_id,
                 DBInstanceClass=BIG_OB_DB_SIZE,
-                ApplyImmediately=True
+                ApplyImmediately=True,
+                Tags=OBSERVATION_INSTANCE_TAGS
             )
             logger.info(f"Growing observations DB, please stand by. {response}")
 
@@ -200,4 +205,3 @@ def _validate_observations_resize():
     if os.environ['STAGE'] in ('DEV', 'TEST', 'QA'):
         return
     raise Exception(f"Cannot resize the observations db on tier {os.environ['STAGE']}")
-
