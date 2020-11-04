@@ -55,7 +55,6 @@ rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2')
 sqs_client = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
 
-
 def _get_date_string(my_datetime):
     month = str(my_datetime.month)
     if len(month) == 1:

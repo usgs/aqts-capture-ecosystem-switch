@@ -60,8 +60,7 @@ def shrink_db(event, context):
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
-            ApplyImmediately=True,
-            Tags=CAPTURE_INSTANCE_TAGS
+            ApplyImmediately=True
         )
         logger.info(f"Shrinking DB, please stand by. {response}")
 
@@ -81,8 +80,7 @@ def grow_db(event, context):
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,
-            ApplyImmediately=True,
-            Tags=CAPTURE_INSTANCE_TAGS
+            ApplyImmediately=True
         )
         logger.info(f"Growing the DB, please stand by. {response}")
 
@@ -174,8 +172,7 @@ def shrink_observations_db(event, context):
             response = rds_client.modify_db_instance(
                 DBInstanceIdentifier=ob_id,
                 DBInstanceClass=SMALL_OB_DB_SIZE,
-                ApplyImmediately=True,
-                Tags=OBSERVATION_INSTANCE_TAGS
+                ApplyImmediately=True
             )
             logger.info(f"Shrinking observations DB, please stand by. {response}")
 
@@ -195,8 +192,7 @@ def grow_observations_db(event, context):
             response = rds_client.modify_db_instance(
                 DBInstanceIdentifier=ob_id,
                 DBInstanceClass=BIG_OB_DB_SIZE,
-                ApplyImmediately=True,
-                Tags=OBSERVATION_INSTANCE_TAGS
+                ApplyImmediately=True
             )
             logger.info(f"Growing observations DB, please stand by. {response}")
 
