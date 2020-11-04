@@ -23,7 +23,7 @@ NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
 SMALL_DB_SIZE = 'db.r5.xlarge'
 BIG_DB_SIZE = DEFAULT_DB_INSTANCE_CLASS
 BIG_OB_DB_SIZE = 'db.r5.2xlarge'
-SMALL_OB_DB_SIZE = 'db.r5.large'
+SMALL_OB_DB_SIZE = 'db.r5.xlarge'
 
 cloudwatch_client = boto3.client('cloudwatch', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 rds_client = boto3.client('rds', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
