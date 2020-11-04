@@ -365,8 +365,8 @@ class TestDbCreateHandler(TestCase):
         mock_rds.restore_db_instance_from_db_snapshot.assert_called_once_with(
             DBInstanceIdentifier='observations-test',
             DBSnapshotIdentifier=f"observationSnapshotTESTTemp", DBInstanceClass='db.r5.2xlarge',
-            Port=5432, DBSubnetGroupName='subgroup', MultiAZ=False, Engine='postgres', VpcSecurityGroupIds=['vpc_id'],
-            Tags=OBSERVATION_INSTANCE_TAGS
+            Port=5432, DBSubnetGroupName='subgroup', Iops=0, MultiAZ=False, Engine='postgres',
+            VpcSecurityGroupIds=['vpc_id'], Tags=OBSERVATION_INSTANCE_TAGS
         )
 
     @mock.patch('src.db_create_handler.secrets_client')
