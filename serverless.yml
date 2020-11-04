@@ -348,13 +348,13 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-    events:
-      - cloudwatchEvent:
-          event:
-            source:
-              - 'aws.cloudwatch'
-            detail:
-              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-obs-low-cpu-alarm" ]
+#    events:
+#      - cloudwatchEvent:
+#          event:
+#            source:
+#              - 'aws.cloudwatch'
+#            detail:
+#              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-obs-low-cpu-alarm" ]
     vpc: ${self:custom.vpc}
 
   growObsDb:
