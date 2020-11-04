@@ -56,20 +56,20 @@ sqs_client = boto3.client('sqs', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2')
 
 
 def _get_etl_start():
-    four_days_ago = datetime.datetime.now() - datetime.timedelta(4)
-    my_month = str(four_days_ago.month)
+    yesterday = datetime.datetime.now() - datetime.timedelta(1)
+    my_month = str(yesterday.month)
     if len(my_month) == 1:
         my_month = f"0{my_month}"
-    my_day = str(four_days_ago.day)
+    my_day = str(yesterday.day)
     if len(my_day) == 1:
         my_day = f"0{my_day}"
-    my_etl_start = f"{four_days_ago.year}-{my_month}-{my_day}"
+    my_etl_start = f"{yesterday.year}-{my_month}-{my_day}"
     return my_etl_start
 
 
 etl_start = _get_etl_start()
 OBSERVATIONS_ETL_IN_PROGRESS_SQL = \
-    "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED') and start_time > %s"
+    "select count(1) from batch_job_execution where status not in ('COMPLETED', 'FAILED') and last_updated > %s"
 
 """
 DB stop and start functions
