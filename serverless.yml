@@ -229,7 +229,7 @@ functions:
     events:
       - cloudwatchEvent:
           event:
-            source:aqts-ecosystem-switch-grow-db
+            source:
               - 'aws.cloudwatch'
             detail:
               alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-high-cpu-alarm" ]
