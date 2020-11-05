@@ -163,7 +163,7 @@ functions:
             source:
               - 'aws.cloudwatch'
             detail:
-              alarmName: ["aqts-capture-error-handler-${self:provider.stage}-error-alarm"]
+              alarmName: ["aqts-capture-error-handler-${self:provider.stage}-concurrency-alarm"]
     vpc: ${self:custom.vpc}
 
   disableTrigger:
@@ -229,7 +229,7 @@ functions:
     events:
       - cloudwatchEvent:
           event:
-            source:aqts-ecosystem-switch-grow-db
+            source:
               - 'aws.cloudwatch'
             detail:
               alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-high-cpu-alarm" ]
