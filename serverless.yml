@@ -206,7 +206,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      SHRINK_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-shrink-db-${self:provider.stage}
+      SHRINK_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-shrink-capture-db-${self:provider.stage}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
     events:
@@ -223,13 +223,13 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-db-${self:provider.stage}
+      GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-capture-db-${self:provider.stage}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
     events:
       - cloudwatchEvent:
           event:
-            source:
+            source:aqts-ecosystem-switch-grow-db
               - 'aws.cloudwatch'
             detail:
               alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-high-cpu-alarm" ]
