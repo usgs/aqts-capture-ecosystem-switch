@@ -163,7 +163,7 @@ functions:
             source:
               - 'aws.cloudwatch'
             detail:
-              alarmName: ["aqts-capture-error-handler-${self:provider.stage}-concurrency-alarm"]
+              alarmName: ["aqts-capture-error-handler-${self:provider.stage}-invocation-alarm"]
     vpc: ${self:custom.vpc}
 
   disableTrigger:
