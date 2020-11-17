@@ -210,6 +210,14 @@ def troubleshoot(event, context):
         for cluster_identifier in cluster_identifiers:
             if cluster_identifier == DB[STAGE]:
                 stop_db_cluster(DB[STAGE])
+    elif event['action'].lower() == 'make_kms_key':
+        key_project = event['key_project'].upper()
+        key_stage = event['key_stage'].upper()
+        _make_kms_key(key_project, key_stage)
+    elif event['action'].lower() == 'change_secret_kms_key':
+        new_kms_key = event['new_kms_key'].upper()
+        secret_id = event['secret_id'].upper()
+        _change_secret_kms_key(secret_id, new_kms_key)
     else:
         raise Exception("action must be specified and must be 'start_capture_db' or 'stop_capture_db'")
 
@@ -217,6 +225,35 @@ def troubleshoot(event, context):
 """
 Miscellaneous functions
 """
+
+
+def _change_secret_kms_key(secret_id, new_kms_key):
+    response = secrets_client.update_secret(
+        SecretId=secret_id,
+        KmsKeyId=new_kms_key
+    )
+
+
+def _make_kms_key(key_to_make, stage):
+    client = boto3.client('kms', 'us-west-2')
+    response = client.create_key(
+        Policy='key-consolepolicy-3',
+        Description=f'IOW {key_to_make} {stage} key',
+        KeyUsage='ENCRYPT_DECRYPT',
+        Origin='AWS_KMS',
+        Tags=[
+            {
+                'TagKey': 'wma:organization',
+                'TagValue': 'IOW'
+            },
+        ]
+    )
+    alias = f"IOW-{key_to_make}-{stage}"
+    client.create_alias(
+        AliasName=alias,
+        TargetKeyId=response['KeyMetadata']['KeyId']
+    )
+    return alias
 
 
 def _validate():
