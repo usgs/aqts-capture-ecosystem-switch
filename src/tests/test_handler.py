@@ -331,3 +331,10 @@ class TestHandler(TestCase):
             Policy='key-consolepolicy-3', Description='IOW WQP-EXTERNAL TEST key', KeyUsage='ENCRYPT_DECRYPT',
             Origin='AWS_KMS', Tags=[{'TagKey': 'wma:organization', 'TagValue': 'IOW'}])
         mock_client.create_alias.assert_called_once_with(AliasName='IOW-WQP-EXTERNAL-TEST', TargetKeyId='12345')
+
+    @mock.patch('src.handler.secrets_client', autospec=True)
+    def test_change_secret_kms_key(self, mock_boto):
+        handler.troubleshoot(
+            {"action": "change_secret_kms_key", "new_kms_key": "my_kms_key_id", "secret_id": "my_secret_id"},
+            self.context)
+        mock_boto.update_secret.assert_called_once_with(SecretId='my_secret_id', KmsKeyId='my_kms_key_id')

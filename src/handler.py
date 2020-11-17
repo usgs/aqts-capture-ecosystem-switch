@@ -224,8 +224,8 @@ Miscellaneous functions
 
 
 def _change_secret_kms_key(event):
-    new_kms_key = event['new_kms_key'].upper()
-    secret_id = event['secret_id'].upper()
+    new_kms_key = event['new_kms_key']
+    secret_id = event['secret_id']
     response = secrets_client.update_secret(
         SecretId=secret_id,
         KmsKeyId=new_kms_key
