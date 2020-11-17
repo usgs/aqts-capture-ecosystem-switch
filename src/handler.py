@@ -210,6 +210,10 @@ def troubleshoot(event, context):
         for cluster_identifier in cluster_identifiers:
             if cluster_identifier == DB[STAGE]:
                 stop_db_cluster(DB[STAGE])
+    elif event['action'].lower() == 'make_kms_key':
+        _make_kms_key(event)
+    elif event['action'].lower() == 'change_secret_kms_key':
+        _change_secret_kms_key(event)
     else:
         raise Exception("action must be specified and must be 'start_capture_db' or 'stop_capture_db'")
 
@@ -217,6 +221,41 @@ def troubleshoot(event, context):
 """
 Miscellaneous functions
 """
+
+
+def _change_secret_kms_key(event):
+    new_kms_key = event['new_kms_key']
+    secret_id = event['secret_id']
+    response = secrets_client.update_secret(
+        SecretId=secret_id,
+        KmsKeyId=new_kms_key
+    )
+
+
+def _make_kms_key(event):
+    key_project = event['key_project'].upper()
+    key_stage = event['key_stage'].upper()
+    client = boto3.client('kms', os.getenv('AWS_DEPLOYMENT_REGION'))
+    try:
+        response = client.create_key(
+            Description=f'IOW {key_project} {key_stage} key',
+            KeyUsage='ENCRYPT_DECRYPT',
+            Origin='AWS_KMS',
+            Tags=[
+                {
+                    'TagKey': 'wma:organization',
+                    'TagValue': 'IOW'
+                },
+            ]
+        )
+    except client.exceptions.ClientError:
+        logger.error(f"Couldn't create KMS key, probably already exists")
+
+    alias = f"alias/IOW-{key_project}-{key_stage}"
+    client.create_alias(
+        AliasName=alias,
+        TargetKeyId=response['KeyMetadata']['KeyId']
+    )
 
 
 def _validate():

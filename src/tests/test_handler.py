@@ -307,10 +307,37 @@ class TestHandler(TestCase):
         mock_client.describe_db_clusters.assert_called_once()
         mock_client.start_db_cluster.assert_called_once_with(DBClusterIdentifier='nwcapture-test')
 
-
     @mock.patch('src.handler.rds_client')
     def test_troubleshoot_start_bad_actions(self, mock_rds):
         with self.assertRaises(Exception) as context:
             handler.troubleshoot({}, self.context)
         with self.assertRaises(Exception) as context:
             handler.troubleshoot({"action": "unknown"}, self.context)
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_make_kms_key(self, mock_boto):
+        mock_client = mock.Mock()
+        mock_client.create_key.return_value = {
+            'KeyMetadata': {
+                'KeyId': '12345'
+            }
+        }
+        mock_boto.return_value = mock_client
+
+        os.environ['ARN_PREFIX'] = "arn:aws:iam::None"
+        handler.troubleshoot(
+            {"action": "make_kms_key", "key_project": "WQP-EXTERNAL", "key_stage": "TEST"},
+            self.context)
+        mock_client.create_key.assert_called_once_with(
+            Description='IOW WQP-EXTERNAL TEST key',
+            KeyUsage='ENCRYPT_DECRYPT',
+            Origin='AWS_KMS',
+            Tags=[{'TagKey': 'wma:organization', 'TagValue': 'IOW'}])
+        mock_client.create_alias.assert_called_once_with(AliasName='alias/IOW-WQP-EXTERNAL-TEST', TargetKeyId='12345')
+
+    @mock.patch('src.handler.secrets_client', autospec=True)
+    def test_change_secret_kms_key(self, mock_boto):
+        handler.troubleshoot(
+            {"action": "change_secret_kms_key", "new_kms_key": "my_kms_key_id", "secret_id": "my_secret_id"},
+            self.context)
+        mock_boto.update_secret.assert_called_once_with(SecretId='my_secret_id', KmsKeyId='my_kms_key_id')
