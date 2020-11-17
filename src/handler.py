@@ -236,23 +236,26 @@ def _make_kms_key(event):
     key_project = event['key_project'].upper()
     key_stage = event['key_stage'].upper()
     client = boto3.client('kms', os.getenv('AWS_DEPLOYMENT_REGION'))
-    response = client.create_key(
-        Description=f'IOW {key_project} {key_stage} key',
-        KeyUsage='ENCRYPT_DECRYPT',
-        Origin='AWS_KMS',
-        Tags=[
-            {
-                'TagKey': 'wma:organization',
-                'TagValue': 'IOW'
-            },
-        ]
-    )
-    alias = f"IOW-{key_project}-{key_stage}"
+    try:
+        response = client.create_key(
+            Description=f'IOW {key_project} {key_stage} key',
+            KeyUsage='ENCRYPT_DECRYPT',
+            Origin='AWS_KMS',
+            Tags=[
+                {
+                    'TagKey': 'wma:organization',
+                    'TagValue': 'IOW'
+                },
+            ]
+        )
+    except client.exceptions.ClientError:
+        logger.error(f"Couldn't create KMS key, probably already exists")
+
+    alias = f"alias/IOW-{key_project}-{key_stage}"
     client.create_alias(
         AliasName=alias,
         TargetKeyId=response['KeyMetadata']['KeyId']
     )
-    return alias
 
 
 def _validate():
