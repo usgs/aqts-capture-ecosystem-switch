@@ -323,6 +323,8 @@ class TestHandler(TestCase):
             }
         }
         mock_boto.return_value = mock_client
+
+        os.environ['ARN_PREFIX'] = "arn:aws:iam::None"
         handler.troubleshoot(
             {"action": "make_kms_key", "key_project": "WQP-EXTERNAL", "key_stage": "TEST"},
             self.context)

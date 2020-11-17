@@ -236,7 +236,7 @@ def _make_kms_key(event):
     key_project = event['key_project'].upper()
     key_stage = event['key_stage'].upper()
     client = boto3.client('kms', os.getenv('AWS_DEPLOYMENT_REGION'))
-    account_number = os.getenv('ACCOUNT_NUMBER')
+    arn_prefix = os.getenv('ARN_PREFIX')
     response = client.create_key(
         Policy={
             "Version": "2012-10-17",
@@ -246,7 +246,7 @@ def _make_kms_key(event):
                     "Sid": "Enable IAM User Permissions",
                     "Effect": "Allow",
                     "Principal": {
-                        "AWS": f"arn:aws:iam::{account_number}:root"
+                        "AWS": f"{arn_prefix}:root"
                     },
                     "Action": "kms:*",
                     "Resource": "*"
@@ -255,7 +255,7 @@ def _make_kms_key(event):
                     "Sid": "Allow access for Key Administrators",
                     "Effect": "Allow",
                     "Principal": {
-                        "AWS": f"arn:aws:iam::{account_number}:role/Ec2-Role"
+                        "AWS": f"{arn_prefix}:role/Ec2-Role"
                     },
                     "Action": [
                         "kms:Create*",
@@ -280,9 +280,9 @@ def _make_kms_key(event):
                     "Effect": "Allow",
                     "Principal": {
                         "AWS": [
-                            f"arn:aws:iam::{account_number}:role/adfs-developers",
-                            f"arn:aws:iam::{account_number}:role/ec2-mlr-test",
-                            f"arn:aws:iam::{account_number}:role/Ec2-Role"
+                            f"{arn_prefix}:role/adfs-developers",
+                            f"{arn_prefix}:role/ec2-mlr-test",
+                            f"{arn_prefix}:role/Ec2-Role"
                         ]
                     },
                     "Action": [
@@ -298,7 +298,7 @@ def _make_kms_key(event):
                     "Sid": "Allow attachment of persistent resources",
                     "Effect": "Allow",
                     "Principal": {
-                        "AWS": f"arn:aws:iam::{account_number}:role/Ec2-Role"
+                        "AWS": f"{arn_prefix}:role/Ec2-Role"
                     },
                     "Action": [
                         "kms:CreateGrant",
