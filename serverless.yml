@@ -146,6 +146,7 @@ functions:
     role: arn:aws:iam::#{AWS::AccountId}:role/csr-Lambda-Role
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      ACCOUNT_NUMBER: #{AWS::AccountId}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
     vpc: ${self:custom.vpc}

@@ -235,9 +235,85 @@ def _change_secret_kms_key(event):
 def _make_kms_key(event):
     key_project = event['key_project'].upper()
     key_stage = event['key_stage'].upper()
-    client = boto3.client('kms', 'us-west-2')
+    client = boto3.client('kms', os.getenv('AWS_DEPLOYMENT_REGION'))
+    account_number = os.getenv('ACCOUNT_NUMBER')
     response = client.create_key(
-        Policy='key-consolepolicy-3',
+        Policy={
+            "Version": "2012-10-17",
+            "Id": "key-consolepolicy-3",
+            "Statement": [
+                {
+                    "Sid": "Enable IAM User Permissions",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": f"arn:aws:iam::{account_number}:root"
+                    },
+                    "Action": "kms:*",
+                    "Resource": "*"
+                },
+                {
+                    "Sid": "Allow access for Key Administrators",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": f"arn:aws:iam::{account_number}:role/Ec2-Role"
+                    },
+                    "Action": [
+                        "kms:Create*",
+                        "kms:Describe*",
+                        "kms:Enable*",
+                        "kms:List*",
+                        "kms:Put*",
+                        "kms:Update*",
+                        "kms:Revoke*",
+                        "kms:Disable*",
+                        "kms:Get*",
+                        "kms:Delete*",
+                        "kms:TagResource",
+                        "kms:UntagResource",
+                        "kms:ScheduleKeyDeletion",
+                        "kms:CancelKeyDeletion"
+                    ],
+                    "Resource": "*"
+                },
+                {
+                    "Sid": "Allow use of the key",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": [
+                            f"arn:aws:iam::{account_number}:role/adfs-developers",
+                            f"arn:aws:iam::{account_number}:role/ec2-mlr-test",
+                            f"arn:aws:iam::{account_number}:role/Ec2-Role"
+                        ]
+                    },
+                    "Action": [
+                        "kms:Encrypt",
+                        "kms:Decrypt",
+                        "kms:ReEncrypt*",
+                        "kms:GenerateDataKey*",
+                        "kms:DescribeKey"
+                    ],
+                    "Resource": "*"
+                },
+                {
+                    "Sid": "Allow attachment of persistent resources",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": f"arn:aws:iam::{account_number}:role/Ec2-Role"
+                    },
+                    "Action": [
+                        "kms:CreateGrant",
+                        "kms:ListGrants",
+                        "kms:RevokeGrant"
+                    ],
+                    "Resource": "*",
+                    "Condition": {
+                        "Bool": {
+                            "kms:GrantIsForAWSResource": "true"
+                        }
+                    }
+                }
+            ]
+        },
         Description=f'IOW {key_project} {key_stage} key',
         KeyUsage='ENCRYPT_DECRYPT',
         Origin='AWS_KMS',

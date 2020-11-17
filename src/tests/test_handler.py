@@ -307,7 +307,6 @@ class TestHandler(TestCase):
         mock_client.describe_db_clusters.assert_called_once()
         mock_client.start_db_cluster.assert_called_once_with(DBClusterIdentifier='nwcapture-test')
 
-
     @mock.patch('src.handler.rds_client')
     def test_troubleshoot_start_bad_actions(self, mock_rds):
         with self.assertRaises(Exception) as context:
@@ -328,8 +327,48 @@ class TestHandler(TestCase):
             {"action": "make_kms_key", "key_project": "WQP-EXTERNAL", "key_stage": "TEST"},
             self.context)
         mock_client.create_key.assert_called_once_with(
-            Policy='key-consolepolicy-3', Description='IOW WQP-EXTERNAL TEST key', KeyUsage='ENCRYPT_DECRYPT',
-            Origin='AWS_KMS', Tags=[{'TagKey': 'wma:organization', 'TagValue': 'IOW'}])
+            Policy={
+                'Version': '2012-10-17',
+                'Id': 'key-consolepolicy-3',
+                'Statement': [
+                    {
+                        'Sid': 'Enable IAM User Permissions', 'Effect': 'Allow',
+                        'Principal': {'AWS': 'arn:aws:iam::None:root'},
+                        'Action': 'kms:*', 'Resource': '*'
+                    },
+                    {
+                        'Sid': 'Allow access for Key Administrators', 'Effect': 'Allow',
+                        'Principal': {'AWS': 'arn:aws:iam::None:role/Ec2-Role'},
+                        'Action': ['kms:Create*', 'kms:Describe*', 'kms:Enable*', 'kms:List*', 'kms:Put*',
+                                   'kms:Update*', 'kms:Revoke*', 'kms:Disable*', 'kms:Get*', 'kms:Delete*',
+                                   'kms:TagResource', 'kms:UntagResource', 'kms:ScheduleKeyDeletion',
+                                   'kms:CancelKeyDeletion'], 'Resource': '*'
+                    },
+                    {
+                        'Sid': 'Allow use of the key', 'Effect': 'Allow',
+                        'Principal': {
+                            'AWS': [
+                                'arn:aws:iam::None:role/adfs-developers',
+                                'arn:aws:iam::None:role/ec2-mlr-test',
+                                'arn:aws:iam::None:role/Ec2-Role'
+                            ]
+                        },
+                        'Action': ['kms:Encrypt', 'kms:Decrypt', 'kms:ReEncrypt*', 'kms:GenerateDataKey*',
+                                   'kms:DescribeKey'],
+                        'Resource': '*'
+                    },
+                    {
+                        'Sid': 'Allow attachment of persistent resources',
+                        'Effect': 'Allow', 'Principal': {'AWS': 'arn:aws:iam::None:role/Ec2-Role'},
+                        'Action': ['kms:CreateGrant', 'kms:ListGrants', 'kms:RevokeGrant'],
+                        'Resource': '*', 'Condition': {'Bool': {'kms:GrantIsForAWSResource': 'true'}}
+                    }
+                ]
+            },
+            Description='IOW WQP-EXTERNAL TEST key',
+            KeyUsage='ENCRYPT_DECRYPT',
+            Origin='AWS_KMS',
+            Tags=[{'TagKey': 'wma:organization', 'TagValue': 'IOW'}])
         mock_client.create_alias.assert_called_once_with(AliasName='IOW-WQP-EXTERNAL-TEST', TargetKeyId='12345')
 
     @mock.patch('src.handler.secrets_client', autospec=True)
