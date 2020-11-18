@@ -39,25 +39,25 @@ custom:
     QA: true
     PROD-EXTERNAL: false
   startObservationSchedules:
-    DEV: cron(0 12 ? * MON *)
-    TEST: cron(0 12 ? * MON-FRI *)
-    QA: cron(0 12 ? * MON *)
+    DEV: cron(59 12 ? * MON *)
+    TEST: cron(59 12 ? * MON-FRI *)
+    QA: cron(59 12 ? * MON *)
     PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopObservationSchedules:
-    DEV: cron(0 23 ? * FRI *)
-    TEST: cron(0 23 ? * MON-FRI *)
-    QA: cron(0 23 ? * FRI *)
+    DEV: cron(59 23 ? * FRI *)
+    TEST: cron(59 23 ? * MON-FRI *)
+    QA: cron(59 23 ? * FRI *)
     PROD-EXTERNAL: cron(0 23 ? * FRI *)
   startCaptureSchedules:
-    DEV: cron(0 12 ? * MON *)
-    TEST: cron(0 12 ? * MON-FRI *)
-    QA: cron(0 12 ? * MON *)
+    DEV: cron(59 12 ? * MON *)
+    TEST: cron(59 12 ? * MON-FRI *)
+    QA: cron(59 12 ? * MON *)
     PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopCaptureSchedules:
-    DEV: cron(0 23 ? * FRI *)
-    TEST: cron(0 23 ? * MON-FRI *)
-    QA: cron(0 23 ? * FRI *)
-    PROD-EXTERNAL: cron(0 23 ? * FRI *)
+    DEV: cron(59 23 ? * FRI *)
+    TEST: cron(59 23 ? * MON-FRI *)
+    QA: cron(59 23 ? * FRI *)
+    PROD-EXTERNAL: cron(59 23 ? * FRI *)
   # No scheduling enabled for prod.  For qa, only Friday stops are scheduled.  For test, both stop and
   # starts are scheduled.
   startCaptureDbScheduleEnabled:
