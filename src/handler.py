@@ -214,6 +214,11 @@ def troubleshoot(event, context):
         _make_kms_key(event)
     elif event['action'].lower() == 'change_secret_kms_key':
         _change_secret_kms_key(event)
+    elif event['action'].lower() == 'delete_stack':
+        client = boto3.client('cloudformation')
+        response = client.delete_stack(
+            StackName='WQP-GEOSERVER-ECS-SERVICE-TEST',
+        )
     else:
         raise Exception("action must be specified and must be 'start_capture_db' or 'stop_capture_db'")
 
