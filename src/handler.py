@@ -228,7 +228,7 @@ def troubleshoot(event, context):
         _make_fargate_security_group(event)
     # TODO remove
     elif event['action'].lower() == 'delete_access_point':
-        client = boto3.client('efs', "us_west-2")
+        client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
         client.delete_access_point('fsap-018551d3524032925')
     else:
         raise Exception(f"action must be specified and must in {actions}")
