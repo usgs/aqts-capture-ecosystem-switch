@@ -200,8 +200,6 @@ def _stop_db(db, triggers):
 
 
 def troubleshoot(event, context):
-    actions = ['start_capture_db', 'stop_capture_db', 'make_kms_key', 'change_secret_kms_key',
-               'make_access_point', 'create_fargate_security_group']
     if event['action'].lower() == 'start_capture_db':
         cluster_identifiers = describe_db_clusters("start")
         for cluster_identifier in cluster_identifiers:
@@ -227,18 +225,26 @@ def troubleshoot(event, context):
     elif event['action'].lower() == 'create_fargate_security_group':
         _make_fargate_security_group(event)
     elif event['action'].lower() == 'delete_fargate_security_group':
+        # When you need to delete a security group, modify the code
+        # here and specify the group id.  Don't check into master
         client = boto3.client('ec2', os.getenv('AWS_DEPLOYMENT_REGION'))
-        client.delete_security_group(GroupId='sg-01391da0301df61e7')
-    # TODO remove
+        client.delete_security_group(GroupId='sg-xxxxxxxxxxxxxxxxx')
     elif event['action'].lower() == 'delete_access_point':
+        # When you need to delete an efs access point, modify the code
+        # here and specify the access point id.  Don't check into master
         client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
-        client.delete_access_point(AccessPointId='fsap-0b2c249ab9b6cdb5b')
+        client.delete_access_point(AccessPointId='fsap-xxxxxxxxxxxxxxxxx')
     else:
-        raise Exception(f"action must be specified and must in {actions}")
+        raise Exception(f"invalid action")
+
+
+def _validate():
+    if os.environ['STAGE'] != "QA":
+        raise Exception("This lambda is currently only supported on the QA tier")
 
 
 """
-Miscellaneous functions
+Occasional use functions.  These are used rarely to set up new long-lived resources.
 """
 
 
@@ -338,8 +344,3 @@ def _make_kms_key(event):
         AliasName=alias,
         TargetKeyId=response['KeyMetadata']['KeyId']
     )
-
-
-def _validate():
-    if os.environ['STAGE'] != "QA":
-        raise Exception("This lambda is currently only supported on the QA tier")
