@@ -227,7 +227,7 @@ def troubleshoot(event, context):
     elif event['action'].lower() == 'create_fargate_security_group':
         _make_fargate_security_group(event)
     elif event['action'].lower() == 'delete_fargate_security_group':
-        client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
+        client = boto3.client('ec2', os.getenv('AWS_DEPLOYMENT_REGION'))
         client.delete_security_group(GroupName='iow-geoserver-sg-test')
     # TODO remove
     elif event['action'].lower() == 'delete_access_point':
