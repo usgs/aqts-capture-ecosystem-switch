@@ -68,22 +68,26 @@ custom:
   # starts are scheduled.
   startCaptureDbScheduleEnabled:
     DEV: false
-    TEST: true
+    # TODO put it back to true
+    TEST: false
     QA: false
     PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
     DEV: false
-    TEST: true
+    # TODO put it back to true
+    TEST: false
     QA: false
     PROD-EXTERNAL: false
   stopCaptureDbScheduleEnabled:
     DEV: false
-    TEST: true
+    # TODO put it back to true
+    TEST: false
     QA: false
     PROD-EXTERNAL: false
   stopObservationDbScheduleEnabled:
     DEV: true
-    TEST: true
+    # TODO put it back to true
+    TEST: false
     QA: true
     PROD-EXTERNAL: false
 
