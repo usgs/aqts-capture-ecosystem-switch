@@ -229,7 +229,7 @@ def troubleshoot(event, context):
     # TODO remove
     elif event['action'].lower() == 'delete_access_point':
         client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
-        client.delete_access_point(AccessPointId='fsap-018551d3524032925')
+        client.delete_access_point(AccessPointId='fsap-0b2c249ab9b6cdb5b')
     else:
         raise Exception(f"action must be specified and must in {actions}")
 
@@ -258,6 +258,11 @@ def _make_efs_access_point(event):
                 'Key': 'wma:organization',
                 'Value': 'IOW'
             },
+            {
+                'Key': 'Name',
+                'Value': 'iow-geoserver-test'
+            }
+
         ],
         FileSystemId=file_system_id,
         PosixUser={
