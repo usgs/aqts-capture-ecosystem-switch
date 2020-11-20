@@ -200,6 +200,8 @@ def _stop_db(db, triggers):
 
 
 def troubleshoot(event, context):
+    actions = ['start_capture_db', 'stop_capture_db', 'make_kms_key', 'change_secret_kms_key',
+               'make_access_point']
     if event['action'].lower() == 'start_capture_db':
         cluster_identifiers = describe_db_clusters("start")
         for cluster_identifier in cluster_identifiers:
@@ -219,8 +221,10 @@ def troubleshoot(event, context):
         response = client.delete_stack(
             StackName='WQP-GEOSERVER-ECS-SERVICE-TEST',
         )
+    elif event['action'].lower() == 'create_access_point':
+        _make_efs_access_point(event)
     else:
-        raise Exception("action must be specified and must be 'start_capture_db' or 'stop_capture_db'")
+        raise Exception(f"action must be specified and must in {actions}")
 
 
 """
@@ -235,6 +239,33 @@ def _change_secret_kms_key(event):
         SecretId=secret_id,
         KmsKeyId=new_kms_key
     )
+
+
+def _make_efs_access_point(event):
+    client = boto3.client('efs')
+    file_system_id = event['file_system_id']
+    response = client.create_access_point(
+        Tags=[
+            {
+                'Key': 'wma:organization',
+                'Value': 'IOW'
+            },
+        ],
+        FileSystemId=file_system_id,
+        PosixUser={
+            'Uid': 1001,
+            'Gid': 1001
+        },
+        RootDirectory={
+            'Path': '/data',
+            'CreationInfo': {
+                'OwnerUid': 1001,
+                'OwnerGid': 1001,
+                'Permissions': '0777'
+            }
+        }
+    )
+    logger.info(f"Access point created: {response}")
 
 
 def _make_kms_key(event):
