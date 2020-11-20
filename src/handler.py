@@ -201,7 +201,7 @@ def _stop_db(db, triggers):
 
 def troubleshoot(event, context):
     actions = ['start_capture_db', 'stop_capture_db', 'make_kms_key', 'change_secret_kms_key',
-               'make_access_point']
+               'make_access_point', 'create_fargate_security_group']
     if event['action'].lower() == 'start_capture_db':
         cluster_identifiers = describe_db_clusters("start")
         for cluster_identifier in cluster_identifiers:
@@ -216,13 +216,20 @@ def troubleshoot(event, context):
         _make_kms_key(event)
     elif event['action'].lower() == 'change_secret_kms_key':
         _change_secret_kms_key(event)
+    # TODO remove
     elif event['action'].lower() == 'delete_stack':
-        client = boto3.client('cloudformation')
+        client = boto3.client('cloudformation', "us-west-2")
         response = client.delete_stack(
             StackName='WQP-GEOSERVER-ECS-SERVICE-TEST',
         )
     elif event['action'].lower() == 'create_access_point':
         _make_efs_access_point(event)
+    elif event['action'].lower() == 'create_fargate_security_group':
+        _make_fargate_security_group(event)
+    # TODO remove
+    elif event['action'].lower() == 'delete_access_point':
+        client = boto3.client('efs', "us_west-2")
+        client.delete_access_point('fsap-018551d3524032925')
     else:
         raise Exception(f"action must be specified and must in {actions}")
 
@@ -242,9 +249,10 @@ def _change_secret_kms_key(event):
 
 
 def _make_efs_access_point(event):
-    client = boto3.client('efs')
+    client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
     file_system_id = event['file_system_id']
     response = client.create_access_point(
+        ClientToken='iow-fargate-test',
         Tags=[
             {
                 'Key': 'wma:organization',
@@ -254,7 +262,8 @@ def _make_efs_access_point(event):
         FileSystemId=file_system_id,
         PosixUser={
             'Uid': 1001,
-            'Gid': 1001
+            'Gid': 1001,
+            'SecondaryGids': []
         },
         RootDirectory={
             'Path': '/data',
@@ -266,6 +275,24 @@ def _make_efs_access_point(event):
         }
     )
     logger.info(f"Access point created: {response}")
+
+
+def _make_fargate_security_group(event):
+    client = boto3.client('ec2', os.getenv('AWS_DEPLOYMENT_REGION'))
+    description = event['description']
+    group_name = event['group_name']
+    vpc_id = event['vpc_id']
+    response = client.create_security_group(
+        Description=description,
+        GroupName=group_name,
+        VpcId=vpc_id,
+    )
+    security_group_id = response['GroupId']
+    ec2 = boto3.resource('ec2', os.getenv('AWS_DEPLOYMENT_REGION'))
+    security_group = ec2.SecurityGroup(security_group_id)
+    security_group.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=2049, ToPort=2049)
+    security_group.authorize_egress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=0, ToPort=65535)
+    logger.info(f"security_group {security_group_id} created")
 
 
 def _make_kms_key(event):
