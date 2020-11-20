@@ -229,7 +229,7 @@ def troubleshoot(event, context):
     # TODO remove
     elif event['action'].lower() == 'delete_access_point':
         client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
-        client.delete_access_point('fsap-018551d3524032925')
+        client.delete_access_point(AccessPointId='fsap-018551d3524032925')
     else:
         raise Exception(f"action must be specified and must in {actions}")
 
