@@ -252,7 +252,7 @@ def _make_efs_access_point(event):
     client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
     file_system_id = event['file_system_id']
     response = client.create_access_point(
-        ClientToken='iow-fargate-test',
+        ClientToken='iow-geoserver-test',
         Tags=[
             {
                 'Key': 'wma:organization',
@@ -296,7 +296,18 @@ def _make_fargate_security_group(event):
     ec2 = boto3.resource('ec2', os.getenv('AWS_DEPLOYMENT_REGION'))
     security_group = ec2.SecurityGroup(security_group_id)
     security_group.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=2049, ToPort=2049)
-    security_group.authorize_egress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=0, ToPort=65535)
+    security_group.authorize_egress(
+        IpPermissions=[
+            {
+                'IpProtocol': 'tcp',
+                'FromPort': 0,
+                'ToPort': 65535,
+                'IpRanges': [
+                    {'CidrIp': '0.0.0.0/0'}
+                ]
+            }
+        ]
+    )
     logger.info(f"security_group {security_group_id} created")
 
 

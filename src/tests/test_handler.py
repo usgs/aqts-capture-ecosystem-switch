@@ -356,7 +356,8 @@ class TestHandler(TestCase):
             self.context
         )
         mock_client.create_access_point.assert_called_once_with(
-            ClientToken='iow-fargate-test', Tags=[{'Key': 'wma:organization', 'Value': 'IOW'}],
+            ClientToken='iow-geoserver-test',
+            Tags=[{'Key': 'wma:organization', 'Value': 'IOW'}, {'Key': 'Name', 'Value': 'iow-geoserver-test'}],
             FileSystemId='my_file_system_id', PosixUser={'Uid': 1001, 'Gid': 1001, 'SecondaryGids': []},
             RootDirectory={'Path': '/data', 'CreationInfo': {'OwnerUid': 1001, 'OwnerGid': 1001, 'Permissions': '0777'}}
         )
