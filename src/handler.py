@@ -308,7 +308,7 @@ def _change_kms_key_policy(event):
     client = boto3.client('kms', os.getenv('AWS_DEPLOYMENT_REGION'))
     response = client.put_key_policy(
         KeyId=key_id,
-        PolicyName='IOW-KMS-POLICY',
+        PolicyName='iow-kms-policy',
         Policy=policy
     )
     logger.info(response)
