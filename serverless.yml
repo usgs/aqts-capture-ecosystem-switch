@@ -549,6 +549,10 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForModify
+          WaitForModify:
+            Type: Wait
+            Seconds: 420
             Next: EnableTrigger
           EnableTrigger:
             Type: Task
@@ -599,6 +603,10 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForModify
+          WaitForModify:
+            Type: Wait
+            Seconds: 420
             Next: EnableTrigger
           EnableTrigger:
             Type: Task
