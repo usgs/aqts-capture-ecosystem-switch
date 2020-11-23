@@ -173,6 +173,8 @@ functions:
             Ref: AWS::AccountId
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      ACCOUNT_ID:
+          Ref: AWS::AccountId
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
 
