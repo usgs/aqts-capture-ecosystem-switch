@@ -216,12 +216,37 @@ def troubleshoot(event, context):
         _change_secret_kms_key(event)
     elif event['action'].lower() == 'change_kms_key_policy':
         _change_kms_key_policy(event)
+    # TODO remove
+    elif event['action'].lower() == 'delete_stack':
+        client = boto3.client('cloudformation', "us-west-2")
+        response = client.delete_stack(
+            StackName='WQP-GEOSERVER-ECS-SERVICE-TEST',
+        )
+    elif event['action'].lower() == 'create_access_point':
+        _make_efs_access_point(event)
+    elif event['action'].lower() == 'create_fargate_security_group':
+        _make_fargate_security_group(event)
+    elif event['action'].lower() == 'delete_fargate_security_group':
+        # When you need to delete a security group, modify the code
+        # here and specify the group id.  Don't check into master
+        client = boto3.client('ec2', os.getenv('AWS_DEPLOYMENT_REGION'))
+        client.delete_security_group(GroupId='sg-xxxxxxxxxxxxxxxxx')
+    elif event['action'].lower() == 'delete_access_point':
+        # When you need to delete an efs access point, modify the code
+        # here and specify the access point id.  Don't check into master
+        client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
+        client.delete_access_point(AccessPointId='fsap-xxxxxxxxxxxxxxxxx')
     else:
-        raise Exception("action must be specified and must be 'start_capture_db' or 'stop_capture_db'")
+        raise Exception(f"invalid action")
+
+
+def _validate():
+    if os.environ['STAGE'] != "QA":
+        raise Exception("This lambda is currently only supported on the QA tier")
 
 
 """
-Miscellaneous functions
+Occasional use functions.  These are used rarely to set up new long-lived resources.
 """
 
 
@@ -323,6 +348,69 @@ def _change_secret_kms_key(event):
     )
 
 
+def _make_efs_access_point(event):
+    client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
+    file_system_id = event['file_system_id']
+    response = client.create_access_point(
+        ClientToken='iow-geoserver-test',
+        Tags=[
+            {
+                'Key': 'wma:organization',
+                'Value': 'IOW'
+            },
+            {
+                'Key': 'Name',
+                'Value': 'iow-geoserver-test'
+            }
+
+        ],
+        FileSystemId=file_system_id,
+        PosixUser={
+            'Uid': 1001,
+            'Gid': 1001,
+            'SecondaryGids': []
+        },
+        RootDirectory={
+            'Path': '/data',
+            'CreationInfo': {
+                'OwnerUid': 1001,
+                'OwnerGid': 1001,
+                'Permissions': '0777'
+            }
+        }
+    )
+    logger.info(f"Access point created: {response}")
+
+
+def _make_fargate_security_group(event):
+    client = boto3.client('ec2', os.getenv('AWS_DEPLOYMENT_REGION'))
+    description = event['description']
+    group_name = event['group_name']
+    vpc_id = event['vpc_id']
+    response = client.create_security_group(
+        Description=description,
+        GroupName=group_name,
+        VpcId=vpc_id,
+    )
+    security_group_id = response['GroupId']
+    ec2 = boto3.resource('ec2', os.getenv('AWS_DEPLOYMENT_REGION'))
+    security_group = ec2.SecurityGroup(security_group_id)
+    security_group.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=2049, ToPort=2049)
+    security_group.authorize_egress(
+        IpPermissions=[
+            {
+                'IpProtocol': 'tcp',
+                'FromPort': 0,
+                'ToPort': 65535,
+                'IpRanges': [
+                    {'CidrIp': '0.0.0.0/0'}
+                ]
+            }
+        ]
+    )
+    logger.info(f"security_group {security_group_id} created")
+
+
 def _make_kms_key(event):
     key_project = event['key_project'].upper()
     key_stage = event['key_stage'].upper()
@@ -347,8 +435,3 @@ def _make_kms_key(event):
         AliasName=alias,
         TargetKeyId=response['KeyMetadata']['KeyId']
     )
-
-
-def _validate():
-    if os.environ['STAGE'] != "QA":
-        raise Exception("This lambda is currently only supported on the QA tier")

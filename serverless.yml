@@ -522,8 +522,23 @@ stepFunctions:
       name: aqts-ecosystem-switch-shrink-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Shrink Db"
-        StartAt: ShrinkDb
+        StartAt: DisableTrigger
         States:
+          DisableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [disableTrigger, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 3
+                BackoffRate: 1
+            Next: WaitForDisable
+          WaitForDisable:
+            Type: Wait
+            Seconds: 120
+            Next: ShrinkDb
           ShrinkDb:
             Type: Task
             Resource:
@@ -534,6 +549,10 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForModify
+          WaitForModify:
+            Type: Wait
+            Seconds: 600
             Next: EnableTrigger
           EnableTrigger:
             Type: Task
@@ -557,8 +576,23 @@ stepFunctions:
       name: aqts-ecosystem-switch-grow-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Grow Db"
-        StartAt: GrowDb
+        StartAt: DisableTrigger
         States:
+          DisableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ disableTrigger, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 3
+                BackoffRate: 1
+            Next: WaitForDisable
+          WaitForDisable:
+            Type: Wait
+            Seconds: 120
+            Next: GrowDb
           GrowDb:
             Type: Task
             Resource:
@@ -569,6 +603,10 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForModify
+          WaitForModify:
+            Type: Wait
+            Seconds: 600
             Next: EnableTrigger
           EnableTrigger:
             Type: Task

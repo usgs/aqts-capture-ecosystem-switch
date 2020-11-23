@@ -55,8 +55,6 @@ def shrink_db(event, context):
     elif not _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
         raise Exception("Cluster is not available")
     else:
-        logger.info("Disabling the trigger!")
-        disable_lambda_trigger(TRIGGER[STAGE])
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=SMALL_DB_SIZE,
@@ -75,8 +73,6 @@ def grow_db(event, context):
     elif not _is_cluster_available(DEFAULT_DB_CLUSTER_IDENTIFIER):
         raise Exception("Cluster is not available")
     else:
-        logger.info("Disabling the trigger!")
-        disable_lambda_trigger(TRIGGER[STAGE])
         response = rds_client.modify_db_instance(
             DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
             DBInstanceClass=BIG_DB_SIZE,

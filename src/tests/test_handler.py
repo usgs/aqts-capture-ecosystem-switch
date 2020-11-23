@@ -360,3 +360,45 @@ class TestHandler(TestCase):
             KeyId='key123', PolicyName='default',
             Policy='{"Version": "2012-10-17", "Id": "key-consolepolicy-3", "Statement": [{"Sid": "Enable IAM User Permissions", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:root"}, "Action": "kms:*", "Resource": "*"}, {"Sid": "Allow access for Key Administrators", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion"], "Resource": "*"}, {"Sid": "Allow use of the key", "Effect": "Allow", "Principal": {"AWS": ["arn:aws:iam::my_account_id:role/adfs-developers", "arn:aws:iam::my_account_id:role/Ec2-Role", "arn:aws:iam::my_account_id:role/ec2-mlr-test"]}, "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"], "Resource": "*"}, {"Sid": "Allow attachment of persistent resources", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:CreateGrant", "kms:ListGrants", "kms:RevokeGrant"], "Resource": "*", "Condition": {"Bool": {"kms:GrantIsForAWSResource": "true"}}}]}'
         )
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_create_efs_access_point(self, mock_boto):
+        mock_client = mock.Mock()
+        mock_client.create_access_point.return_value = \
+            {
+                'AccessPointId': 'mynewaccesspointid',
+            }
+
+        mock_boto.return_value = mock_client
+        handler.troubleshoot(
+            {"action": "create_access_point", "file_system_id": "my_file_system_id"},
+            self.context
+        )
+        mock_client.create_access_point.assert_called_once_with(
+            ClientToken='iow-geoserver-test',
+            Tags=[{'Key': 'wma:organization', 'Value': 'IOW'}, {'Key': 'Name', 'Value': 'iow-geoserver-test'}],
+            FileSystemId='my_file_system_id', PosixUser={'Uid': 1001, 'Gid': 1001, 'SecondaryGids': []},
+            RootDirectory={'Path': '/data', 'CreationInfo': {'OwnerUid': 1001, 'OwnerGid': 1001, 'Permissions': '0777'}}
+        )
+
+    @mock.patch('src.handler.boto3.resource', autospec=True)
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_create_create_security_group(self, mock_boto, mock_resource):
+        os.environ['AWS_DEPLOYMENT_REGION'] = 'us-west-2'
+        mock_client = mock.Mock()
+        mock_client.create_security_group.return_value = {
+            'GroupId': 'f12345'
+        }
+        mock_boto.return_value = mock_client
+        handler.troubleshoot(
+            {
+                "action": "create_fargate_security_group",
+                "description": "test security group",
+                "group_name": "my group",
+                "vpc_id": "fsa12345"
+            },
+            self.context
+        )
+        mock_client.create_security_group.assert_called_once_with(
+            Description='test security group', GroupName='my group', VpcId='fsa12345'
+        )
