@@ -530,7 +530,8 @@ stepFunctions:
         States:
           DisableTrigger:
             Type: Task
-            Resource::GetAtt: [disableTrigger, Arn]
+            Resource:
+              Fn::GetAtt: [disableTrigger, Arn]
             Retry:
               - ErrorEquals:
                   - States.ALL
