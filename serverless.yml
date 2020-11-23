@@ -552,7 +552,7 @@ stepFunctions:
             Next: WaitForModify
           WaitForModify:
             Type: Wait
-            Seconds: 420
+            Seconds: 600
             Next: EnableTrigger
           EnableTrigger:
             Type: Task
@@ -606,7 +606,7 @@ stepFunctions:
             Next: WaitForModify
           WaitForModify:
             Type: Wait
-            Seconds: 420
+            Seconds: 600
             Next: EnableTrigger
           EnableTrigger:
             Type: Task
