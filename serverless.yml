@@ -68,26 +68,22 @@ custom:
   # starts are scheduled.
   startCaptureDbScheduleEnabled:
     DEV: false
-    # TODO put it back to true
-    TEST: false
+    TEST: true
     QA: false
     PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
     DEV: false
-    # TODO put it back to true
-    TEST: false
+    TEST: true
     QA: false
     PROD-EXTERNAL: false
   stopCaptureDbScheduleEnabled:
     DEV: false
-    # TODO put it back to true
-    TEST: false
+    TEST: true
     QA: false
     PROD-EXTERNAL: false
   stopObservationDbScheduleEnabled:
     DEV: true
-    # TODO put it back to true
-    TEST: false
+    TEST: true
     QA: true
     PROD-EXTERNAL: false
 
@@ -177,6 +173,8 @@ functions:
             Ref: AWS::AccountId
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      ACCOUNT_ID:
+          Ref: AWS::AccountId
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
 
@@ -524,8 +522,23 @@ stepFunctions:
       name: aqts-ecosystem-switch-shrink-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Shrink Db"
-        StartAt: ShrinkDb
+        StartAt: DisableTrigger
         States:
+          DisableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [disableTrigger, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 3
+                BackoffRate: 1
+            Next: WaitForDisable
+          WaitForDisable:
+            Type: Wait
+            Seconds: 120
+            Next: ShrinkDb
           ShrinkDb:
             Type: Task
             Resource:
@@ -536,6 +549,10 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForModify
+          WaitForModify:
+            Type: Wait
+            Seconds: 600
             Next: EnableTrigger
           EnableTrigger:
             Type: Task
@@ -559,8 +576,23 @@ stepFunctions:
       name: aqts-ecosystem-switch-grow-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Grow Db"
-        StartAt: GrowDb
+        StartAt: DisableTrigger
         States:
+          DisableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ disableTrigger, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 3
+                BackoffRate: 1
+            Next: WaitForDisable
+          WaitForDisable:
+            Type: Wait
+            Seconds: 120
+            Next: GrowDb
           GrowDb:
             Type: Task
             Resource:
@@ -571,6 +603,10 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForModify
+          WaitForModify:
+            Type: Wait
+            Seconds: 600
             Next: EnableTrigger
           EnableTrigger:
             Type: Task
