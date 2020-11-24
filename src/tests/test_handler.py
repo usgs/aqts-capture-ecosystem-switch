@@ -132,7 +132,7 @@ class TestHandler(TestCase):
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.enable_lambda_trigger', autospec=True)
+    @mock.patch('src.handler.enable_trigger', autospec=True)
     def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_enable_lambda_trigger,
                                                                      mock_describe_db_clusters):
         mock_enable_lambda_trigger.return_value = True
@@ -147,7 +147,7 @@ class TestHandler(TestCase):
             os.environ['STAGE'] = stage
             mock_describe_db_clusters.return_value = DB[stage]
             handler.control_db_utilization(my_alarm, self.context)
-            mock_enable_lambda_trigger.assert_called_with(TRIGGER[stage])
+            mock_enable_lambda_trigger.assert_called_with(my_alarm, self.context)
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
@@ -155,7 +155,7 @@ class TestHandler(TestCase):
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.enable_lambda_trigger', autospec=True)
+    @mock.patch('src.handler.enable_trigger', autospec=True)
     def test_control_db_utilization_dont_enable_lambda_trigger_when_db_off(self, mock_enable_lambda_trigger,
                                                                            mock_describe_db_clusters):
         mock_enable_lambda_trigger.return_value = True
@@ -168,16 +168,15 @@ class TestHandler(TestCase):
         }
         for stage in STAGES:
             os.environ['STAGE'] = stage
-            mock_describe_db_clusters.return_value = "SomebodyElsesDb"
             handler.control_db_utilization(my_alarm, self.context)
-            mock_enable_lambda_trigger.assert_not_called()
+            mock_enable_lambda_trigger.assert_called_with(my_alarm, self.context)
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
+    @mock.patch('src.handler.disable_trigger', autospec=True)
     def test_control_db_utilization_disable(self, mock_disable_lambda_trigger):
         mock_disable_lambda_trigger.return_value = True
         my_alarm = {
@@ -190,7 +189,7 @@ class TestHandler(TestCase):
         for stage in STAGES:
             os.environ['STAGE'] = stage
             handler.control_db_utilization(my_alarm, self.context)
-            mock_disable_lambda_trigger.assert_called_with(TRIGGER[stage])
+            mock_disable_lambda_trigger.assert_called_with(my_alarm, self.context)
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
