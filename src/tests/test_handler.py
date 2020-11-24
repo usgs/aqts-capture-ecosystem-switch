@@ -342,6 +342,25 @@ class TestHandler(TestCase):
         mock_boto.update_secret.assert_called_once_with(SecretId='my_secret_id', KmsKeyId='my_kms_key_id')
 
     @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_change_kms_key_policy(self, mock_boto):
+        mock_client = mock.Mock()
+        os.environ['ACCOUNT_ID'] = 'my_account_id'
+        mock_client.put_key_policy.return_value = {
+            'KeyMetadata': {
+                'KeyId': '12345'
+            }
+        }
+        mock_boto.return_value = mock_client
+
+        handler.troubleshoot(
+            {"action": "change_kms_key_policy", "key_id": "key123"},
+            self.context)
+        mock_client.put_key_policy.assert_called_once_with(
+            KeyId='key123', PolicyName='default',
+            Policy='{"Version": "2012-10-17", "Id": "key-consolepolicy-3", "Statement": [{"Sid": "Enable IAM User Permissions", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:root"}, "Action": "kms:*", "Resource": "*"}, {"Sid": "Allow access for Key Administrators", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion"], "Resource": "*"}, {"Sid": "Allow use of the key", "Effect": "Allow", "Principal": {"AWS": ["arn:aws:iam::my_account_id:role/adfs-developers", "arn:aws:iam::my_account_id:role/Ec2-Role", "arn:aws:iam::my_account_id:role/ec2-mlr-test"]}, "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"], "Resource": "*"}, {"Sid": "Allow attachment of persistent resources", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:CreateGrant", "kms:ListGrants", "kms:RevokeGrant"], "Resource": "*", "Condition": {"Bool": {"kms:GrantIsForAWSResource": "true"}}}]}'
+        )
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
     def test_create_efs_access_point(self, mock_boto):
         mock_client = mock.Mock()
         mock_client.create_access_point.return_value = \
