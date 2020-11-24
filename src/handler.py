@@ -144,9 +144,10 @@ def control_db_utilization(event, context):
     if alarm_state == "ALARM":
         logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
         disable_lambda_trigger(TRIGGER[stage])
-    elif alarm_state == "OK":
+    else:
         """
-        We do NOT want to enable the trigger if the db is not up and running.
+        If we are not in a state of alarm (i.e. OK or INSUFFICIENT_DATA) then it is okay
+        to enable the trigger if the db is up and running (status == available)
         """
         active_dbs = describe_db_clusters('stop')
         if DB[stage] in active_dbs:
