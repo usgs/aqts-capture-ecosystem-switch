@@ -3,6 +3,8 @@ import json
 import os
 
 import boto3
+
+from src.db_resize_handler import disable_trigger, enable_trigger
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
     stop_db_cluster, \
@@ -143,16 +145,14 @@ def control_db_utilization(event, context):
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     if alarm_state == "ALARM":
         logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
-        disable_lambda_trigger(TRIGGER[stage])
+        disable_trigger(event, context)
     else:
         """
         If we are not in a state of alarm (i.e. OK or INSUFFICIENT_DATA) then it is okay
         to enable the trigger if the db is up and running (status == available)
         """
-        active_dbs = describe_db_clusters('stop')
-        if DB[stage] in active_dbs:
-            logger.info(f"Enabling trigger {TRIGGER[stage]} for {DB[stage]} because error handler is okay")
-            enable_lambda_trigger(TRIGGER[stage])
+        logger.info(f"Enabling trigger {TRIGGER[stage]} for {DB[stage]} because error handler is okay")
+        enable_trigger(event, context)
 
 
 def run_etl_query(rds=None):
