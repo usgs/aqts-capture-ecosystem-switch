@@ -215,6 +215,8 @@ def troubleshoot(event, context):
         _make_kms_key(event)
     elif event['action'].lower() == 'change_secret_kms_key':
         _change_secret_kms_key(event)
+    elif event['action'].lower() == 'change_kms_key_policy':
+        _change_kms_key_policy(event)
     # TODO remove
     elif event['action'].lower() == 'delete_stack':
         client = boto3.client('cloudformation', "us-west-2")
@@ -247,6 +249,95 @@ def _validate():
 """
 Occasional use functions.  These are used rarely to set up new long-lived resources.
 """
+
+
+def _change_kms_key_policy(event):
+    key_id = event['key_id']
+    account_id = os.environ['ACCOUNT_ID']
+    policy = {
+        "Version": "2012-10-17",
+        "Id": "key-consolepolicy-3",
+        "Statement": [
+            {
+                "Sid": "Enable IAM User Permissions",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": f"arn:aws:iam::{account_id}:root"
+                },
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow access for Key Administrators",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": f"arn:aws:iam::{account_id}:role/Ec2-Role"
+                },
+                "Action": [
+                    "kms:Create*",
+                    "kms:Describe*",
+                    "kms:Enable*",
+                    "kms:List*",
+                    "kms:Put*",
+                    "kms:Update*",
+                    "kms:Revoke*",
+                    "kms:Disable*",
+                    "kms:Get*",
+                    "kms:Delete*",
+                    "kms:TagResource",
+                    "kms:UntagResource",
+                    "kms:ScheduleKeyDeletion",
+                    "kms:CancelKeyDeletion"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow use of the key",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": [
+                        f"arn:aws:iam::{account_id}:role/adfs-developers",
+                        f"arn:aws:iam::{account_id}:role/Ec2-Role",
+                        f"arn:aws:iam::{account_id}:role/ec2-mlr-test"
+                    ]
+                },
+                "Action": [
+                    "kms:Encrypt",
+                    "kms:Decrypt",
+                    "kms:ReEncrypt*",
+                    "kms:GenerateDataKey*",
+                    "kms:DescribeKey"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow attachment of persistent resources",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": f"arn:aws:iam::{account_id}:role/Ec2-Role"
+                },
+                "Action": [
+                    "kms:CreateGrant",
+                    "kms:ListGrants",
+                    "kms:RevokeGrant"
+                ],
+                "Resource": "*",
+                "Condition": {
+                    "Bool": {
+                        "kms:GrantIsForAWSResource": "true"
+                    }
+                }
+            }
+        ]
+    }
+    policy = json.dumps(policy)
+    client = boto3.client('kms', os.getenv('AWS_DEPLOYMENT_REGION'))
+    response = client.put_key_policy(
+        KeyId=key_id,
+        PolicyName='default',
+        Policy=policy
+    )
+    logger.info(response)
 
 
 def _change_secret_kms_key(event):
