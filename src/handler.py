@@ -237,6 +237,10 @@ def troubleshoot(event, context):
         # here and specify the access point id.  Don't check into master
         client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
         client.delete_access_point(AccessPointId='fsap-xxxxxxxxxxxxxxxxx')
+    elif event['action'].lower() == 'subscribe':
+        _subscribe_sns(event)
+    elif event['action'].lower() == 'unsubscribe':
+        _unsubscribe_sns(event)
     else:
         raise Exception(f"invalid action")
 
@@ -435,4 +439,25 @@ def _make_kms_key(event):
     client.create_alias(
         AliasName=alias,
         TargetKeyId=response['KeyMetadata']['KeyId']
+    )
+
+
+def _subscribe_sns(event):
+    client = boto3.client('sns')
+    topic_arn = event['topic_arn']
+    endpoint = event['endpoint']
+    response = client.subscribe(
+        TopicArn=topic_arn,
+        Protocol='email',
+        Endpoint=endpoint,
+        ReturnSubscriptionArn=True
+    )
+    logger.info(f"here is the subscribe response {response}")
+
+
+def _unsubscribe_sns(event):
+    subscription_arn = event['subscription_arn']
+    client = boto3.client('sns')
+    response = client.unsubscribe(
+        SubscriptionArn=subscription_arn
     )
