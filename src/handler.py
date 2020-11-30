@@ -467,6 +467,8 @@ def _describe_subscriptions(event):
     original = secrets_client.get_secret_value(
         SecretId=NWCAPTURE_REAL,
     )
+    logger.info(f"\nNWCAPTURE_REAL={NWCAPTURE_REAL}")
+    logger.info(f"\nsecret string {original['SecretString']}")
     secret_string = json.loads(original['SecretString'])
     subscribe_emails = secret_string['TERMINAL_ERRORS_SUBSCRIPTION_LIST']
     logger.info(f"\nhere are subscribe emails: {subscribe_emails}")
