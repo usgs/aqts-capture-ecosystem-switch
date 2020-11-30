@@ -456,6 +456,7 @@ def _subscribe_sns(event):
     )
     logger.info(f"here is the subscribe response {response}")
 
+
 def _describe_subscriptions(event):
     topic_arn = event['topic_arn']
     client = boto3.client('sns')
@@ -463,6 +464,26 @@ def _describe_subscriptions(event):
        TopicArn=topic_arn
     )
     logger.info(f"subscriptions: {response}")
+    original = secrets_client.get_secret_value(
+        SecretId=NWCAPTURE_REAL,
+    )
+    secret_string = json.loads(original['SecretString'])
+    subscribe_emails = secret_string['TERMINAL_ERRORS_SUBSCRIPTION_LIST']
+    logger.info(f"\nhere are subscribe emails: {subscribe_emails}")
+    subscriptions_str = json.dumps(response['Subscriptions'])
+    for subscribe_email in subscribe_emails:
+        if subscribe_email in subscriptions_str:
+            logger.info(f"\nthe user {subscribe_email} is already subscribed")
+        else:
+            logger.info(f"\nnew subscription for {subscribe_email}")
+            _subscribe_sns({'topic_arn': topic_arn, 'endpoint': subscribe_email})
+    subscriptions = response['Subscriptions']
+    for subscription in subscriptions:
+        if subscription['Endpoint'] not in subscribe_emails:
+            logger.info(f"\nunsubscribe {subscription['Endpoint']} because no longer on subscribe list")
+            _unsubscribe_sns(subscription['SubscriptionArn'])
+
+
 
 def _unsubscribe_sns(event):
     subscription_arn = event['subscription_arn']
