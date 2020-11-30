@@ -241,6 +241,8 @@ def troubleshoot(event, context):
         _subscribe_sns(event)
     elif event['action'].lower() == 'unsubscribe':
         _unsubscribe_sns(event)
+    elif event['action'].lower() == 'list_subscriptions':
+        _describe_subscriptions(event)
     else:
         raise Exception(f"invalid action")
 
@@ -454,6 +456,13 @@ def _subscribe_sns(event):
     )
     logger.info(f"here is the subscribe response {response}")
 
+def _describe_subscriptions(event):
+    topic_arn = event['topic_arn']
+    client = boto3.client('sns')
+    response = client.list_subscriptions_by_topic(
+       TopicArn=topic_arn
+    )
+    logger.info(f"subscriptions: {response}")
 
 def _unsubscribe_sns(event):
     subscription_arn = event['subscription_arn']
