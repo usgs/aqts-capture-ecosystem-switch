@@ -487,9 +487,7 @@ def _describe_subscriptions(event):
             _unsubscribe_sns(subscription['SubscriptionArn'])
 
 
-
-def _unsubscribe_sns(event):
-    subscription_arn = event['subscription_arn']
+def _unsubscribe_sns(subscription_arn):
     client = boto3.client('sns')
     response = client.unsubscribe(
         SubscriptionArn=subscription_arn
