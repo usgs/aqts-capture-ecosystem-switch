@@ -470,8 +470,9 @@ def _describe_subscriptions(event):
     logger.info(f"\nNWCAPTURE_REAL={NWCAPTURE_REAL}")
     logger.info(f"\nsecret string {original['SecretString']}")
     secret_string = json.loads(original['SecretString'])
-    subscribe_emails = secret_string['TERMINAL_ERRORS_SUBSCRIPTION_LIST']
+    subscribe_emails = secret_string['TERMINAL_ERRORS_SUBSCRIPTION_LIST'].split(",")
     logger.info(f"\nhere are subscribe emails: {subscribe_emails}")
+
     subscriptions_str = json.dumps(response['Subscriptions'])
     for subscribe_email in subscribe_emails:
         if subscribe_email in subscriptions_str:
