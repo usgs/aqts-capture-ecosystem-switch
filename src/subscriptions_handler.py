@@ -7,12 +7,12 @@ import boto3
 STAGES = ['TEST', 'QA', 'PROD-EXTERNAL']
 
 STAGE = os.getenv('STAGE', 'TEST')
-
+DEPLOYMENT_REGION = os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2')
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
 
-secrets_client = boto3.client('secretsmanager', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+secrets_client = boto3.client('secretsmanager', DEPLOYMENT_REGION)
 
 
 def manage_subscriptions(event, context):
@@ -23,7 +23,7 @@ def manage_subscriptions(event, context):
     original = secrets_client.get_secret_value(
         SecretId="AQTS-CAPTURE-MAILING-LISTS",
     )
-    client = boto3.client('sns', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+    client = boto3.client('sns', DEPLOYMENT_REGION)
 
     secret_string = json.loads(original['SecretString'])
 
@@ -68,7 +68,7 @@ def _process_subscriptions(response, subscribe_emails, topic_arn):
 
 
 def _subscribe_sns(event):
-    client = boto3.client('sns', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+    client = boto3.client('sns', DEPLOYMENT_REGION)
     topic_arn = event['topic_arn']
     endpoint = event['endpoint']
     response = client.subscribe(
@@ -80,7 +80,7 @@ def _subscribe_sns(event):
 
 
 def _unsubscribe_sns(subscription_arn):
-    client = boto3.client('sns', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+    client = boto3.client('sns', DEPLOYMENT_REGION)
     response = client.unsubscribe(
         SubscriptionArn=subscription_arn
     )

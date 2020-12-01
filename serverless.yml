@@ -114,7 +114,6 @@ functions:
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
-      LOG_LEVEL: INFO
       TERMINAL_ERRORS_TOPIC_ARN: ["arn:aws:sns:us-west-2:#{AWS::AccountId}:aqts-capture-error-handler-${self:provider.stage}-topic"]
       WARNINGS_TOPIC_ARN: ["arn:aws:sns:us-west-2:#{AWS::AccountId}:aqts-capture-state-machine-${self:provider.stage}-topic"]
     events:
