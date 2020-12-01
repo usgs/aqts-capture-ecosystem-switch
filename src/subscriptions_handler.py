@@ -63,6 +63,7 @@ def _process_subscriptions(response, subscribe_emails, topic_arn):
     for subscription in subscriptions:
         if subscription['Endpoint'] not in subscribe_emails:
             logger.info(f"\nunsubscribe {subscription['Endpoint']} because no longer on subscribe list")
+            logger.info(f"\nusing the SubscriptionArn {subscription}")
             _unsubscribe_sns(subscription['SubscriptionArn'])
 
 
