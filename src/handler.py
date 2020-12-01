@@ -237,12 +237,6 @@ def troubleshoot(event, context):
         # here and specify the access point id.  Don't check into master
         client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
         client.delete_access_point(AccessPointId='fsap-xxxxxxxxxxxxxxxxx')
-    elif event['action'].lower() == 'subscribe':
-        _subscribe_sns(event)
-    elif event['action'].lower() == 'unsubscribe':
-        _unsubscribe_sns(event)
-    elif event['action'].lower() == 'list_subscriptions':
-        _describe_subscriptions(event)
     else:
         raise Exception(f"invalid action")
 
@@ -443,52 +437,3 @@ def _make_kms_key(event):
         TargetKeyId=response['KeyMetadata']['KeyId']
     )
 
-
-def _subscribe_sns(event):
-    client = boto3.client('sns')
-    topic_arn = event['topic_arn']
-    endpoint = event['endpoint']
-    response = client.subscribe(
-        TopicArn=topic_arn,
-        Protocol='email',
-        Endpoint=endpoint,
-        ReturnSubscriptionArn=True
-    )
-    logger.info(f"here is the subscribe response {response}")
-
-
-def _describe_subscriptions(event):
-    topic_arn = event['topic_arn']
-    client = boto3.client('sns')
-    response = client.list_subscriptions_by_topic(
-       TopicArn=topic_arn
-    )
-    logger.info(f"subscriptions: {response}")
-    original = secrets_client.get_secret_value(
-        SecretId=NWCAPTURE_REAL,
-    )
-    logger.info(f"\nNWCAPTURE_REAL={NWCAPTURE_REAL}")
-    logger.info(f"\nsecret string {original['SecretString']}")
-    secret_string = json.loads(original['SecretString'])
-    subscribe_emails = secret_string['TERMINAL_ERRORS_SUBSCRIPTION_LIST'].split(",")
-    logger.info(f"\nhere are subscribe emails: {subscribe_emails}")
-
-    subscriptions_str = json.dumps(response['Subscriptions'])
-    for subscribe_email in subscribe_emails:
-        if subscribe_email in subscriptions_str:
-            logger.info(f"\nthe user {subscribe_email} is already subscribed")
-        else:
-            logger.info(f"\nnew subscription for {subscribe_email}")
-            _subscribe_sns({'topic_arn': topic_arn, 'endpoint': subscribe_email})
-    subscriptions = response['Subscriptions']
-    for subscription in subscriptions:
-        if subscription['Endpoint'] not in subscribe_emails:
-            logger.info(f"\nunsubscribe {subscription['Endpoint']} because no longer on subscribe list")
-            _unsubscribe_sns(subscription['SubscriptionArn'])
-
-
-def _unsubscribe_sns(subscription_arn):
-    client = boto3.client('sns')
-    response = client.unsubscribe(
-        SubscriptionArn=subscription_arn
-    )

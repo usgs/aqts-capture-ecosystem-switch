@@ -104,6 +104,23 @@ custom:
     filterPattern: "?ERROR ?CRITICAL"
 
 functions:
+  ManageSubscriptions:
+    handler: src.subscriptions_handler.manage_subscriptions
+    role:
+      Fn::Sub:
+        - arn:aws:iam::${accountId}:role/csr-Lambda-Role
+        - accountId:
+            Ref: AWS::AccountId
+      environment:
+        AWS_DEPLOYMENT_REGION: ${self:provider.region}
+        STAGE: ${self:provider.stage}
+        TERMINAL_ERRORS_TOPIC_ARN: arn:aws:sns:us-west-2:${accountId}:aqts-capture-error-handler-${self:provider.stage}-topic
+        WARNINGS_TOPIC_ARN: arn:aws:sns:us-west-2:${accountId}:aqts-capture-state-machine-${self:provider.stage}-topic
+      events:
+        - schedule:
+            rate: cron(0 7 ? * MON-FRI *)
+            enabled: true
+
   StartObservationsDb:
     handler: src.handler.start_observations_db
     role:
