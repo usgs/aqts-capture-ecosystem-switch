@@ -436,3 +436,4 @@ def _make_kms_key(event):
         AliasName=alias,
         TargetKeyId=response['KeyMetadata']['KeyId']
     )
+
