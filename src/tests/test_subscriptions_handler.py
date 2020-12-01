@@ -64,7 +64,8 @@ class TestSubscriptionsHandler(TestCase):
         topic_arn = "my_test_topic"
         subscriptions_handler._process_subscriptions(response, subscribe_emails, topic_arn)
         mock_subscribe.assert_called_once_with({'topic_arn': 'my_test_topic', 'endpoint': 'aaaaaa@usgs.gov'})
-        self.assertEqual(mock_unsubscribe.call_count, 4)
+        # should be 4 but three are 'PendingConfirmation' and AWS needs to skip them because no real ARN
+        self.assertEqual(mock_unsubscribe.call_count, 1)
 
     @mock.patch('src.utils.boto3.client', autospec=True)
     def test_subscribe_sns(self, mock_boto):

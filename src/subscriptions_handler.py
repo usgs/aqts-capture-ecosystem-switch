@@ -61,7 +61,7 @@ def _process_subscriptions(response, subscribe_emails, topic_arn):
             _subscribe_sns({'topic_arn': topic_arn, 'endpoint': subscribe_email})
     subscriptions = response['Subscriptions']
     for subscription in subscriptions:
-        if subscription['Endpoint'] not in subscribe_emails:
+        if subscription['Endpoint'] not in subscribe_emails and subscription['SubscriptionArn'] != "PendingConfirmation":
             logger.info(f"\nunsubscribe {subscription['Endpoint']} because no longer on subscribe list")
             logger.info(f"\nusing the SubscriptionArn {subscription}")
             _unsubscribe_sns(subscription['SubscriptionArn'])
