@@ -30,6 +30,9 @@ provider:
     commitIdentifier: ${git:sha1}
 
 custom:
+  prune:
+    automatic: true
+    number: 3
   # https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#CronExpressions
   # The test database starts at 7 am central and stops at 6 pm central time, Monday through Friday.
   # The qa database stops at 6 pm central on Fridays
@@ -803,6 +806,7 @@ plugins:
   - serverless-pseudo-parameters
   - serverless-python-requirements
   - serverless-step-functions
+  - serverless-prune-plugin
   - serverless-es-logs
 
 package:
