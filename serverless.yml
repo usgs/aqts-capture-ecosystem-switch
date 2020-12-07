@@ -210,6 +210,13 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
       RECOVER_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-recover-${self:provider.stage}
+    events:
+      - cloudwatchEvent:
+          event:
+            source:
+              - 'aws.cloudwatch'
+            detail:
+              alarmName: ["aqts-capture-error-handler-${self:provider.stage}-invocation-alarm"]
 
   disableTrigger:
     handler: src.db_resize_handler.disable_trigger
