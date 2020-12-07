@@ -306,7 +306,7 @@ functions:
               alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-high-cpu-alarm" ]
 
   executeRecover:
-    handler: src.db_resize_handler.execute_recover_from_circuit_breaker
+    handler: src.db_resize_handler.execute_recover_machine
     role:
       Fn::Sub:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
