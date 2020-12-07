@@ -209,13 +209,7 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-    # events:
-    #   - cloudwatchEvent:
-    #       event:
-    #         source:
-    #           - 'aws.cloudwatch'
-    #         detail:
-    #           alarmName: ["aqts-capture-error-handler-${self:provider.stage}-invocation-alarm"]
+      RECOVER_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-recover-${self:provider.stage}
 
   disableTrigger:
     handler: src.db_resize_handler.disable_trigger
@@ -305,18 +299,6 @@ functions:
             detail:
               alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-high-cpu-alarm" ]
 
-  executeRecover:
-    handler: src.db_resize_handler.execute_recover_machine
-    role:
-      Fn::Sub:
-        - arn:aws:iam::${accountId}:role/csr-Lambda-Role
-        - accountId:
-            Ref: AWS::AccountId
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-recover-${self:provider.stage}
-      LOG_LEVEL: INFO
-      STAGE: ${self:provider.stage}
 
   restoreDbCluster:
     handler: src.db_create_handler.restore_db_cluster

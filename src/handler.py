@@ -154,6 +154,7 @@ def control_db_utilization(event, context):
         However, we know there is a backlog to work through so we need to force the db to maximum size
         by issuing a fake high-cpu alarm.
         """
+        logger.info(f"os.environ {os.environ}")
         execute_recover_machine({}, {})
 
 

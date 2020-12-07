@@ -101,9 +101,10 @@ def execute_grow_machine(event, context):
 
 
 def execute_recover_machine(event, context):
-    arn = os.environ['GROW_STATE_MACHINE_ARN']
+    arn = os.environ['RECOVER_STATE_MACHINE_ARN']
     payload = {}
     _execute_state_machine(arn, json.dumps(payload))
+
 
 
 def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):
