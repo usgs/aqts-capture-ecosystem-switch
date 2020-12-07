@@ -4,7 +4,7 @@ import os
 
 import boto3
 
-from src.db_resize_handler import disable_trigger, enable_trigger, execute_grow_machine
+from src.db_resize_handler import disable_trigger, enable_trigger, execute_recover_machine
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
     stop_db_cluster, \
@@ -154,15 +154,7 @@ def control_db_utilization(event, context):
         However, we know there is a backlog to work through so we need to force the db to maximum size
         by issuing a fake high-cpu alarm.
         """
-
-        event = {
-            "detail": {
-                "state": {
-                    "value": "ALARM"
-                }
-            }
-        }
-        execute_grow_machine(event, {})
+        execute_recover_machine({}, {})
 
 
 def run_etl_query(rds=None):

@@ -71,26 +71,22 @@ custom:
   # starts are scheduled.
   startCaptureDbScheduleEnabled:
     DEV: false
-    # TODO
-    TEST: false
+    TEST: true
     QA: false
     PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
     DEV: false
-    # TODO
-    TEST: false
+    TEST: true
     QA: false
     PROD-EXTERNAL: false
   stopCaptureDbScheduleEnabled:
     DEV: false
-    # TODO
-    TEST: false
+    TEST: true
     QA: false
     PROD-EXTERNAL: false
   stopObservationDbScheduleEnabled:
     DEV: true
-    # TODO
-    TEST: false
+    TEST: true
     QA: true
     PROD-EXTERNAL: false
 
@@ -308,6 +304,19 @@ functions:
               - 'aws.cloudwatch'
             detail:
               alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-high-cpu-alarm" ]
+
+  executeRecover:
+    handler: src.db_resize_handler.execute_recover_from_circuit_breaker
+    role:
+      Fn::Sub:
+        - arn:aws:iam::${accountId}:role/csr-Lambda-Role
+        - accountId:
+            Ref: AWS::AccountId
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-recover-${self:provider.stage}
+      LOG_LEVEL: INFO
+      STAGE: ${self:provider.stage}
 
   restoreDbCluster:
     handler: src.db_create_handler.restore_db_cluster
@@ -606,16 +615,47 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [ disableTrigger, Arn ]
+            Next: WaitForDisable
+          WaitForDisable:
+            Type: Wait
+            Seconds: 300
+            Next: GrowDb
+          GrowDb:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ growDb, Arn ]
             Retry:
               - ErrorEquals:
                   - States.ALL
                 IntervalSeconds: 120
-                MaxAttempts: 3
+                MaxAttempts: 10
                 BackoffRate: 1
-            Next: WaitForDisable
-          WaitForDisable:
+            Next: WaitForModify
+          WaitForModify:
             Type: Wait
-            Seconds: 120
+            Seconds: 600
+            Next: EnableTrigger
+          EnableTrigger:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ enableTrigger, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
+                BackoffRate: 1
+            End: true
+
+    aqtsRecoverFromCircuitBreaker:
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      name: aqts-ecosystem-switch-recover-${self:provider.stage}
+      definition:
+        Comment: "AQTS Recover From Circuit Breaker"
+        States:
+          WaitForBackoffPurposes:
+            Type: Wait
+            Seconds: 7200
             Next: GrowDb
           GrowDb:
             Type: Task
@@ -712,7 +752,7 @@ resources:
     concurrencyAlarm:
       Type: AWS::CloudWatch::Alarm
       Properties:
-        AlarmName: ${self:service}-${self:provider.stage}-invocation-alarm
+        AlarmName: ${self:service}-${self:provider.stage}-circuit-breaker-alarm
         AlarmDescription: Notify when the db control utilization lambda is invoked
         Namespace: 'AWS/Lambda'
         Dimensions:

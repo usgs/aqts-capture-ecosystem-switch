@@ -132,10 +132,10 @@ class TestHandler(TestCase):
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.execute_grow_machine', autospec=True)
-    def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_execute_grow_machine,
+    @mock.patch('src.handler.execute_recover_machine', autospec=True)
+    def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_execute_recover_machine,
                                                                      mock_describe_db_clusters):
-        mock_execute_grow_machine.return_value = True
+        mock_execute_recover_machine.return_value = True
         my_alarm = {
             "detail": {
                 "state": {
@@ -147,18 +147,16 @@ class TestHandler(TestCase):
             os.environ['STAGE'] = stage
             mock_describe_db_clusters.return_value = DB[stage]
             handler.control_db_utilization(my_alarm, self.context)
-            mock_execute_grow_machine.assert_called_with({'detail': {'state': {'value': 'ALARM'}}}, {})
+            mock_execute_recover_machine.assert_called_with({}, {})
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.execute_grow_machine', autospec=True)
-    def test_control_db_utilization_dont_enable_lambda_trigger_when_db_off(self, mock_execute_grow_machine,
-                                                                           mock_describe_db_clusters):
-        mock_execute_grow_machine.return_value = True
+    @mock.patch('src.handler.execute_recover_machine', autospec=True)
+    def test_control_db_utilization_enable(self, mock_execute_recover_machine):
+        mock_execute_recover_machine.return_value = True
         my_alarm = {
             "detail": {
                 "state": {
@@ -169,7 +167,7 @@ class TestHandler(TestCase):
         for stage in STAGES:
             os.environ['STAGE'] = stage
             handler.control_db_utilization(my_alarm, self.context)
-            mock_execute_grow_machine.assert_called_with({'detail': {'state': {'value': 'ALARM'}}}, {})
+            mock_execute_recover_machine.assert_called_with({}, {})
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
