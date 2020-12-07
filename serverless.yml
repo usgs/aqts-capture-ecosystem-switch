@@ -213,13 +213,13 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-    events:
-      - cloudwatchEvent:
-          event:
-            source:
-              - 'aws.cloudwatch'
-            detail:
-              alarmName: ["aqts-capture-error-handler-${self:provider.stage}-invocation-alarm"]
+    # events:
+    #   - cloudwatchEvent:
+    #       event:
+    #         source:
+    #           - 'aws.cloudwatch'
+    #         detail:
+    #           alarmName: ["aqts-capture-error-handler-${self:provider.stage}-invocation-alarm"]
 
   disableTrigger:
     handler: src.db_resize_handler.disable_trigger
