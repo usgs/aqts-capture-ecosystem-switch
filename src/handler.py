@@ -224,7 +224,7 @@ def troubleshoot(event, context):
     elif event['action'].lower() == 'delete_stack':
         client = boto3.client('cloudformation', "us-west-2")
         response = client.delete_stack(
-            StackName='WQP-GEOSERVER-ECS-SERVICE-TEST',
+            StackName='WQP-WQX-SERVICES-ECS-SERVICE-TEST',
         )
     elif event['action'].lower() == 'create_access_point':
         _make_efs_access_point(event)
