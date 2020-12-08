@@ -222,9 +222,10 @@ def troubleshoot(event, context):
         _change_kms_key_policy(event)
     # TODO remove
     elif event['action'].lower() == 'delete_stack':
+        stack = event['stack']
         client = boto3.client('cloudformation', "us-west-2")
         response = client.delete_stack(
-            StackName='WQP-GEOSERVER-ECS-SERVICE-TEST',
+            StackName=stack,
         )
     elif event['action'].lower() == 'create_access_point':
         _make_efs_access_point(event)
