@@ -65,7 +65,6 @@ def shrink_db(event, context):
 
 def grow_db(event, context):
     logger.info(event)
-
     response = rds_client.describe_db_instances(DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER)
     db_instance_class = str(response['DBInstances'][0]['DBInstanceClass'])
     if db_instance_class == BIG_DB_SIZE:
@@ -99,6 +98,13 @@ def execute_grow_machine(event, context):
         _execute_state_machine(arn, json.dumps(payload))
         return True
     return False
+
+
+def execute_recover_machine(event, context):
+    arn = os.environ['RECOVER_STATE_MACHINE_ARN']
+    payload = {}
+    _execute_state_machine(arn, json.dumps(payload))
+
 
 
 def _get_cpu_utilization(db_instance_identifier, period_in_seconds, total_time):

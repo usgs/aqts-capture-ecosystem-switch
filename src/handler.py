@@ -4,7 +4,7 @@ import os
 
 import boto3
 
-from src.db_resize_handler import disable_trigger, enable_trigger
+from src.db_resize_handler import disable_trigger, enable_trigger, execute_recover_machine
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
     stop_db_cluster, \
@@ -150,9 +150,12 @@ def control_db_utilization(event, context):
         """
         If we are not in a state of alarm (i.e. OK or INSUFFICIENT_DATA) then it is okay
         to enable the trigger if the db is up and running (status == available)
+        
+        However, we know there is a backlog to work through so we need to force the db to maximum size
+        by issuing a fake high-cpu alarm.
         """
-        logger.info(f"Enabling trigger {TRIGGER[stage]} for {DB[stage]} because error handler is okay")
-        enable_trigger(event, context)
+        logger.info(f"os.environ {os.environ}")
+        execute_recover_machine({}, {})
 
 
 def run_etl_query(rds=None):
