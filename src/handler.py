@@ -181,7 +181,11 @@ def run_etl_query(rds=None):
 
 
 def _start_db(db, triggers, queue_name):
-    purge_queue(queue_name)
+    """
+    Purging the queue was originally done for expense control on the test and QA tiers in the early days, but now that
+    development is further along, we'd like to see these tiers coping with a more production-like backlog.
+    """
+    # purge_queue(queue_name)
     cluster_identifiers = describe_db_clusters("start")
     started = False
     for cluster_identifier in cluster_identifiers:
@@ -227,6 +231,9 @@ def troubleshoot(event, context):
         response = client.delete_stack(
             StackName=stack,
         )
+    elif event['action'].lower() == 'purge_queues':
+        purge_queue(CAPTURE_TRIGGER_QUEUE)
+        purge_queue(ERROR_QUEUE)
     elif event['action'].lower() == 'create_access_point':
         _make_efs_access_point(event)
     elif event['action'].lower() == 'create_fargate_security_group':
