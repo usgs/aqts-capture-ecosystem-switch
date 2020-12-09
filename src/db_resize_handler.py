@@ -206,13 +206,23 @@ def enable_provisioned_concurrency(event, context):
 
     for function_name in list_of_functions:
         response = client.list_versions_by_function(FunctionName=function_name)
-        print(response)
+        latest_version = _get_function_version(response)
         response = client.put_provisioned_concurrency_config(
             FunctionName=function_name,
-            Qualifier='$LATEST',
+            Qualifier=latest_version,
             ProvisionedConcurrentExecutions=1
         )
         print(response)
+
+
+def _get_function_version(response):
+    versions = response['Versions']
+    latest_version = "-1"
+    for version in versions:
+        this_version = version['Version']
+        if this_version > latest_version and 'LATEST' not in this_version:
+            latest_version = this_version
+    return latest_version
 
 
 def disable_provisioned_concurrency(event, context):
@@ -220,9 +230,11 @@ def disable_provisioned_concurrency(event, context):
     list_of_functions = [f"aqts-capture-discrete-loader-{STAGE}-loadDiscrete"]
 
     for function_name in list_of_functions:
+        response = client.list_versions_by_function(FunctionName=function_name)
+        latest_version = _get_function_version(response)
         response = client.delete_provisioned_concurrency_config(
             FunctionName=function_name,
-            Qualifier='$LATEST'
+            Qualifier=latest_version
         )
         print(response)
 
