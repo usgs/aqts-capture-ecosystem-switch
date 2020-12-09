@@ -595,11 +595,6 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
-            Next: EnableProvisionedConcurrency
-          EnableProvisionedConcurrency:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [enableProvisionedConcurrency, Arn]
             Next: WaitForModify
           WaitForModify:
             Type: Wait
@@ -657,11 +652,6 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
-            Next: EnableProvisionedConcurrency
-          EnableProvisionedConcurrency:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [ enableProvisionedConcurrency, Arn ]
             Next: WaitForModify
           WaitForModify:
             Type: Wait
@@ -709,11 +699,6 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
-            Next: EnableProvisionedConcurrency
-          EnableProvisionedConcurrency:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [ enableProvisionedConcurrency, Arn ]
             Next: WaitForModify
           WaitForModify:
             Type: Wait
