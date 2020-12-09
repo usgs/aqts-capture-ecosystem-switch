@@ -222,11 +222,12 @@ def enable_provisioned_concurrency(event, context):
     for function_name in LIST_OF_LAMBDAS:
         response = client.list_versions_by_function(FunctionName=function_name)
         latest_version = _get_function_version(response)
-        client.put_provisioned_concurrency_config(
+        response = client.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=latest_version,
             ProvisionedConcurrentExecutions=1
         )
+        logger.info(f"enabling_provisioned_concurrency:\n {response}")
 
 
 def _get_function_version(response):
@@ -249,6 +250,7 @@ def disable_provisioned_concurrency(event, context):
             FunctionName=function_name,
             Qualifier=latest_version
         )
+        logger.info(f"disabling_provisioned_concurrency:\n {response}")
 
 
 def _validate_observations_resize():
