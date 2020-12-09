@@ -7,6 +7,8 @@ from src.db_resize_handler import SMALL_DB_SIZE, BIG_DB_SIZE, DEFAULT_DB_CLUSTER
 from src.handler import DEFAULT_DB_INSTANCE_IDENTIFIER
 from src.utils import OBSERVATION_INSTANCE_TAGS, CAPTURE_INSTANCE_TAGS
 
+VERSION_RESPONSE = {'Versions': [{'Version': '$LATEST'}, {'Version': '32'}, {'Version': '33'}, {'Version': '34'}]}
+
 
 class TestDbResizeHandler(TestCase):
 
@@ -370,3 +372,27 @@ class TestDbResizeHandler(TestCase):
         mock_rds.describe_db_instances.return_value = {"DBInstances": [{"DBInstanceClass": BIG_OB_DB_SIZE}]}
         db_resize_handler.grow_observations_db(alarm_event, {})
         mock_rds.modify_db_instance.assert_not_called()
+
+    def test_get_function_version(self):
+        version = db_resize_handler._get_function_version(VERSION_RESPONSE)
+        assert version == '34'
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_enable_provisioned_concurrency(self, mock_boto3):
+        mock_client = mock.Mock()
+        mock_client.list_versions_by_function.return_value = VERSION_RESPONSE
+        mock_boto3.return_value = mock_client
+
+        db_resize_handler.enable_provisioned_concurrency({}, {})
+        self.assertEqual(mock_client.list_versions_by_function.call_count, 15)
+        self.assertEqual(mock_client.put_provisioned_concurrency_config.call_count, 15)
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_disable_provisioned_concurrency(self, mock_boto3):
+        mock_client = mock.Mock()
+        mock_client.list_versions_by_function.return_value = VERSION_RESPONSE
+        mock_boto3.return_value = mock_client
+
+        db_resize_handler.disable_provisioned_concurrency({}, {})
+        self.assertEqual(mock_client.list_versions_by_function.call_count, 15)
+        self.assertEqual(mock_client.delete_provisioned_concurrency_config.call_count, 15)

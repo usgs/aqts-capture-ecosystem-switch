@@ -32,6 +32,24 @@ log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
 
+LIST_OF_LAMBDAS = [
+    f"aqts-capture-discrete-loader-{STAGE}-loadDiscrete",
+    f"aqts-capture-dvstat-transform-{STAGE}-transform",
+    f"aqts-capture-error-handler-{STAGE}-aqtsErrorHandler",
+    f"aqts-capture-field-visit-metadata-{STAGE}-preProcess",
+    f"aqts-capture-field-visit-transform-{STAGE}-transform",
+    f"aqts-capture-pruner-{STAGE}-pruneTimeSeries",
+    f"aqts-capture-raw-load-{STAGE}-iowExtraSmall",
+    f"aqts-capture-raw-load-{STAGE}-iowCapture",
+    f"aqts-capture-raw-load-{STAGE}-iowCaptureSmall",
+    f"aqts-capture-raw-load-{STAGE}-iowCaptureMedium",
+    f"aqts-capture-trigger-{STAGE}-aqtsCaptureTrigger",
+    f"aqts-capture-ts-corrected-{STAGE}-preProcess",
+    f"aqts-capture-ts-description-{STAGE}-processTsDescription",
+    f"aqts-capture-ts-field-visit-{STAGE}-preProcess",
+    f"aqts-capture-ts-loader-{STAGE}-loadTimeSeries",
+]
+
 """
 DB resize functions
 """
@@ -201,18 +219,14 @@ def grow_observations_db(event, context):
 
 def enable_provisioned_concurrency(event, context):
     client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-
-    list_of_functions = [f"aqts-capture-discrete-loader-{STAGE}-loadDiscrete"]
-
-    for function_name in list_of_functions:
+    for function_name in LIST_OF_LAMBDAS:
         response = client.list_versions_by_function(FunctionName=function_name)
         latest_version = _get_function_version(response)
-        response = client.put_provisioned_concurrency_config(
+        client.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=latest_version,
             ProvisionedConcurrentExecutions=1
         )
-        print(response)
 
 
 def _get_function_version(response):
@@ -227,16 +241,14 @@ def _get_function_version(response):
 
 def disable_provisioned_concurrency(event, context):
     client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-    list_of_functions = [f"aqts-capture-discrete-loader-{STAGE}-loadDiscrete"]
 
-    for function_name in list_of_functions:
+    for function_name in LIST_OF_LAMBDAS:
         response = client.list_versions_by_function(FunctionName=function_name)
         latest_version = _get_function_version(response)
         response = client.delete_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=latest_version
         )
-        print(response)
 
 
 def _validate_observations_resize():

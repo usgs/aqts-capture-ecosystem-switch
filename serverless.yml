@@ -595,6 +595,11 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: EnableProvisionedConcurrency
+          EnableProvisionedConcurrency:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [enableProvisionedConcurrency, Arn]
             Next: WaitForModify
           WaitForModify:
             Type: Wait
@@ -610,6 +615,15 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForProvisionedConcurrency
+          WaitForProvisionedConcurrency:
+            Type: Wait
+            Seconds: 600
+            Next: DisableProvisionedConcurrency
+          DisableProvisionedConcurrency:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [disableProvisionedConcurrency, Arn]
             End: true
 
     aqtsGrowCaptureDb:
@@ -643,6 +657,11 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: EnableProvisionedConcurrency
+          EnableProvisionedConcurrency:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ enableProvisionedConcurrency, Arn ]
             Next: WaitForModify
           WaitForModify:
             Type: Wait
@@ -658,6 +677,15 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForProvisionedConcurrency
+          WaitForProvisionedConcurrency:
+            Type: Wait
+            Seconds: 600
+            Next: DisableProvisionedConcurrency
+          DisableProvisionedConcurrency:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ disableProvisionedConcurrency, Arn ]
             End: true
 
     aqtsRecoverFromCircuitBreaker:
@@ -681,6 +709,11 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: EnableProvisionedConcurrency
+          EnableProvisionedConcurrency:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ enableProvisionedConcurrency, Arn ]
             Next: WaitForModify
           WaitForModify:
             Type: Wait
@@ -696,6 +729,15 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
+            Next: WaitForProvisionedConcurrency
+          WaitForProvisionedConcurrency:
+            Type: Wait
+            Seconds: 600
+            Next: DisableProvisionedConcurrency
+          DisableProvisionedConcurrency:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ disableProvisionedConcurrency, Arn ]
             End: true
 
     aqtsCreateObDb:
