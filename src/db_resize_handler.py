@@ -205,7 +205,7 @@ def enable_provisioned_concurrency(event, context):
     list_of_functions = [f"aqts-capture-discrete-loader-{STAGE}-loadDiscrete"]
 
     for function_name in list_of_functions:
-        response = client.get_function(FunctionName=function_name)
+        response = client.get_function_configuration(FunctionName=function_name)
         print(response)
         response = client.put_provisioned_concurrency_config(
             FunctionName=function_name,
