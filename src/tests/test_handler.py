@@ -399,3 +399,15 @@ class TestHandler(TestCase):
         mock_client.create_security_group.assert_called_once_with(
             Description='test security group', GroupName='my group', VpcId='fsa12345'
         )
+
+
+    @mock.patch('src.handler.purge_queue', autospec=True)
+    def test_create_efs_access_point(self, mock_purge):
+
+        handler.troubleshoot(
+            {"action": "purge_queues"},
+            self.context
+        )
+
+        self.assertEqual(mock_purge.purge_queue.call_count, 2)
+
