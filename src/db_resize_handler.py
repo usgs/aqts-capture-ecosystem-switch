@@ -199,6 +199,32 @@ def grow_observations_db(event, context):
             logger.info(f"Growing observations DB, please stand by. {response}")
 
 
+def enable_provisioned_concurrency(event, context):
+    client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+
+    list_of_functions = [f"aqts-capture-discrete-loader-{STAGE}-loadDiscrete"]
+
+    for function_name in list_of_functions:
+        response = client.put_provisioned_concurrency_config(
+            FunctionName=function_name,
+            Qualifier='LATEST',
+            ProvisionedConcurrentExecutions=1
+        )
+        print(response)
+
+
+def disable_provisioned_concurrency(event, context):
+    client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+    list_of_functions = [f"aqts-capture-discrete-loader-{STAGE}-loadDiscrete"]
+
+    for function_name in list_of_functions:
+        response = client.delete_provisioned_concurrency_config(
+            FunctionName=function_name,
+            Qualifier='LATEST'
+        )
+        print(response)
+
+
 def _validate_observations_resize():
     if os.environ['STAGE'] in ('DEV', 'TEST', 'QA'):
         return
