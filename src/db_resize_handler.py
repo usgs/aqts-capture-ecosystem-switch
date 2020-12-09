@@ -205,9 +205,10 @@ def enable_provisioned_concurrency(event, context):
     list_of_functions = [f"aqts-capture-discrete-loader-{STAGE}-loadDiscrete"]
 
     for function_name in list_of_functions:
+        #response = client.get_alias()
         response = client.put_provisioned_concurrency_config(
             FunctionName=function_name,
-            Qualifier='LATEST',
+            Qualifier='$LATEST',
             ProvisionedConcurrentExecutions=1
         )
         print(response)
@@ -220,7 +221,7 @@ def disable_provisioned_concurrency(event, context):
     for function_name in list_of_functions:
         response = client.delete_provisioned_concurrency_config(
             FunctionName=function_name,
-            Qualifier='LATEST'
+            Qualifier='$LATEST'
         )
         print(response)
 
