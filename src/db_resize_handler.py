@@ -39,7 +39,7 @@ LIST_OF_LAMBDAS = [
     f"aqts-capture-field-visit-metadata-{STAGE}-preProcess",
     f"aqts-capture-field-visit-transform-{STAGE}-transform",
     f"aqts-capture-pruner-{STAGE}-pruneTimeSeries",
-    f"aqts-capture-raw-load-{STAGE}-iowExtraSmall",
+    f"aqts-capture-raw-load-{STAGE}-iowCaptureExtraSmall",
     f"aqts-capture-raw-load-{STAGE}-iowCapture",
     f"aqts-capture-raw-load-{STAGE}-iowCaptureSmall",
     f"aqts-capture-raw-load-{STAGE}-iowCaptureMedium",
