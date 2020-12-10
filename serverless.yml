@@ -165,6 +165,7 @@ functions:
             Ref: AWS::AccountId
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      START_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-start-capture-db-${self:provider.stage}
       STAGE: ${self:provider.stage}
     events:
       - schedule:
@@ -753,7 +754,7 @@ stepFunctions:
 
     aqtsStartCaptureDb:
       role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
-      name: aqts-ecosystem-switch-start-machine-${self:provider.stage}
+      name: aqts-ecosystem-switch-start-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Start Capture Db with Provisioned Concurrency"
         StartAt: EnableProvisionedConcurrency
