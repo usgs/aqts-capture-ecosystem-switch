@@ -224,7 +224,7 @@ def enable_provisioned_concurrency(event, context):
     for function_name in LIST_OF_LAMBDAS:
         response = client.list_versions_by_function(FunctionName=function_name)
         latest_version = _get_function_version(response)
-       
+
         concurrent_executions = 10
         logger.info(f"set initial concurrent executions to 10 for {function_name}")
         response = client.get_function_concurrency(FunctionName=function_name)
@@ -254,18 +254,29 @@ def _get_function_version(response):
     return latest_version
 
 
+def _get_all_function_versions(response):
+    versions = response['Versions']
+    version_list = []
+    for version in versions:
+        this_version = version['Version']
+        if 'LATEST' not in this_version:
+            version_list.append(this_version)
+    return version_list
+
+
 def disable_provisioned_concurrency(event, context):
     client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 
     for function_name in LIST_OF_LAMBDAS:
         response = client.list_versions_by_function(FunctionName=function_name)
-        latest_version = _get_function_version(response)
-        response = client.delete_provisioned_concurrency_config(
-            FunctionName=function_name,
-            Qualifier=latest_version
-        )
-        logger.info(f"disabling_provisioned_concurrency:\n {response}")
-
+        #latest_version = _get_function_version(response)
+        all_versions = _get_all_function_versions(response)
+        for my_version in all_versions:
+            logger.info(f"delete provisioned concurrency for version {my_version} of {function_name}")
+            client.delete_provisioned_concurrency_config(
+                FunctionName=function_name,
+                Qualifier=my_version
+            )
 
 def _validate_observations_resize():
     if os.environ['STAGE'] in ('DEV', 'TEST', 'QA'):
