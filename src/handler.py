@@ -80,7 +80,7 @@ DB stop and start functions
 
 def execute_start_machine(event, context):
     arn = os.environ['START_STATE_MACHINE_ARN']
-    _execute_state_machine(arn, {})
+    _execute_state_machine(arn, "")
 
 
 def start_capture_db(event, context):
