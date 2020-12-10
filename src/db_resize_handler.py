@@ -216,15 +216,15 @@ def enable_provisioned_concurrency(event, context):
         response = client.list_versions_by_function(FunctionName=function_name)
         latest_version = _get_function_version(response)
 
-        concurrent_executions = 10
-        logger.info(f"set initial concurrent executions to 10 for {function_name}")
+        concurrent_executions = 25
+        logger.info(f"set initial concurrent executions to 25 for {function_name}")
         response = client.get_function_concurrency(FunctionName=function_name)
         logger.info(f"response from get_function_concurrency {response}")
         reserved = response.get('ReservedConcurrentExecutions')
         logger.info(f"reserved = {reserved} for {function_name}")
         if reserved is None:
             logger.info(f"reserved was none for {function_name}")
-        elif 0 < reserved < 10:
+        elif 0 < reserved < 25:
             concurrent_executions = reserved
             logger.info(f"resetting provisioning target to {reserved} for {function_name}")
         response = client.put_provisioned_concurrency_config(
