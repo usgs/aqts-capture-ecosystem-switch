@@ -225,7 +225,7 @@ def enable_provisioned_concurrency(event, context):
         response = client.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=latest_version,
-            ProvisionedConcurrentExecutions=1
+            ProvisionedConcurrentExecutions=10
         )
         logger.info(f"enabling_provisioned_concurrency:\n {response}")
 
