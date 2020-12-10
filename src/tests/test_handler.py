@@ -400,14 +400,14 @@ class TestHandler(TestCase):
             Description='test security group', GroupName='my group', VpcId='fsa12345'
         )
 
-
-    @mock.patch('src.handler.purge_queue', autospec=True)
-    def test_create_efs_access_point(self, mock_purge):
-
-        handler.troubleshoot(
-            {"action": "purge_queues"},
-            self.context
-        )
-
-        self.assertEqual(mock_purge.purge_queue.call_count, 2)
+    # @mock.patch('src.utils.boto3.client', autospec=True)
+    # def test_purge_queues(self, mock_purge):
+    #     mock_client = mock.Mock()
+    #     mock_purge.return_value = mock_client()
+    #     handler.troubleshoot(
+    #         {"action": "purge_queues"},
+    #         self.context
+    #     )
+    #
+    #     self.assertEqual(mock_purge.purge_queue.call_count, 2)
 
