@@ -397,4 +397,4 @@ class TestDbResizeHandler(TestCase):
 
         db_resize_handler.disable_provisioned_concurrency({}, {})
         self.assertEqual(mock_client.list_versions_by_function.call_count, 15)
-        self.assertEqual(mock_client.delete_provisioned_concurrency_config.call_count, 15)
+        self.assertEqual(mock_client.delete_provisioned_concurrency_config.call_count, 45)

@@ -264,6 +264,15 @@ def _get_all_function_versions(response):
     return version_list
 
 
+def list_provisioned_concurrency(event, context):
+    client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+    all_provisioned = []
+    for function_name in LIST_OF_LAMBDAS:
+        response = client.list_provisioned_concurrency_configs(FunctionName=function_name)
+        all_provisioned.append(response)
+    logger.info(f"All provisioned concurrency: \n{all_provisioned}")
+    return all_provisioned
+
 def disable_provisioned_concurrency(event, context):
     client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
 

@@ -385,6 +385,20 @@ functions:
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
 
+
+  listProvisionedConcurrency:
+    handler: src.db_resize_handler.list_provisioned_concurrency
+    role:
+      Fn::Sub:
+        - arn:aws:iam::${accountId}:role/csr-Lambda-Role
+        - accountId:
+            Ref: AWS::AccountId
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+      LOG_LEVEL: INFO
+
+
   deleteCaptureDb:
     handler: src.db_create_handler.delete_capture_db
     role:
