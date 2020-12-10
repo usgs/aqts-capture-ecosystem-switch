@@ -651,10 +651,6 @@ stepFunctions:
                 IntervalSeconds: 120
                 MaxAttempts: 10
                 BackoffRate: 1
-            Next: WaitForGrow
-          WaitForGrow:
-            Type: Wait
-            Seconds: 600
             Next: EnableProvisionedConcurrency
           EnableProvisionedConcurrency:
             Type: Task
