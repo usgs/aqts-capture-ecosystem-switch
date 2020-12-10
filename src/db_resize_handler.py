@@ -222,10 +222,16 @@ def enable_provisioned_concurrency(event, context):
     for function_name in LIST_OF_LAMBDAS:
         response = client.list_versions_by_function(FunctionName=function_name)
         latest_version = _get_function_version(response)
+        """
+        TODO: provisionedConcurrency cannot exceed any reservedConcurrency limit that is set.
+        """
+        concurrent_executions = 10
+        if function_name.endswith("iowCapture") or function_name.endswith("iowCaptureMedium"):
+            concurrent_executions = 5
         response = client.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=latest_version,
-            ProvisionedConcurrentExecutions=10
+            ProvisionedConcurrentExecutions=concurrent_executions
         )
         logger.info(f"enabling_provisioned_concurrency:\n {response}")
 

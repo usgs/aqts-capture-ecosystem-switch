@@ -582,11 +582,13 @@ stepFunctions:
           ShrinkDb:
             Type: Task
             Resource:
-              Fn::GetAtt: [shrinkDb, Arn]
-            Next: WaitForShrink
-          WaitForShrink:
-            Type: Wait
-            Seconds: 600
+              Fn::GetAtt: [ shrinkDb, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
+                BackoffRate: 1
             Next: EnableProvisionedConcurrency
           EnableProvisionedConcurrency:
             Type: Task
@@ -601,6 +603,12 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [enableTrigger, Arn]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
+                BackoffRate: 1
             Next: WaitForProvisionedConcurrency
           WaitForProvisionedConcurrency:
             Type: Wait
@@ -637,6 +645,12 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [ growDb, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
+                BackoffRate: 1
             Next: WaitForGrow
           WaitForGrow:
             Type: Wait
@@ -655,6 +669,12 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [ enableTrigger, Arn ]
+            Retry:
+              - ErrorEquals:
+                  - States.ALL
+                IntervalSeconds: 120
+                MaxAttempts: 10
+                BackoffRate: 1
             Next: WaitForProvisionedConcurrency
           WaitForProvisionedConcurrency:
             Type: Wait
