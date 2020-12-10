@@ -157,6 +157,17 @@ functions:
           enabled: ${self:custom.stopObservationDbScheduleEnabled.${self:provider.stage}}
 
   StartCaptureDb:
+    handler: src.handler.start_capture_db
+    role:
+      Fn::Sub:
+        - arn:aws:iam::${accountId}:role/csr-Lambda-Role
+        - accountId:
+            Ref: AWS::AccountId
+    environment:
+      AWS_DEPLOYMENT_REGION: ${self:provider.region}
+      STAGE: ${self:provider.stage}
+
+  executeStart:
     handler: src.handler.execute_start_machine
     role:
       Fn::Sub:
