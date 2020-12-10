@@ -1,3 +1,5 @@
+from typing import Any
+
 import datetime
 import json
 import os
@@ -226,8 +228,14 @@ def enable_provisioned_concurrency(event, context):
         TODO: provisionedConcurrency cannot exceed any reservedConcurrency limit that is set.
         """
         concurrent_executions = 10
-        if function_name.endswith("iowCapture") or function_name.endswith("iowCaptureMedium"):
-            concurrent_executions = 5
+        logger.info(f"set initial concurrent executions to 10 for {function_name}")
+        response = client.get_function_concurrency(function_name)
+        logger.info(f"response from get_function_concurrency")
+        reserved = response['ReservedConcurrentExecutions']
+        logger.info(f"reserved = {reserved} for {function_name}")
+        if '0' < reserved < '10':
+            concurrent_executions = reserved
+            logger.info(f"resetting provisioning target to {reserved} for {function_name}")
         response = client.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=latest_version,

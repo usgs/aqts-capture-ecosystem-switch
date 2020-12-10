@@ -381,11 +381,13 @@ class TestDbResizeHandler(TestCase):
     def test_enable_provisioned_concurrency(self, mock_boto3):
         mock_client = mock.Mock()
         mock_client.list_versions_by_function.return_value = VERSION_RESPONSE
+        mock_client.get_function_concurrency.return_value = {'ReservedConcurrentExecutions': '10'}
         mock_boto3.return_value = mock_client
 
         db_resize_handler.enable_provisioned_concurrency({}, {})
         self.assertEqual(mock_client.list_versions_by_function.call_count, 15)
         self.assertEqual(mock_client.put_provisioned_concurrency_config.call_count, 15)
+        self.assertEqual(mock_client.get_function_concurrency.call_count, 15)
 
     @mock.patch('src.utils.boto3.client', autospec=True)
     def test_disable_provisioned_concurrency(self, mock_boto3):
