@@ -229,7 +229,7 @@ def enable_provisioned_concurrency(event, context):
         """
         concurrent_executions = 10
         logger.info(f"set initial concurrent executions to 10 for {function_name}")
-        response = client.get_function_concurrency(function_name)
+        response = client.get_function_concurrency(FunctionName=function_name)
         logger.info(f"response from get_function_concurrency")
         reserved = response['ReservedConcurrentExecutions']
         logger.info(f"reserved = {reserved} for {function_name}")
