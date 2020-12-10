@@ -155,7 +155,7 @@ functions:
           enabled: ${self:custom.stopObservationDbScheduleEnabled.${self:provider.stage}}
 
   StartCaptureDb:
-    handler: src.handler.start_capture_db
+    handler: src.handler.execute_start_machine
     role:
       Fn::Sub:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
@@ -739,6 +739,35 @@ stepFunctions:
             Resource:
               Fn::GetAtt: [ disableProvisionedConcurrency, Arn ]
             End: true
+
+
+    aqtsStartCaptureDb:
+      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      name: aqts-ecosystem-switch-start-machine-${self:provider.stage}
+      definition:
+        Comment: "AQTS Start Capture Db with Provisioned Concurrency"
+        StartAt: EnableProvisionedConcurrency
+        States:
+          EnableProvisionedConcurrency:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ enableProvisionedConcurrency, Arn ]
+            Next: StartDb
+          StartDb:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ StartCaptureDb, Arn ]
+            Next: WaitForDbStartup
+          WaitForDbStartup:
+            Type: Wait
+            Seconds: 900
+            Next: DisableProvisionedConcurrency
+          DisableProvisionedConcurrency:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [ disableProvisionedConcurrency, Arn ]
+            End: true
+
 
     aqtsCreateObDb:
       #loggingConfig:
