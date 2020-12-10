@@ -4,7 +4,7 @@ import os
 
 import boto3
 
-from src.db_resize_handler import disable_trigger, enable_trigger, execute_recover_machine
+from src.db_resize_handler import disable_trigger, enable_trigger, execute_recover_machine, _execute_state_machine
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
     stop_db_cluster, \
