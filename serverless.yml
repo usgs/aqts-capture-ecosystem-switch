@@ -574,27 +574,19 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [disableTrigger, Arn]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 120
-                MaxAttempts: 3
-                BackoffRate: 1
             Next: WaitForDisable
           WaitForDisable:
             Type: Wait
-            Seconds: 120
+            Seconds: 180
             Next: ShrinkDb
           ShrinkDb:
             Type: Task
             Resource:
               Fn::GetAtt: [shrinkDb, Arn]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 120
-                MaxAttempts: 10
-                BackoffRate: 1
+            Next: WaitForShrink
+          WaitForShrink:
+            Type: Wait
+            Seconds: 600
             Next: EnableProvisionedConcurrency
           EnableProvisionedConcurrency:
             Type: Task
@@ -609,12 +601,6 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [enableTrigger, Arn]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 120
-                MaxAttempts: 10
-                BackoffRate: 1
             Next: WaitForProvisionedConcurrency
           WaitForProvisionedConcurrency:
             Type: Wait
@@ -651,12 +637,10 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [ growDb, Arn ]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 120
-                MaxAttempts: 10
-                BackoffRate: 1
+            Next: WaitForGrow
+          WaitForGrow:
+            Type: Wait
+            Seconds: 600
             Next: EnableProvisionedConcurrency
           EnableProvisionedConcurrency:
             Type: Task
@@ -671,12 +655,6 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [ enableTrigger, Arn ]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 120
-                MaxAttempts: 10
-                BackoffRate: 1
             Next: WaitForProvisionedConcurrency
           WaitForProvisionedConcurrency:
             Type: Wait
