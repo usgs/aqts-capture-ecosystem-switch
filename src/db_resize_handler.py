@@ -260,7 +260,7 @@ def list_provisioned_concurrency(event, context):
     all_provisioned = []
     for function_name in LIST_OF_LAMBDAS:
         response = client.list_provisioned_concurrency_configs(FunctionName=function_name)
-        if len(response['ProvisionedConcurrencyConfigs'] > 0):
+        if len(response['ProvisionedConcurrencyConfigs']) > 0:
             all_provisioned.append(f"function: {function_name} {response['ProvisionedConcurrencyConfigs']}")
     logger.info(f"All provisioned concurrency: \n{all_provisioned}")
     return all_provisioned
