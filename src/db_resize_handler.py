@@ -170,15 +170,6 @@ def _is_cluster_available(cluster_id):
         raise Exception(f"DB {DEFAULT_DB_CLUSTER_IDENTIFIER} is not ready yet")
 
 
-def _execute_state_machine(state_machine_arn, invocation_payload, region='us-west-2'):
-    sf = boto3.client('stepfunctions', region_name=region)
-    resp = sf.start_execution(
-        stateMachineArn=state_machine_arn,
-        input=invocation_payload
-    )
-    return resp
-
-
 def shrink_observations_db(event, context):
     _validate_observations_resize()
     alarm_state = event["detail"]["state"]["value"]
@@ -291,3 +282,14 @@ def _validate_observations_resize():
     if os.environ['STAGE'] in ('DEV', 'TEST', 'QA'):
         return
     raise Exception(f"Cannot resize the observations db on tier {os.environ['STAGE']}")
+
+
+
+def _execute_state_machine(state_machine_arn, invocation_payload, region='us-west-2'):
+    sf = boto3.client('stepfunctions', region_name=region)
+    resp = sf.start_execution(
+        stateMachineArn=state_machine_arn,
+        input=invocation_payload
+    )
+    return resp
+

@@ -4,7 +4,7 @@ import os
 
 import boto3
 
-from src.db_resize_handler import disable_trigger, enable_trigger, execute_recover_machine, _execute_state_machine
+from src.db_resize_handler import disable_trigger, enable_trigger, execute_recover_machine
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
     stop_db_cluster, \
@@ -80,7 +80,7 @@ DB stop and start functions
 
 def execute_start_machine(event, context):
     arn = os.environ['START_STATE_MACHINE_ARN']
-    _execute_start_machine(arn, {})
+    _execute_state_machine(arn, {})
 
 
 def start_capture_db(event, context):
@@ -452,4 +452,13 @@ def _make_kms_key(event):
         AliasName=alias,
         TargetKeyId=response['KeyMetadata']['KeyId']
     )
+
+
+def _execute_state_machine(state_machine_arn, invocation_payload, region='us-west-2'):
+    sf = boto3.client('stepfunctions', region_name=region)
+    resp = sf.start_execution(
+        stateMachineArn=state_machine_arn,
+        input=invocation_payload
+    )
+    return resp
 
