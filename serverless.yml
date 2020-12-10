@@ -71,8 +71,7 @@ custom:
   # starts are scheduled.
   startCaptureDbScheduleEnabled:
     DEV: false
-    # TODO
-    TEST: false
+    TEST: true
     QA: false
     PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
@@ -82,8 +81,7 @@ custom:
     PROD-EXTERNAL: false
   stopCaptureDbScheduleEnabled:
     DEV: false
-    # TODO
-    TEST: false
+    TEST: true
     QA: false
     PROD-EXTERNAL: false
   stopObservationDbScheduleEnabled:
