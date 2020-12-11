@@ -76,12 +76,12 @@ custom:
     PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
     DEV: false
-    TEST: true
+    TEST: false
     QA: false
     PROD-EXTERNAL: false
   stopCaptureDbScheduleEnabled:
     DEV: false
-    TEST: true
+    TEST: false
     QA: false
     PROD-EXTERNAL: false
   stopObservationDbScheduleEnabled:
