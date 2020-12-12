@@ -248,6 +248,12 @@ def troubleshoot(event, context):
         # here and specify the access point id.  Don't check into master
         client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
         client.delete_access_point(AccessPointId='fsap-xxxxxxxxxxxxxxxxx')
+    elif event['action'].lower() == 'modify_concurrency':
+        client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
+        client.put_function_concurrency(
+            FunctionName=event['FunctionArn'],
+            ReservedConcurrentExecutions=event['ReservedConcurrency']
+        )
     else:
         raise Exception(f"invalid action")
 
