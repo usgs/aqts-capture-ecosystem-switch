@@ -17,7 +17,9 @@ provider:
   deploymentBucket:
     name: ${opt:bucket, iow-cloud-applications}
   stackTags:
-    "wma:applicationId": "Aquarius TS Capture Ecosystem Switch"
+    "wma:project_id": "aqtscapture"
+    "wma:subSystem": "aqtscapture"
+    "wma:application_id": "Aquarius TS Capture Ecosystem Switch"
     "wma:contact": "Kenneth Kehl kkehl@contractor.usgs.gov"
     "wma:environment": ${self:provider.stage}
     "wma:taggingVersion": 0.0.1
