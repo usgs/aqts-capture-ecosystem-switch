@@ -110,6 +110,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -127,6 +128,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -142,6 +144,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       DB_HOST: ${self:custom.observationsDb.connectInfo.DATABASE_ADDRESS}
       DB_USER: ${self:custom.observationsDb.connectInfo.WQP_READ_ONLY_USERNAME}
@@ -161,6 +164,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -176,6 +180,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       STAGE: ${self:provider.stage}
@@ -191,6 +196,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       ACCOUNT_ID:
@@ -205,6 +211,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
@@ -225,6 +232,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
@@ -237,6 +245,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
@@ -249,6 +258,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
@@ -261,6 +271,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
@@ -273,6 +284,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       SHRINK_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-shrink-capture-db-${self:provider.stage}
@@ -293,6 +305,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       GROW_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-grow-capture-db-${self:provider.stage}
@@ -314,6 +327,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -327,6 +341,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -340,6 +355,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -353,6 +369,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -366,6 +383,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -382,6 +400,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -395,6 +414,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -408,6 +428,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -421,6 +442,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       # If we are on the dev tier the snapshots need to be manually copied.  See README
       LAST_OB_DB_SNAPSHOT: ${self:custom.observationsDb.connectInfo.LAST_OB_DB_SNAPSHOT}
@@ -436,6 +458,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
@@ -449,6 +472,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
@@ -468,6 +492,7 @@ functions:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role
         - accountId:
             Ref: AWS::AccountId
+    reservedConcurrency: 2
     environment:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
