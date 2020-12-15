@@ -145,12 +145,15 @@ def control_db_utilization(event, context):
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     if alarm_state == "ALARM":
         logger.info(f"ALARM!")
-        if get_flow_rate() == 25:
+        flow_rate = get_flow_rate()
+        if flow_rate == 25:
             logger.info(f"Adjusting flow rate to 15")
             adjust_flow_rate(15)
-        elif get_flow_rate() == 15:
+        elif flow_rate == 15:
             logger.info(f"Adjusting flow rate to 0")
             adjust_flow_rate(0)
+        else:
+            logger.error(f"Unknown flow rate during ramp down: {flow_rate}")
     else:
         """
         If we are not in a state of alarm (i.e. OK or INSUFFICIENT_DATA) then it is okay
@@ -160,20 +163,24 @@ def control_db_utilization(event, context):
         by issuing a fake high-cpu alarm.
         """
         logger.info(f"The circuit breaker has calmed down.")
-        if get_flow_rate() == 0:
+        flow_rate = get_flow_rate()
+        if flow_rate == 0:
             logger.info(f"Adjusting flow rate up to 15.")
             adjust_flow_rate(15)
-        elif get_flow_rate() == 15:
+        elif flow_rate == 15:
             logger.info(f"Adjusting flow rate up to 25.")
             adjust_flow_rate(25)
+        else:
+            logger.error(f"unknown flow rate during ramp up {flow_rate}")
 
 
 def adjust_flow_rate(new_flow_rate):
     client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
-    client.put_function_concurrency(
+    response = client.put_function_concurrency(
         FunctionName=TRIGGER[STAGE][0],
         ReservedConcurrentExecutions=new_flow_rate
     )
+    print(f"response from adjust_flow_rate {response}")
 
 
 def get_flow_rate():
@@ -182,6 +189,7 @@ def get_flow_rate():
         FunctionName=TRIGGER[STAGE][0]
     )
     flow_rate = response['ReservedConcurrentExecutions']
+    print(f"response from flow_rate {response}")
     return flow_rate
 
 

@@ -136,7 +136,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.adjust_flow_rate')
     def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_adjust, mock_get_flow,
                                                                      mock_describe_db_clusters):
-        mock_get_flow.return_value = 25
+        mock_get_flow.return_value = 15
         my_alarm = {
             "detail": {
                 "state": {
@@ -159,7 +159,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
     def test_control_db_utilization_enable(self, mock_adjust, mock_get_flow):
-        mock_get_flow.return_value = 25
+        mock_get_flow.return_value = 15
         my_alarm = {
             "detail": {
                 "state": {
