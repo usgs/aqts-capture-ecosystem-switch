@@ -4,7 +4,7 @@ import os
 
 import boto3
 
-from src.db_resize_handler import disable_trigger, enable_trigger, execute_recover_machine
+from src.db_resize_handler import disable_trigger, enable_trigger
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
     stop_db_cluster, \
@@ -144,8 +144,13 @@ def control_db_utilization(event, context):
     if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     if alarm_state == "ALARM":
-        logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
-        disable_trigger(event, context)
+        logger.info(f"ALARM!")
+        if get_flow_rate() == 25:
+            logger.info(f"Adjusting flow rate to 15")
+            adjust_flow_rate(15)
+        elif get_flow_rate() == 15:
+            logger.info(f"Adjusting flow rate to 0")
+            adjust_flow_rate(0)
     else:
         """
         If we are not in a state of alarm (i.e. OK or INSUFFICIENT_DATA) then it is okay
@@ -154,8 +159,30 @@ def control_db_utilization(event, context):
         However, we know there is a backlog to work through so we need to force the db to maximum size
         by issuing a fake high-cpu alarm.
         """
-        logger.info(f"os.environ {os.environ}")
-        execute_recover_machine({}, {})
+        logger.info(f"The circuit breaker has calmed down.")
+        if get_flow_rate() == 0:
+            logger.info(f"Adjusting flow rate up to 15.")
+            adjust_flow_rate(15)
+        elif get_flow_rate() == 15:
+            logger.info(f"Adjusting flow rate up to 25.")
+            adjust_flow_rate(25)
+
+
+def adjust_flow_rate(new_flow_rate):
+    client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
+    client.put_function_concurrency(
+        FunctionName=TRIGGER[STAGE][0],
+        ReservedConcurrentExecutions=new_flow_rate
+    )
+
+
+def get_flow_rate():
+    client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
+    response = client.get_function_concurrency(
+        FunctionName=TRIGGER[STAGE][0]
+    )
+    flow_rate = response['ReservedConcurrentExecutions']
+    return flow_rate
 
 
 def run_etl_query(rds=None):
@@ -232,8 +259,7 @@ def troubleshoot(event, context):
             StackName=stack,
         )
     elif event['action'].lower() == 'purge_queues':
-        purge_queue(CAPTURE_TRIGGER_QUEUE)
-        purge_queue(ERROR_QUEUE)
+        purge_queue([CAPTURE_TRIGGER_QUEUE, ERROR_QUEUE])
     elif event['action'].lower() == 'create_access_point':
         _make_efs_access_point(event)
     elif event['action'].lower() == 'create_fargate_security_group':

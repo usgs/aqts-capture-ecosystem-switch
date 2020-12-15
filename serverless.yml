@@ -209,7 +209,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-      RECOVER_STATE_MACHINE_ARN: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:aqts-ecosystem-switch-recover-${self:provider.stage}
     events:
       - cloudwatchEvent:
           event:
@@ -608,44 +607,6 @@ stepFunctions:
           WaitForDisable:
             Type: Wait
             Seconds: 300
-            Next: GrowDb
-          GrowDb:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [ growDb, Arn ]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 120
-                MaxAttempts: 10
-                BackoffRate: 1
-            Next: WaitForModify
-          WaitForModify:
-            Type: Wait
-            Seconds: 600
-            Next: EnableTrigger
-          EnableTrigger:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [ enableTrigger, Arn ]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 120
-                MaxAttempts: 10
-                BackoffRate: 1
-            End: true
-
-    aqtsRecoverFromCircuitBreaker:
-      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
-      name: aqts-ecosystem-switch-recover-${self:provider.stage}
-      definition:
-        Comment: "AQTS Recover From Circuit Breaker"
-        StartAt: WaitForBackoffPurposes
-        States:
-          WaitForBackoffPurposes:
-            Type: Wait
-            Seconds: 7200
             Next: GrowDb
           GrowDb:
             Type: Task

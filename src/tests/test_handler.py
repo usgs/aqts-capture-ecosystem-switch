@@ -132,10 +132,11 @@ class TestHandler(TestCase):
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
-    @mock.patch('src.handler.execute_recover_machine', autospec=True)
-    def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_execute_recover_machine,
+    @mock.patch('src.handler.get_flow_rate')
+    @mock.patch('src.handler.adjust_flow_rate')
+    def test_control_db_utilization_enable_lambda_trigger_when_db_on(self, mock_adjust, mock_get_flow,
                                                                      mock_describe_db_clusters):
-        mock_execute_recover_machine.return_value = True
+        mock_get_flow.return_value = 25
         my_alarm = {
             "detail": {
                 "state": {
@@ -147,16 +148,18 @@ class TestHandler(TestCase):
             os.environ['STAGE'] = stage
             mock_describe_db_clusters.return_value = DB[stage]
             handler.control_db_utilization(my_alarm, self.context)
-            mock_execute_recover_machine.assert_called_with({}, {})
+            # TODO
+            # mock_execute_recover_machine.assert_called_with({}, {})
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.execute_recover_machine', autospec=True)
-    def test_control_db_utilization_enable(self, mock_execute_recover_machine):
-        mock_execute_recover_machine.return_value = True
+    @mock.patch('src.handler.get_flow_rate')
+    @mock.patch('src.handler.adjust_flow_rate')
+    def test_control_db_utilization_enable(self, mock_adjust, mock_get_flow):
+        mock_get_flow.return_value = 25
         my_alarm = {
             "detail": {
                 "state": {
@@ -167,16 +170,18 @@ class TestHandler(TestCase):
         for stage in STAGES:
             os.environ['STAGE'] = stage
             handler.control_db_utilization(my_alarm, self.context)
-            mock_execute_recover_machine.assert_called_with({}, {})
+            # TODO
+            # mock_execute_recover_machine.assert_called_with({}, {})
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
             handler.control_db_utilization(self.initial_event, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.disable_trigger', autospec=True)
-    def test_control_db_utilization_disable(self, mock_disable_lambda_trigger):
-        mock_disable_lambda_trigger.return_value = True
+    @mock.patch('src.handler.get_flow_rate')
+    @mock.patch('src.handler.adjust_flow_rate')
+    def test_control_db_utilization_disable(self, mock_adjust, mock_get_flow):
+        mock_get_flow.return_value = 25
         my_alarm = {
             "detail": {
                 "state": {
@@ -187,7 +192,20 @@ class TestHandler(TestCase):
         for stage in STAGES:
             os.environ['STAGE'] = stage
             handler.control_db_utilization(my_alarm, self.context)
-            mock_disable_lambda_trigger.assert_called_with(my_alarm, self.context)
+            mock_adjust.assert_called_with(15)
+
+        mock_get_flow.return_value = 15
+        my_alarm = {
+            "detail": {
+                "state": {
+                    "value": "ALARM",
+                }
+            }
+        }
+        for stage in STAGES:
+            os.environ['STAGE'] = stage
+            handler.control_db_utilization(my_alarm, self.context)
+            mock_adjust.assert_called_with(0)
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
@@ -355,7 +373,7 @@ class TestHandler(TestCase):
             self.context)
         mock_client.put_key_policy.assert_called_once_with(
             KeyId='key123', PolicyName='default',
-            Policy='{"Version": "2012-10-17", "Id": "key-consolepolicy-3", "Statement": [{"Sid": "Enable IAM User Permissions", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:root"}, "Action": "kms:*", "Resource": "*"}, {"Sid": "Allow access for Key Administrators", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion"], "Resource": "*"}, {"Sid": "Allow use of the key", "Effect": "Allow", "Principal": {"AWS": ["arn:aws:iam::my_account_id:role/adfs-developers", "arn:aws:iam::my_account_id:role/Ec2-Role", "arn:aws:iam::my_account_id:role/ec2-mlr-test"]}, "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"], "Resource": "*"}, {"Sid": "Allow attachment of persistent resources", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:CreateGrant", "kms:ListGrants", "kms:RevokeGrant"], "Resource": "*", "Condition": {"Bool": {"kms:GrantIsForAWSResource": "true"}}}]}'
+            Policy='{"Version": "2012-10-17", "Id": "key-consolepolicy-3", "Statement": [{"Sid": "Enable IAM User Permissions", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:root"}, "Action": "kms:*", "Resource": "*"}, {"Sid": "Allow access for Key Administrators", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion"], "Resource": "*"}, {"Sid": "Allow use of the key", "Effect": "Allow", "Principal": {"AWS": ["arn:aws:iam::my_account_id:role/adfs-developers", "arn:aws:iam::my_account_id:role/Ec2-Role"]}, "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"], "Resource": "*"}, {"Sid": "Allow attachment of persistent resources", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:CreateGrant", "kms:ListGrants", "kms:RevokeGrant"], "Resource": "*", "Condition": {"Bool": {"kms:GrantIsForAWSResource": "true"}}}]}'
         )
 
     @mock.patch('src.utils.boto3.client', autospec=True)
@@ -400,14 +418,36 @@ class TestHandler(TestCase):
             Description='test security group', GroupName='my group', VpcId='fsa12345'
         )
 
-
-    @mock.patch('src.handler.purge_queue', autospec=True)
-    def test_create_efs_access_point(self, mock_purge):
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_purge_queue(self, mock_boto):
+        os.environ['AWS_DEPLOYMENT_REGION'] = 'us-west-2'
+        mock_client = mock.MagicMock()
+        mock_client.purge_queue.return_value = None
+        mock_boto.return_value = mock_client
 
         handler.troubleshoot(
             {"action": "purge_queues"},
             self.context
         )
 
-        self.assertEqual(mock_purge.purge_queue.call_count, 2)
+        self.assertEqual(mock_client.purge_queue.call_count, 2)
 
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_adjust_flow_rate(self, mock_boto):
+        os.environ['AWS_DEPLOYMENT_REGION'] = 'us-west-2'
+        mock_client = mock.MagicMock()
+        mock_client.put_function_concurrency.return_value = None
+        mock_boto.return_value = mock_client
+        handler.adjust_flow_rate(25)
+        mock_client.put_function_concurrency.assert_called_once_with(
+            FunctionName='aqts-capture-trigger-TEST-aqtsCaptureTrigger', ReservedConcurrentExecutions=25)
+
+    @mock.patch('src.utils.boto3.client', autospec=True)
+    def test_get_flow_rate(self, mock_boto):
+        os.environ['AWS_DEPLOYMENT_REGION'] = 'us-west-2'
+        mock_client = mock.MagicMock()
+        mock_client.get_function_concurrency.return_value = {'ReservedConcurrentExecutions': 25}
+        mock_boto.return_value = mock_client
+        handler.get_flow_rate()
+        mock_client.get_function_concurrency.assert_called_once_with(
+            FunctionName='aqts-capture-trigger-TEST-aqtsCaptureTrigger')
