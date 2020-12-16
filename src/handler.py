@@ -175,6 +175,8 @@ def circuit_breaker(event, context):
 
 
 def adjust_flow_rate(new_flow_rate):
+    if new_flow_rate is None or new_flow_rate < 0 or new_flow_rate > 25:
+        raise Exception(f"flow rate must be between 0 and 25")
     client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
     response = client.put_function_concurrency(
         FunctionName=TRIGGER[STAGE][0],
@@ -257,6 +259,8 @@ def troubleshoot(event, context):
         _change_secret_kms_key(event)
     elif event['action'].lower() == 'change_kms_key_policy':
         _change_kms_key_policy(event)
+    elif event['action'].lower() == 'change_flow_rate':
+        adjust_flow_rate(event['flow_rate'])
     # TODO remove
     elif event['action'].lower() == 'delete_stack':
         stack = event['stack']
