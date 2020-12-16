@@ -4,7 +4,7 @@ import os
 
 import boto3
 
-from src.db_resize_handler import disable_trigger, enable_trigger, execute_recover_machine
+from src.db_resize_handler import disable_trigger, enable_trigger
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
     stop_db_cluster, \
@@ -130,7 +130,7 @@ def start_observations_db(event, context):
     }
 
 
-def control_db_utilization(event, context):
+def circuit_breaker(event, context):
     """
     Right now we are only listening for the error handler alarm, because it
     is the last alarm to get triggered when we are going into a death spiral.
@@ -144,18 +144,53 @@ def control_db_utilization(event, context):
     if stage not in STAGES:
         raise Exception(f"stage not recognized {os.getenv('STAGE')}")
     if alarm_state == "ALARM":
-        logger.info(f"Disabling trigger {TRIGGER[stage]} because error handler is in alarm")
-        disable_trigger(event, context)
+        logger.info(f"ALARM!")
+        flow_rate = get_flow_rate()
+        if flow_rate == 25:
+            logger.info(f"Adjusting flow rate to 15")
+            adjust_flow_rate(15)
+        elif flow_rate == 15:
+            logger.info(f"Adjusting flow rate to 0")
+            adjust_flow_rate(0)
+        elif flow_rate == 0:
+            logger.info(f"The flow rate is already at 0 so no change made.")
+        else:
+            raise Exception(f"Invalid flow rate {flow_rate}")
     else:
         """
-        If we are not in a state of alarm (i.e. OK or INSUFFICIENT_DATA) then it is okay
-        to enable the trigger if the db is up and running (status == available)
-        
-        However, we know there is a backlog to work through so we need to force the db to maximum size
-        by issuing a fake high-cpu alarm.
+        Ramp up the reserved concurrency on aqts-capture-trigger to increase the data flow rate.
         """
-        logger.info(f"os.environ {os.environ}")
-        execute_recover_machine({}, {})
+        logger.info(f"The error handler notifications have calmed down.  Let's try to ramp things up.")
+        flow_rate = get_flow_rate()
+        if flow_rate == 0:
+            logger.info(f"Adjusting flow rate up to 15.")
+            adjust_flow_rate(15)
+        elif flow_rate == 15:
+            logger.info(f"Adjusting flow rate up to 25.")
+            adjust_flow_rate(25)
+        elif flow_rate == 25:
+            logger.info(f"We already at maximum flow rate, so no change made.")
+        else:
+            raise Exception(f"Invalid flow rate {flow_rate}")
+
+
+def adjust_flow_rate(new_flow_rate):
+    if new_flow_rate is None or new_flow_rate < 0 or new_flow_rate > 25:
+        raise Exception(f"flow rate must be between 0 and 25")
+    client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
+    response = client.put_function_concurrency(
+        FunctionName=TRIGGER[STAGE][0],
+        ReservedConcurrentExecutions=new_flow_rate
+    )
+
+
+def get_flow_rate():
+    client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
+    response = client.get_function_concurrency(
+        FunctionName=TRIGGER[STAGE][0]
+    )
+    flow_rate = response['ReservedConcurrentExecutions']
+    return flow_rate
 
 
 def run_etl_query(rds=None):
@@ -224,6 +259,8 @@ def troubleshoot(event, context):
         _change_secret_kms_key(event)
     elif event['action'].lower() == 'change_kms_key_policy':
         _change_kms_key_policy(event)
+    elif event['action'].lower() == 'change_flow_rate':
+        adjust_flow_rate(event['flow_rate'])
     # TODO remove
     elif event['action'].lower() == 'delete_stack':
         stack = event['stack']
@@ -232,8 +269,7 @@ def troubleshoot(event, context):
             StackName=stack,
         )
     elif event['action'].lower() == 'purge_queues':
-        purge_queue(CAPTURE_TRIGGER_QUEUE)
-        purge_queue(ERROR_QUEUE)
+        purge_queue([CAPTURE_TRIGGER_QUEUE, ERROR_QUEUE])
     elif event['action'].lower() == 'create_access_point':
         _make_efs_access_point(event)
     elif event['action'].lower() == 'create_fargate_security_group':
@@ -264,6 +300,7 @@ Occasional use functions.  These are used rarely to set up new long-lived resour
 
 def _change_kms_key_policy(event):
     key_id = event['key_id']
+
     account_id = os.environ['ACCOUNT_ID']
     policy = {
         "Version": "2012-10-17",
