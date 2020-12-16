@@ -204,7 +204,7 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
 
-  circuitBreaker:
+  CircuitBreaker:
     handler: src.handler.circuit_breaker
     role:
       Fn::Sub:
@@ -729,12 +729,12 @@ resources:
       Type: AWS::CloudWatch::Alarm
       Properties:
         AlarmName: ${self:service}-${self:provider.stage}-circuit-breaker-alarm
-        AlarmDescription: Notify when the db control utilization lambda is invoked
+        AlarmDescription: Notify when the circuit breaker lambda is invoked
         Namespace: 'AWS/Lambda'
         Dimensions:
           - Name: FunctionName
             Value:
-              Ref: ControlDbUtilLambdaFunction
+              Ref: CircuitBreakerFunction
         MetricName: ConcurrentExecutions
         Statistic: Maximum
         ComparisonOperator: GreaterThanOrEqualToThreshold
