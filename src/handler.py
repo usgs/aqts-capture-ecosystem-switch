@@ -130,7 +130,7 @@ def start_observations_db(event, context):
     }
 
 
-def control_db_utilization(event, context):
+def circuit_breaker(event, context):
     """
     Right now we are only listening for the error handler alarm, because it
     is the last alarm to get triggered when we are going into a death spiral.
@@ -158,13 +158,9 @@ def control_db_utilization(event, context):
             raise Exception(f"Invalid flow rate {flow_rate}")
     else:
         """
-        If we are not in a state of alarm (i.e. OK or INSUFFICIENT_DATA) then it is okay
-        to enable the trigger if the db is up and running (status == available)
-        
-        However, we know there is a backlog to work through so we need to force the db to maximum size
-        by issuing a fake high-cpu alarm.
+        Ramp up the reserved concurrency on aqts-capture-trigger to increase the data flow rate.
         """
-        logger.info(f"The circuit breaker has calmed down.  Let's try to ramp things up.")
+        logger.info(f"The error handler notifications have calmed down.  Let's try to ramp things up.")
         flow_rate = get_flow_rate()
         if flow_rate == 0:
             logger.info(f"Adjusting flow rate up to 15.")
@@ -300,6 +296,7 @@ Occasional use functions.  These are used rarely to set up new long-lived resour
 
 def _change_kms_key_policy(event):
     key_id = event['key_id']
+
     account_id = os.environ['ACCOUNT_ID']
     policy = {
         "Version": "2012-10-17",

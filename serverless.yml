@@ -204,8 +204,8 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
 
-  ControlDbUtil:
-    handler: src.handler.control_db_utilization
+  circuitBreaker:
+    handler: src.handler.circuit_breaker
     role:
       Fn::Sub:
         - arn:aws:iam::${accountId}:role/csr-Lambda-Role

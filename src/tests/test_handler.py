@@ -135,7 +135,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_ramp_25_to_15(
+    def test_circuit_breaker_ramp_25_to_15(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp down from 25
@@ -149,7 +149,7 @@ class TestHandler(TestCase):
         }
         os.environ['STAGE'] = 'TEST'
         mock_describe_db_clusters.return_value = DB['TEST']
-        handler.control_db_utilization(my_alarm, self.context)
+        handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
         mock_adjust.assert_called_once_with(15)
 
@@ -157,7 +157,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_ramp_15_to_0(
+    def test_circuit_breaker_ramp_15_to_0(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp down from 15
@@ -171,7 +171,7 @@ class TestHandler(TestCase):
         }
         os.environ['STAGE'] = 'TEST'
         mock_describe_db_clusters.return_value = DB['TEST']
-        handler.control_db_utilization(my_alarm, self.context)
+        handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
         mock_adjust.assert_called_once_with(0)
 
@@ -179,7 +179,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_ramp_0_to_0(
+    def test_circuit_breaker_ramp_0_to_0(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp down from 0
@@ -193,7 +193,7 @@ class TestHandler(TestCase):
         }
         os.environ['STAGE'] = 'TEST'
         mock_describe_db_clusters.return_value = DB['TEST']
-        handler.control_db_utilization(my_alarm, self.context)
+        handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
         mock_adjust.assert_not_called()
 
@@ -202,7 +202,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_ramp_0_to_15(
+    def test_circuit_breaker_ramp_0_to_15(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp from zero
@@ -216,7 +216,7 @@ class TestHandler(TestCase):
         }
         os.environ['STAGE'] = 'TEST'
         mock_describe_db_clusters.return_value = DB['TEST']
-        handler.control_db_utilization(my_alarm, self.context)
+        handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
         mock_adjust.assert_called_once_with(15)
 
@@ -224,7 +224,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_ramp_15_to_25(
+    def test_circuit_breaker_ramp_15_to_25(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp from zero
@@ -238,7 +238,7 @@ class TestHandler(TestCase):
         }
         os.environ['STAGE'] = 'TEST'
         mock_describe_db_clusters.return_value = DB['TEST']
-        handler.control_db_utilization(my_alarm, self.context)
+        handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
         mock_adjust.assert_called_once_with(25)
 
@@ -247,7 +247,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_ramp_25_to_25(
+    def test_circuit_breaker_ramp_25_to_25(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp from zero
@@ -261,7 +261,7 @@ class TestHandler(TestCase):
         }
         os.environ['STAGE'] = 'TEST'
         mock_describe_db_clusters.return_value = DB['TEST']
-        handler.control_db_utilization(my_alarm, self.context)
+        handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
         mock_adjust.assert_not_called()
 
@@ -270,7 +270,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_ramp_bogus_flow_rate(
+    def test_circuit_breaker_ramp_bogus_flow_rate(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
         my_alarm = {
             "detail": {
@@ -283,74 +283,18 @@ class TestHandler(TestCase):
         os.environ['STAGE'] = 'TEST'
         mock_get_flow.return_value = 9000
         with self.assertRaises(Exception) as context:
-            handler.control_db_utilization(my_alarm, self.context)
+            handler.circuit_breaker(my_alarm, self.context)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_bogus_stage(
+    def test_circuit_breaker_bogus_stage(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         os.environ['STAGE'] = 'UNKNOWN'
         with self.assertRaises(Exception) as context:
-            handler.control_db_utilization(self.initial_event, self.context)
-
-    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.get_flow_rate')
-    @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_enable(self, mock_adjust, mock_get_flow):
-        mock_get_flow.return_value = 15
-        my_alarm = {
-            "detail": {
-                "state": {
-                    "value": "OK",
-                }
-            }
-        }
-        for stage in STAGES:
-            os.environ['STAGE'] = stage
-            handler.control_db_utilization(my_alarm, self.context)
-            # TODO
-            # mock_execute_recover_machine.assert_called_with({}, {})
-
-        os.environ['STAGE'] = 'UNKNOWN'
-        with self.assertRaises(Exception) as context:
-            handler.control_db_utilization(self.initial_event, self.context)
-
-    @mock.patch.dict('src.utils.os.environ', mock_env_vars)
-    @mock.patch('src.handler.get_flow_rate')
-    @mock.patch('src.handler.adjust_flow_rate')
-    def test_control_db_utilization_disable(self, mock_adjust, mock_get_flow):
-        mock_get_flow.return_value = 25
-        my_alarm = {
-            "detail": {
-                "state": {
-                    "value": "ALARM",
-                }
-            }
-        }
-        for stage in STAGES:
-            os.environ['STAGE'] = stage
-            handler.control_db_utilization(my_alarm, self.context)
-            mock_adjust.assert_called_with(15)
-
-        mock_get_flow.return_value = 15
-        my_alarm = {
-            "detail": {
-                "state": {
-                    "value": "ALARM",
-                }
-            }
-        }
-        for stage in STAGES:
-            os.environ['STAGE'] = stage
-            handler.control_db_utilization(my_alarm, self.context)
-            mock_adjust.assert_called_with(0)
-
-        os.environ['STAGE'] = 'UNKNOWN'
-        with self.assertRaises(Exception) as context:
-            handler.control_db_utilization(self.initial_event, self.context)
+            handler.circuit_breaker(self.initial_event, self.context)
 
     @mock.patch('src.handler.disable_lambda_trigger', autospec=True)
     @mock.patch('src.handler.run_etl_query')
