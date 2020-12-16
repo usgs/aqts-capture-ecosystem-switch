@@ -734,7 +734,7 @@ resources:
         Dimensions:
           - Name: FunctionName
             Value:
-              Ref: CircuitBreakerFunction
+              Ref: CircuitBreakerLambdaFunction
         MetricName: ConcurrentExecutions
         Statistic: Maximum
         ComparisonOperator: GreaterThanOrEqualToThreshold
