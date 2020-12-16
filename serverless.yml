@@ -28,7 +28,6 @@ provider:
     "displayName": "Eco-switch"
     "wma:role": etl
     "wma:system": NWIS
-    "wma:subSystem": NWISWeb-Capture
     commitIdentifier: ${git:sha1}
 
 custom:
