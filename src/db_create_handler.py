@@ -164,7 +164,8 @@ def restore_db_cluster(event, context):
         ],
         Tags=[
             {'Key': 'Name', 'Value': f"NWISWEB-CAPTURE-RDS-AURORA-{STAGE}"},
-            {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
+            {'Key': 'wma:project_id', 'Value': 'aqtscapture'},
+            {'Key': 'wma:application_id', 'Value': 'NWISWEB-CAPTURE'},
             {'Key': 'wma:contact', 'Value': 'tbd'},
             {'Key': 'wma:costCenter', 'Value': 'tbd'},
             {'Key': 'wma:criticality', 'Value': 'tbd'},
