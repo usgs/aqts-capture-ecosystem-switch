@@ -345,6 +345,7 @@ def _change_kms_key_policy(event):
                 "Principal": {
                     "AWS": [
                         f"arn:aws:iam::{account_id}:role/adfs-developers",
+                        f"arn:aws:iam::{account_id}:role/adfs-app-operations",
                         f"arn:aws:iam::{account_id}:role/Ec2-Role"
                     ]
                 },
@@ -378,6 +379,7 @@ def _change_kms_key_policy(event):
         ]
     }
     policy = json.dumps(policy)
+
     client = boto3.client('kms', os.getenv('AWS_DEPLOYMENT_REGION'))
     response = client.put_key_policy(
         KeyId=key_id,
