@@ -147,34 +147,19 @@ class TestDbCreateHandler(TestCase):
 
         db_create_handler.restore_db_cluster({}, {})
         mock_rds.restore_db_cluster_from_snapshot.assert_called_once_with(
-            DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
-            SnapshotIdentifier=db_create_handler.get_snapshot_identifier(),
-            Engine='aurora-postgresql',
-            EngineVersion='11.7',
-            Port=5432,
-            DBSubnetGroupName='subgroup',
-            DatabaseName='nwcapture-qa',
-            EnableIAMDatabaseAuthentication=False,
-            EngineMode='provisioned',
-            DBClusterParameterGroupName='aqts-capture',
-            DeletionProtection=False,
-            CopyTagsToSnapshot=False,
-            KmsKeyId='kms',
-            VpcSecurityGroupIds=['vpc_id'],
-
+            DBClusterIdentifier='nwcapture-test', SnapshotIdentifier='rds:nwcapture-prod-external-2020-12-20-10-08',
+            Engine='aurora-postgresql', EngineVersion='11.7', Port=5432, DBSubnetGroupName='subgroup',
+            DatabaseName='nwcapture-qa', EnableIAMDatabaseAuthentication=False, EngineMode='provisioned',
+            DBClusterParameterGroupName='aqts-capture', DeletionProtection=False, CopyTagsToSnapshot=False,
+            KmsKeyId='kms', VpcSecurityGroupIds=['vpc_id'],
             Tags=[{'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
-                  {'Key': 'wma:applicationId', 'Value': 'NWISWEB-CAPTURE'},
-                  {'Key': 'wma:contact', 'Value': 'tbd'},
-                  {'Key': 'wma:costCenter', 'Value': 'tbd'},
-                  {'Key': 'wma:criticality', 'Value': 'tbd'},
-                  {'Key': 'wma:environment', 'Value': 'qa'},
-                  {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-                  {'Key': 'wma:organization', 'Value': 'IOW'},
-                  {'Key': 'wma:role', 'Value': 'database'},
-                  {'Key': 'wma:system', 'Value': 'NWIS'},
-                  {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
+                  {'Key': 'wma:project_id', 'Value': 'aqtscapture'},
+                  {'Key': 'wma:application_id', 'Value': 'NWISWEB-CAPTURE'}, {'Key': 'wma:contact', 'Value': 'tbd'},
+                  {'Key': 'wma:costCenter', 'Value': 'tbd'}, {'Key': 'wma:criticality', 'Value': 'tbd'},
+                  {'Key': 'wma:environment', 'Value': 'qa'}, {'Key': 'wma:operationalHours', 'Value': 'tbd'},
+                  {'Key': 'wma:organization', 'Value': 'IOW'}, {'Key': 'wma:role', 'Value': 'database'},
+                  {'Key': 'wma:system', 'Value': 'NWIS'}, {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
                   {'Key': 'taggingVersion', 'Value': '0.0.1'}]
-
         )
 
     @mock.patch('src.db_create_handler.secrets_client')

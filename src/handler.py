@@ -345,6 +345,7 @@ def _change_kms_key_policy(event):
                 "Principal": {
                     "AWS": [
                         f"arn:aws:iam::{account_id}:role/adfs-developers",
+                        f"arn:aws:iam::{account_id}:rols/adfs-app-operations",
                         f"arn:aws:iam::{account_id}:role/Ec2-Role"
                     ]
                 },
