@@ -378,8 +378,6 @@ def _change_kms_key_policy(event):
             }
         ]
     }
-    logger.info(json.dumps(policy, indent=4))
-    logger.info(f"\nkey_id {key_id}")
     policy = json.dumps(policy)
 
     client = boto3.client('kms', os.getenv('AWS_DEPLOYMENT_REGION'))
