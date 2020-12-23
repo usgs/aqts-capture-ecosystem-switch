@@ -147,7 +147,7 @@ class TestDbCreateHandler(TestCase):
 
         db_create_handler.restore_db_cluster({}, {})
         mock_rds.restore_db_cluster_from_snapshot.assert_called_once_with(
-            DBClusterIdentifier='nwcapture-test', SnapshotIdentifier='rds:nwcapture-prod-external-2020-12-20-10-08',
+            DBClusterIdentifier='nwcapture-test', SnapshotIdentifier='rds:nwcapture-prod-external-2020-12-21-10-08',
             Engine='aurora-postgresql', EngineVersion='11.7', Port=5432, DBSubnetGroupName='subgroup',
             DatabaseName='nwcapture-qa', EnableIAMDatabaseAuthentication=False, EngineMode='provisioned',
             DBClusterParameterGroupName='aqts-capture', DeletionProtection=False, CopyTagsToSnapshot=False,
