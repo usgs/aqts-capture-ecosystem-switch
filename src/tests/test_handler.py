@@ -130,7 +130,6 @@ class TestHandler(TestCase):
         with self.assertRaises(Exception) as context:
             handler.stop_observations_db(self.initial_event, self.context)
 
-
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
@@ -197,7 +196,6 @@ class TestHandler(TestCase):
         mock_get_flow.assert_called_once()
         mock_adjust.assert_not_called()
 
-
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
@@ -242,7 +240,6 @@ class TestHandler(TestCase):
         mock_get_flow.assert_called_once()
         mock_adjust.assert_called_once_with(25)
 
-
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
@@ -264,7 +261,6 @@ class TestHandler(TestCase):
         handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
         mock_adjust.assert_not_called()
-
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
@@ -458,7 +454,7 @@ class TestHandler(TestCase):
             self.context)
         mock_client.put_key_policy.assert_called_once_with(
             KeyId='key123', PolicyName='default',
-            Policy='{"Version": "2012-10-17", "Id": "key-consolepolicy-3", "Statement": [{"Sid": "Enable IAM User Permissions", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:root"}, "Action": "kms:*", "Resource": "*"}, {"Sid": "Allow access for Key Administrators", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion"], "Resource": "*"}, {"Sid": "Allow use of the key", "Effect": "Allow", "Principal": {"AWS": ["arn:aws:iam::my_account_id:role/adfs-developers", "arn:aws:iam::my_account_id:rols/adfs-app-operations", "arn:aws:iam::my_account_id:role/Ec2-Role"]}, "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"], "Resource": "*"}, {"Sid": "Allow attachment of persistent resources", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:CreateGrant", "kms:ListGrants", "kms:RevokeGrant"], "Resource": "*", "Condition": {"Bool": {"kms:GrantIsForAWSResource": "true"}}}]}'
+            Policy='{"Version": "2012-10-17", "Id": "key-consolepolicy-3", "Statement": [{"Sid": "Enable IAM User Permissions", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:root"}, "Action": "kms:*", "Resource": "*"}, {"Sid": "Allow access for Key Administrators", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion"], "Resource": "*"}, {"Sid": "Allow use of the key", "Effect": "Allow", "Principal": {"AWS": ["arn:aws:iam::my_account_id:role/adfs-developers", "arn:aws:iam::my_account_id:role/adfs-app-operations", "arn:aws:iam::my_account_id:role/Ec2-Role"]}, "Action": ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"], "Resource": "*"}, {"Sid": "Allow attachment of persistent resources", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::my_account_id:role/Ec2-Role"}, "Action": ["kms:CreateGrant", "kms:ListGrants", "kms:RevokeGrant"], "Resource": "*", "Condition": {"Bool": {"kms:GrantIsForAWSResource": "true"}}}]}'
         )
 
     @mock.patch('src.utils.boto3.client', autospec=True)
