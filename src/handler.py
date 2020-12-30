@@ -479,10 +479,10 @@ def _make_kms_key(event):
         )
     except client.exceptions.ClientError:
         logger.error(f"Couldn't create KMS key, probably already exists")
-
-    alias = f"alias/IOW-{key_project}-{key_stage}"
-    client.create_alias(
-        AliasName=alias,
-        TargetKeyId=response['KeyMetadata']['KeyId']
-    )
+    else:
+        alias = f"alias/IOW-{key_project}-{key_stage}"
+        client.create_alias(
+            AliasName=alias,
+            TargetKeyId=response['KeyMetadata']['KeyId']
+        )
 
