@@ -491,12 +491,10 @@ functions:
 stepFunctions:
   stateMachines:
     aqtsCreateCaptureDb:
-      #loggingConfig:
-      #  level: ALL
-      #  includeExecutionData: true
-      #  destinations:
-      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
-      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      role:
+        Fn::GetAtt:
+          - stepFunctionIamRole
+          - Arn
       name: aqts-capture-ecosystem-switch-create-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS CreateCaptureDb"
@@ -542,12 +540,10 @@ stepFunctions:
             End: true
 
     aqtsShrinkCaptureDb:
-      #loggingConfig:
-      #  level: ALL
-      #  includeExecutionData: true
-      #  destinations:
-      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
-      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      role:
+        Fn::GetAtt:
+          - stepFunctionIamRole
+          - Arn
       name: aqts-ecosystem-switch-shrink-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Shrink Db"
@@ -596,12 +592,10 @@ stepFunctions:
             End: true
 
     aqtsGrowCaptureDb:
-      # loggingConfig:
-      #  level: ALL
-      #  includeExecutionData: true
-      #  destinations:
-      #    - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
-      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      role:
+        Fn::GetAtt:
+          - stepFunctionIamRole
+          - Arn
       name: aqts-ecosystem-switch-grow-capture-db-${self:provider.stage}
       definition:
         Comment: "AQTS Grow Db"
@@ -644,13 +638,10 @@ stepFunctions:
             End: true
 
     aqtsCreateObDb:
-      #loggingConfig:
-      #  level: ALL
-      #  includeExecutionData: true
-      #  destinations:
-      #    destinations:
-      #      - arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:step-functions-${self:custom.environments.${self:provider.stage}}:*
-      role: arn:aws:iam::#{AWS::AccountId}:role/step-functions-service-access
+      role:
+        Fn::GetAtt:
+          - stepFunctionIamRole
+          - Arn
       name: aqts-capture-ecosystem-switch-create-obs-db-${self:provider.stage}
       definition:
         Comment: "AQTS CreateObservationsDb"
@@ -762,43 +753,35 @@ resources:
         EvaluationPeriods: 6
         AlarmActions:
           - Ref: snsTopic
-#    obsHighCpuAlarm:
-#      Type: AWS::CloudWatch::Alarm
-#      Properties:
-#        AlarmName: ${self:service}-${self:provider.stage}-obs-high-cpu-alarm
-#        AlarmDescription: Notify when the observations rds cpu goes over the threshold
-#        Namespace: 'AWS/RDS'
-#        Dimensions:
-#          - Name: DBInstanceIdentifier
-#            Value: observations-${self:custom.environments.${self:provider.stage}}
-#        MetricName: CPUUtilization
-#        Statistic: Average
-#        ComparisonOperator: GreaterThanOrEqualToThreshold
-#        Threshold: 50
-#        Period: 300
-#        Unit: Percent
-#        EvaluationPeriods: 2
-#        AlarmActions:
-#          - Ref: snsTopic
-#    obsLowCpuAlarm:
-#      Type: AWS::CloudWatch::Alarm
-#      Properties:
-#        AlarmName: ${self:service}-${self:provider.stage}-obs-low-cpu-alarm
-#        AlarmDescription: Notify when the observations rds cpu goes under the threshold
-#        Namespace: 'AWS/RDS'
-#        Dimensions:
-#          - Name: DBInstanceIdentifier
-#            Value: observations-${self:custom.environments.${self:provider.stage}}
-#        MetricName: CPUUtilization
-#        Statistic: Average
-#        ComparisonOperator: LessThanOrEqualToThreshold
-#        Threshold: 10
-#        Period: 300
-#        Unit: Percent
-#        EvaluationPeriods: 6
-#        AlarmActions:
-#          - Ref: snsTopic
-
+    stepFunctionIamRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - states.amazonaws.com
+                  - events.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: startexecution
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - states:StartExecution
+                  Resource: "*"
+        RoleName: ${self:service}-${self:provider.stage}-role
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+        PermissionsBoundary:
+          Fn::Sub:
+            - "arn:aws:iam::${accountId}:policy/csr-Developer-Permissions-Boundary"
+            - accountId:
+               Ref: "AWS::AccountId"
 
 plugins:
   - serverless-plugin-git-variables
