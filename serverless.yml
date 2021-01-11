@@ -229,19 +229,6 @@ functions:
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
 
-  getPostgresPassword:
-    handler: src.db_create_handler.get_postgres_password
-    role:
-      Fn::Sub:
-        - arn:aws:iam::${accountId}:role/csr-Lambda-Role
-        - accountId:
-            Ref: AWS::AccountId
-    reservedConcurrency: 2
-    environment:
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      LOG_LEVEL: INFO
-      STAGE: ${self:provider.stage}
-
   shrinkDb:
     handler: src.db_resize_handler.shrink_db
     role:
