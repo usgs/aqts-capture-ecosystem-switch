@@ -97,11 +97,11 @@ custom:
     subnetIds: ${ssm:/iow/aws/vpc/${self:provider.stage}/subnetIds~split}
   observationsDb:
     connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-${self:provider.stage}~true}
-  esLogs:
-    endpoint: ${ssm:/iow/aws/vpc/${self:provider.stage}/elasticsearchEndpoint}
-    index: ${self:service}
-    retentionInDays: 90
-    filterPattern: "?ERROR ?CRITICAL"
+#  esLogs:
+#    endpoint: ${ssm:/iow/aws/vpc/${self:provider.stage}/elasticsearchEndpoint}
+#    index: ${self:service}
+#    retentionInDays: 90
+#    filterPattern: "?ERROR ?CRITICAL"
 
 functions:
   StartObservationsDb:
