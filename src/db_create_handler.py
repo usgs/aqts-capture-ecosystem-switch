@@ -355,7 +355,7 @@ def modify_observation_passwords(event, context):
     return True
 
 
-def get_postgres_password():
+def get_postgres_password(event, context):
     postgres = secrets_client.get_secret_value(
         SecretId="/observations-db-legacy-production-external/legacy-production-external/rds-admin-password"
     )
