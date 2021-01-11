@@ -81,8 +81,6 @@ DB create and delete functions
 
 def modify_postgres_password(event, context):
     _validate()
-    logger.info("enter modify postgres password")
-    logger.info(event)
     original = secrets_client.get_secret_value(
         SecretId=NWCAPTURE_REAL,
     )
@@ -90,7 +88,6 @@ def modify_postgres_password(event, context):
     postgres_password = secret_string['POSTGRES_PASSWORD']
 
     response = rds_client.describe_db_clusters()
-    logger.info(f" all clusters {response}")
     rds_client.modify_db_cluster(
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         ApplyImmediately=True,
@@ -199,10 +196,7 @@ def modify_schema_owner_password(event, context):
     db_name = secret_string['DATABASE_NAME']
     postgres_password = secret_string['POSTGRES_PASSWORD']
     schema_owner_password = secret_string['SCHEMA_OWNER_PASSWORD']
-    logger.info(
-        f"db_host {db_host} db_name {db_name} postgres_password {postgres_password} sop {schema_owner_password}")
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
-    logger.info("got rds ok")
     sql = "alter user capture_owner with password %s"
     rds.alter_permissions(sql, (schema_owner_password,))
 
@@ -248,25 +242,6 @@ def create_observation_db(event, context):
         Tags=OBSERVATION_INSTANCE_TAGS
 
     )
-    logger.info(f"response is {response}")
-
-
-# def copy_observation_db_snapshot(event, context):
-#     _validate()
-#     logger.info(event)
-#
-#     original = secrets_client.get_secret_value(
-#         SecretId=OBSERVATION_REAL
-#     )
-#     secret_string = json.loads(original['SecretString'])
-#     kms_key = str(secret_string['KMS_KEY_ID'])
-#     my_snapshot_identifier = _get_observation_snapshot_identifier()
-#
-#     rds_client.copy_db_snapshot(
-#         SourceDBSnapshotIdentifier=my_snapshot_identifier,
-#         TargetDBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp",
-#         KmsKeyId=kms_key
-#     )
 
 
 def delete_observation_db(event, context):
@@ -279,14 +254,9 @@ def delete_observation_db(event, context):
     except rds_client.exceptions.DBInstanceNotFoundFault:
         logger.info("observations db was already deleted, skipping")
 
-    # rds_client.delete_db_snapshot(
-    #     DBSnapshotIdentifier=f"observationSnapshot{STAGE}Temp"
-    # )
-
 
 def modify_observation_postgres_password(event, context):
     _validate()
-    logger.info("enter modify postgres password")
     logger.info(event)
     original = secrets_client.get_secret_value(
         SecretId=OBSERVATION_REAL,
