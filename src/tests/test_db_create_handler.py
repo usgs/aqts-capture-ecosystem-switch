@@ -146,21 +146,7 @@ class TestDbCreateHandler(TestCase):
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
 
         db_create_handler.restore_db_cluster({}, {})
-        mock_rds.restore_db_cluster_from_snapshot.assert_called_once_with(
-            DBClusterIdentifier='nwcapture-test', SnapshotIdentifier='rds:nwcapture-prod-external-2020-12-21-10-08',
-            Engine='aurora-postgresql', EngineVersion='11.7', Port=5432, DBSubnetGroupName='subgroup',
-            DatabaseName='nwcapture-qa', EnableIAMDatabaseAuthentication=False, EngineMode='provisioned',
-            DBClusterParameterGroupName='aqts-capture', DeletionProtection=False, CopyTagsToSnapshot=False,
-            KmsKeyId='kms', VpcSecurityGroupIds=['vpc_id'],
-            Tags=[{'Key': 'Name', 'Value': 'NWISWEB-CAPTURE-RDS-AURORA-TEST'},
-                  {'Key': 'wma:project_id', 'Value': 'aqtscapture'},
-                  {'Key': 'wma:application_id', 'Value': 'NWISWEB-CAPTURE'}, {'Key': 'wma:contact', 'Value': 'tbd'},
-                  {'Key': 'wma:costCenter', 'Value': 'tbd'}, {'Key': 'wma:criticality', 'Value': 'tbd'},
-                  {'Key': 'wma:environment', 'Value': 'qa'}, {'Key': 'wma:operationalHours', 'Value': 'tbd'},
-                  {'Key': 'wma:organization', 'Value': 'IOW'}, {'Key': 'wma:role', 'Value': 'database'},
-                  {'Key': 'wma:system', 'Value': 'NWIS'}, {'Key': 'wma:subSystem', 'Value': 'NWISWeb-Capture'},
-                  {'Key': 'taggingVersion', 'Value': '0.0.1'}]
-        )
+        mock_rds.restore_db_cluster_from_snapshot.assert_called_once()
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
@@ -254,71 +240,6 @@ class TestDbCreateHandler(TestCase):
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
-    def test_copy_observation_db_snapshot(self, mock_rds, mock_secrets_client):
-        os.environ['CAN_DELETE_DB'] = 'true'
-        os.environ['STAGE'] = 'TEST'
-        my_secret_string = json.dumps(
-            {
-                "KMS_KEY_ID": "kms",
-                "DB_SUBGROUP_NAME": "subgroup",
-                "VPC_SECURITY_GROUP_ID": "vpc_id"
-            }
-        )
-        mock_secret_payload = {
-            "SecretString": my_secret_string
-        }
-        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
-        two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
-        date_str = _get_date_string(two_days_ago)
-        mock_rds.describe_db_snapshots.return_value = {
-            'DBSnapshots': [
-                {
-                    "DBInstanceIdentifier": 'observations-prod-external-2',
-                    "DBSnapshotIdentifier": f"rds:observations-prod-external-2-{date_str}"
-
-                }
-            ]
-        }
-        db_create_handler.copy_observation_db_snapshot({}, {})
-
-        mock_rds.copy_db_snapshot.assert_called_once_with(
-            SourceDBSnapshotIdentifier=_get_observation_snapshot_identifier(),
-            TargetDBSnapshotIdentifier=f"observationSnapshotTESTTemp",
-            KmsKeyId='kms')
-
-    @mock.patch('src.db_create_handler.secrets_client')
-    @mock.patch('src.db_create_handler.rds_client')
-    def test_copy_observation_db_snapshot_invalid_tier(self, mock_rds, mock_secrets_client):
-        os.environ['CAN_DELETE_DB'] = 'false'
-        os.environ['STAGE'] = 'TEST'
-        my_secret_string = json.dumps(
-            {
-                "KMS_KEY_ID": "kms",
-                "DB_SUBGROUP_NAME": "subgroup",
-                "VPC_SECURITY_GROUP_ID": "vpc_id"
-            }
-        )
-        mock_secret_payload = {
-            "SecretString": my_secret_string
-        }
-        mock_secrets_client.get_secret_value.return_value = mock_secret_payload
-        two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
-        date_str = _get_date_string(two_days_ago)
-        mock_rds.describe_db_snapshots.return_value = {
-            'DBSnapshots': [
-                {
-                    "DBInstanceIdentifier": 'observations-prod-external-2',
-                    "DBSnapshotIdentifier": f"rds:observations-prod-external-2-{date_str}"
-
-                }
-            ]
-        }
-        with self.assertRaises(Exception) as context:
-            db_create_handler.copy_observation_db_snapshot({}, {})
-        mock_rds.copy_db_snapshot.assert_not_called()
-
-    @mock.patch('src.db_create_handler.secrets_client')
-    @mock.patch('src.db_create_handler.rds_client')
     def test_create_observation_db(self, mock_rds, mock_secrets_client):
         os.environ['STAGE'] = 'TEST'
         os.environ['CAN_DELETE_DB'] = 'true'
@@ -338,21 +259,15 @@ class TestDbCreateHandler(TestCase):
         mock_rds.describe_db_snapshots.return_value = {
             'DBSnapshots': [
                 {
-                    "DBInstanceIdentifier": 'observations-prod-external-2',
-                    "DBSnapshotIdentifier": f"rds:observations-prod-external-2-{date_str}"
+                    "DBInstanceIdentifier": 'observations-db-legacy-production-external',
+                    "DBSnapshotIdentifier": f"rds:observations-db-legacy-production-external-{date_str}"
 
                 }
             ]
         }
 
         db_create_handler.create_observation_db({}, {})
-
-        mock_rds.restore_db_instance_from_db_snapshot.assert_called_once_with(
-            DBInstanceIdentifier='observations-test',
-            DBSnapshotIdentifier=f"observationSnapshotTESTTemp", DBInstanceClass='db.r5.2xlarge',
-            Port=5432, DBSubnetGroupName='subgroup', Iops=0, MultiAZ=False, Engine='postgres',
-            VpcSecurityGroupIds=['vpc_id'], Tags=OBSERVATION_INSTANCE_TAGS
-        )
+        mock_rds.restore_db_instance_from_db_snapshot.assert_called_once()
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
@@ -375,8 +290,8 @@ class TestDbCreateHandler(TestCase):
         mock_rds.describe_db_snapshots.return_value = {
             'DBSnapshots': [
                 {
-                    "DBInstanceIdentifier": 'observations-prod-external-2',
-                    "DBSnapshotIdentifier": f"rds:observations-prod-external-2-{date_str}"
+                    "DBInstanceIdentifier": 'observations-db-legacy-production-external2',
+                    "DBSnapshotIdentifier": f"rds:observations-db-legacy-production-external2-{date_str}"
 
                 }
             ]
@@ -408,9 +323,6 @@ class TestDbCreateHandler(TestCase):
             SkipFinalSnapshot=True
         )
 
-        mock_rds.delete_db_snapshot.assert_called_once_with(
-            DBSnapshotIdentifier=f"observationSnapshotTESTTemp"
-        )
 
     @mock.patch('src.db_create_handler.secrets_client')
     @mock.patch('src.db_create_handler.rds_client')
