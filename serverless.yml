@@ -746,6 +746,7 @@ resources:
         RoleName: ${self:service}-${self:provider.stage}-role
         ManagedPolicyArns:
           - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+          - arn:aws:iam::aws:policy/CloudWatchFullAccess
         PermissionsBoundary:
           Fn::Sub:
             - "arn:aws:iam::${accountId}:policy/csr-Developer-Permissions-Boundary"
