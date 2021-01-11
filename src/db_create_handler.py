@@ -310,16 +310,7 @@ def modify_observation_passwords(event, context):
     secret_string = json.loads(original['SecretString'])
     db_host = secret_string['DATABASE_ADDRESS']
     db_name = secret_string['DATABASE_NAME']
-
-    '''
-    The postgres password is no longer stored with the other ones
-    '''
-    postgres = secrets_client.get_secret_value(
-        SecretId="/observations-db-legacy-production-external/legacy-production-external/rds-admin-password"
-    )
-    postgres_string = postgres['SecretString']
-    postgres_password = postgres_string
-    logger.info(f"postgres_string={postgres_string}")
+    postgres_password = secret_string['POSTGRES_PASSWORD']
 
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
     logger.info("got rds ok")
@@ -354,14 +345,6 @@ def modify_observation_passwords(event, context):
     logger.info("changed wdfn_user password")
     return True
 
-
-def get_postgres_password(event, context):
-    postgres = secrets_client.get_secret_value(
-        SecretId="/observations-db-legacy-production-external/legacy-production-external/rds-admin-password"
-    )
-    postgres_string = postgres['SecretString']
-    postgres_password = postgres_string
-    return postgres_password
 
 def _get_observation_snapshot_identifier():
     # In the dev account we don't have a list of automatic backups
