@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.6.2021.01.06.16
+FROM public.ecr.aws/bitnami/python:3.9.1-debian-10-r35
 
 RUN apt-get update
 
