@@ -2,11 +2,7 @@ service: aqts-capture-ecosystem-switch
 
 provider:
   name: aws
-  rolePermissionsBoundary:
-    Fn::Sub:
-      - "arn:aws:iam::${accountId}:policy/csr-Developer-Permissions-Boundary"
-      - accountId:
-          Ref: "AWS::AccountId"
+  rolePermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/csr-Developer-Permissions-Boundary"
   vpc: ${self:custom.vpc}
   region: ${opt:region, 'us-west-2'}
   stage: ${opt:stage, 'TEST'}
@@ -97,11 +93,11 @@ custom:
     subnetIds: ${ssm:/iow/aws/vpc/${self:provider.stage}/subnetIds~split}
   observationsDb:
     connectInfo: ${ssm:/aws/reference/secretsmanager/WQP-EXTERNAL-${self:provider.stage}~true}
-#  esLogs:
-#    endpoint: ${ssm:/iow/aws/vpc/${self:provider.stage}/elasticsearchEndpoint}
-#    index: ${self:service}
-#    retentionInDays: 90
-#    filterPattern: "?ERROR ?CRITICAL"
+  esLogs:
+    endpoint: ${ssm:/iow/aws/vpc/${self:provider.stage}/elasticsearchEndpoint}
+    index: ${self:service}
+    retentionInDays: 90
+    filterPattern: "?ERROR ?CRITICAL"
 
 functions:
   StartObservationsDb:
@@ -762,6 +758,7 @@ plugins:
   - serverless-python-requirements
   - serverless-step-functions
   - serverless-prune-plugin
+  - serverless-es-logs
 
 package:
   exclude:
