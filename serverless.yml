@@ -2,11 +2,7 @@ service: aqts-capture-ecosystem-switch
 
 provider:
   name: aws
-  rolePermissionsBoundary:
-    Fn::Sub:
-      - "arn:aws:iam::${accountId}:policy/csr-Developer-Permissions-Boundary"
-      - accountId:
-          Ref: "AWS::AccountId"
+  rolePermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/csr-Developer-Permissions-Boundary"
   vpc: ${self:custom.vpc}
   region: ${opt:region, 'us-west-2'}
   stage: ${opt:stage, 'TEST'}
@@ -417,22 +413,6 @@ functions:
       STAGE: ${self:provider.stage}
       LOG_LEVEL: INFO
 
-  copyObDbSnapshot:
-    handler: src.db_create_handler.copy_observation_db_snapshot
-    role:
-      Fn::Sub:
-        - arn:aws:iam::${accountId}:role/csr-Lambda-Role
-        - accountId:
-            Ref: AWS::AccountId
-    reservedConcurrency: 2
-    environment:
-      # If we are on the dev tier the snapshots need to be manually copied.  See README
-      LAST_OB_DB_SNAPSHOT: ${self:custom.observationsDb.connectInfo.LAST_OB_DB_SNAPSHOT}
-      AWS_DEPLOYMENT_REGION: ${self:provider.region}
-      CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
-      STAGE: ${self:provider.stage}
-      LOG_LEVEL: INFO
-
   deleteObservationDb:
     handler: src.db_create_handler.delete_observation_db
     role:
@@ -645,19 +625,8 @@ stepFunctions:
       name: aqts-capture-ecosystem-switch-create-obs-db-${self:provider.stage}
       definition:
         Comment: "AQTS CreateObservationsDb"
-        StartAt: CopyObsSnapshot
+        StartAt: CreateObservationDb
         States:
-          CopyObsSnapshot:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [ copyObDbSnapshot, Arn ]
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                IntervalSeconds: 300
-                MaxAttempts: 24
-                BackoffRate: 1
-            Next: CreateObservationDb
           CreateObservationDb:
             Type: Task
             Resource:
@@ -777,6 +746,7 @@ resources:
         RoleName: ${self:service}-${self:provider.stage}-role
         ManagedPolicyArns:
           - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+          - arn:aws:iam::aws:policy/CloudWatchFullAccess
         PermissionsBoundary:
           Fn::Sub:
             - "arn:aws:iam::${accountId}:policy/csr-Developer-Permissions-Boundary"
