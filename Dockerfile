@@ -1,4 +1,4 @@
-FROM public.ecr.aws/bitnami/python:3.9.1-debian-10-r35
+FROM usgswma/python:3.8
 
 RUN apt-get update
 
