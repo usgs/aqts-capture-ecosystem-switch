@@ -6,6 +6,9 @@ pipeline {
             label 'team:iow'
         }
     }
+    environment {
+        npm_config_cache = 'npm-cache'
+    }
     parameters {
         choice(choices: ['DEV', 'TEST', 'QA', 'PROD-EXTERNAL'], description: 'Deploy Stage (i.e. tier)', name: 'DEPLOY_STAGE')
     }
