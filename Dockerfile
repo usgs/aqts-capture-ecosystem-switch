@@ -1,4 +1,4 @@
-FROM public.ecr.aws/ubuntu/ubuntu:latest
+FROM public.ecr.aws/ubuntu/ubuntu:20.04
 
 RUN apt-get update
 
