@@ -12,5 +12,4 @@ RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - && apt-get install -
 
 RUN mkdir $HOME/.npm && chmod 777 $HOME/.npm/ && chmod 777 $HOME/
 
-RUN chown -R $USER $HOME/.npm
 USER $USER
