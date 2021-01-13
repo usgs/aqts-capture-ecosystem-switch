@@ -1,7 +1,4 @@
-FROM public.ecr.aws/ubuntu/ubuntu:20.04
-
-ENV TZ=America/North_Dakota/Center
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+FROM public.ecr.aws/bitnami/python:3.8
 
 RUN apt-get update
 
