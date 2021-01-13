@@ -11,5 +11,4 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - && apt-get install -y nodejs
 
 RUN mkdir $HOME/.npm && chmod 777 $HOME/.npm/ && chmod 777 $HOME/
-RUN chmod 777 -R /usr
 USER $USER

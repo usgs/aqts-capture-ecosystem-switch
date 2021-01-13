@@ -8,6 +8,7 @@ pipeline {
     }
     environment {
         npm_config_cache = 'npm-cache'
+        HOME = '/home/python'
     }
     parameters {
         choice(choices: ['DEV', 'TEST', 'QA', 'PROD-EXTERNAL'], description: 'Deploy Stage (i.e. tier)', name: 'DEPLOY_STAGE')
@@ -49,7 +50,7 @@ pipeline {
                     }
                 }
                 sh '''
-                sudo npm install -g --unsafe-perm=true --allow-root
+                npm install
                 ./node_modules/serverless/bin/serverless.js deploy --stage ${DEPLOY_STAGE} --bucket ${BUCKET} --region us-west-2
                 '''
             }
