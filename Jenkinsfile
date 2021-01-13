@@ -49,7 +49,7 @@ pipeline {
                     }
                 }
                 sh '''
-                npm install -g --unsafe-perm=true --allow-root
+                sudo npm install -g --unsafe-perm=true --allow-root
                 ./node_modules/serverless/bin/serverless.js deploy --stage ${DEPLOY_STAGE} --bucket ${BUCKET} --region us-west-2
                 '''
             }
