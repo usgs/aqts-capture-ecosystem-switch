@@ -5,20 +5,21 @@ import os
 import boto3
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, disable_lambda_trigger, \
-    DEFAULT_DB_INSTANCE_CLASS, CAPTURE_INSTANCE_TAGS, OBSERVATION_INSTANCE_TAGS
+    DEFAULT_DB_INSTANCE_CLASS, CAPTURE_INSTANCE_TAGS, OBSERVATION_INSTANCE_TAGS,  \
+    get_capture_db_secret_key, get_capture_db_instance_identifier, get_capture_db_cluster_identifier
 import logging
 
 STAGES = ['TEST', 'QA', 'PROD-EXTERNAL']
 DB = {
     "TEST": 'nwcapture-test',
     "QA": 'nwcapture-qa',
-    "PROD-EXTERNAL": 'nwcapture-prod-external'
+    "PROD-EXTERNAL": 'aqts-capture-db-legacy-production-external'
 }
 
 OBSERVATIONS_DB = {
     "TEST": 'observations-test',
     "QA": 'observations-qa',
-    "PROD-EXTERNAL": 'observations-prod-external'
+    "PROD-EXTERNAL": 'observations-db-legacy-production-external'
 }
 
 SQS = {
@@ -37,10 +38,10 @@ STAGE = os.getenv('STAGE', 'TEST')
 CAPTURE_TRIGGER_QUEUE = f"aqts-capture-trigger-queue-{STAGE}"
 ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
-DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
-DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
+DEFAULT_DB_CLUSTER_IDENTIFIER = get_capture_db_cluster_identifier(STAGE)
+DEFAULT_DB_INSTANCE_IDENTIFIER = get_capture_db_instance_identifier(STAGE)
 ENGINE = 'aurora-postgresql'
-NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
+CAPTURE_DB_SECRET_KEY = get_capture_db_secret_key(STAGE)
 OBSERVATION_REAL = f"WQP-EXTERNAL-{STAGE}"
 
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
@@ -82,7 +83,7 @@ DB create and delete functions
 def modify_postgres_password(event, context):
     _validate()
     original = secrets_client.get_secret_value(
-        SecretId=NWCAPTURE_REAL,
+        SecretId=CAPTURE_DB_SECRET_KEY,
     )
     secret_string = json.loads(original['SecretString'])
     postgres_password = secret_string['POSTGRES_PASSWORD']
@@ -135,10 +136,9 @@ def restore_db_cluster(event, context):
     logger.info(event)
 
     original = secrets_client.get_secret_value(
-        SecretId=NWCAPTURE_REAL
+        SecretId=CAPTURE_DB_SECRET_KEY
     )
     secret_string = json.loads(original['SecretString'])
-    kms_key = str(secret_string['KMS_KEY_ID'])
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
     my_snapshot_identifier = get_snapshot_identifier()
@@ -146,7 +146,6 @@ def restore_db_cluster(event, context):
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SnapshotIdentifier=my_snapshot_identifier,
         Engine=ENGINE,
-        EngineVersion='11.7',
         Port=5432,
         DBSubnetGroupName=subgroup_name,
         DatabaseName=DB[os.environ['STAGE']],
@@ -155,7 +154,6 @@ def restore_db_cluster(event, context):
         DBClusterParameterGroupName='aqts-capture',
         DeletionProtection=False,
         CopyTagsToSnapshot=False,
-        KmsKeyId=kms_key,
         VpcSecurityGroupIds=[
             vpc_security_group_id
         ],
@@ -189,7 +187,7 @@ def modify_schema_owner_password(event, context):
     :return:
     """
     original = secrets_client.get_secret_value(
-        SecretId=NWCAPTURE_REAL,
+        SecretId=CAPTURE_DB_SECRET_KEY,
     )
     secret_string = json.loads(original['SecretString'])
     db_host = secret_string['DATABASE_ADDRESS']

@@ -8,20 +8,22 @@ from src.db_resize_handler import disable_trigger, enable_trigger
 from src.rds import RDS
 from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_cluster, disable_lambda_trigger, \
     stop_db_cluster, \
-    purge_queue, stop_observations_db_instance, DEFAULT_DB_INSTANCE_CLASS
+    purge_queue, stop_observations_db_instance, DEFAULT_DB_INSTANCE_CLASS, get_capture_db_secret_key, \
+    get_capture_db_cluster_identifier, get_capture_db_instance_identifier
 import logging
 
 STAGES = ['TEST', 'QA', 'PROD-EXTERNAL']
+
 DB = {
     "TEST": 'nwcapture-test',
     "QA": 'nwcapture-qa',
-    "PROD-EXTERNAL": 'nwcapture-prod-external'
+    "PROD-EXTERNAL": 'aqts-capture-db-legacy-production-external'
 }
 
 OBSERVATIONS_DB = {
     "TEST": 'observations-test',
     "QA": 'observations-qa',
-    "PROD-EXTERNAL": 'observations-prod-external'
+    "PROD-EXTERNAL": 'observations-db-legacy-production-external'
 }
 
 SQS = {
@@ -40,10 +42,10 @@ STAGE = os.getenv('STAGE', 'TEST')
 CAPTURE_TRIGGER_QUEUE = f"aqts-capture-trigger-queue-{STAGE}"
 ERROR_QUEUE = f"aqts-capture-error-queue-{STAGE}"
 
-DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
-DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
+DEFAULT_DB_CLUSTER_IDENTIFIER = get_capture_db_cluster_identifier(STAGE)
+DEFAULT_DB_INSTANCE_IDENTIFIER = get_capture_db_instance_identifier(STAGE)
 ENGINE = 'aurora-postgresql'
-NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
+CAPTURE_DB_SECRET_KEY = get_capture_db_secret_key(STAGE)
 
 log_level = os.getenv('LOG_LEVEL', logging.ERROR)
 logger = logging.getLogger(__name__)
