@@ -138,11 +138,11 @@ def get_capture_db_instance_identifier(stage):
 def get_capture_db_secret_key(stage):
     if stage.lower() == 'prod-external':
         # TODO
-        return 'NWCAPTURE-PROD-EXTERNAL'
+        return 'NWCAPTURE-DB-PROD-EXTERNAL'
     elif stage.lower() == 'qa':
-        return 'NWCAPTURE-QA'
+        return 'NWCAPTURE-DB-QA'
     elif stage.lower() == 'test':
-        return 'NWCAPTURE-TEST'
+        return 'NWCAPTURE-DB-TEST'
     elif stage.lower() == 'dev':
-        return 'NWCAPTURE-DEV'
+        return 'NWCAPTURE-DB-DEV'
     raise Exception(f"Invalid stage {stage}")
