@@ -4,7 +4,8 @@ from unittest import TestCase, mock
 from src import handler
 from src.handler import TRIGGER, STAGES, DB
 from src.utils import enable_lambda_trigger, disable_lambda_trigger, purge_queue, stop_db_cluster, start_db_cluster, \
-    describe_db_clusters
+    describe_db_clusters, get_capture_db_secret_key, get_capture_db_cluster_identifier, \
+    get_capture_db_instance_identifier
 
 
 class TestUtils(TestCase):
@@ -141,3 +142,51 @@ class TestUtils(TestCase):
         }
         describe_db_clusters("stop")
         client.describe_db_clusters.assert_called_once_with()
+
+    def test_get_capture_db_secret_key(self):
+        key = get_capture_db_secret_key('DEV')
+        assert key == 'NWCAPTURE-DB-DEV'
+
+        key = get_capture_db_secret_key('TEST')
+        assert key == 'NWCAPTURE-DB-TEST'
+
+        key = get_capture_db_secret_key('QA')
+        assert key == 'NWCAPTURE-DB-QA'
+
+        key = get_capture_db_secret_key('PROD-EXTERNAL')
+        assert key == 'NWCAPTURE-DB-PROD-EXTERNAL'
+
+        with self.assertRaises(Exception) as context:
+            get_capture_db_secret_key('INVALID')
+
+    def test_get_capture_db_cluster_identifier(self):
+        key = get_capture_db_cluster_identifier('DEV')
+        assert key == 'nwcapture-dev'
+
+        key = get_capture_db_cluster_identifier('TEST')
+        assert key == 'nwcapture-test'
+
+        key = get_capture_db_cluster_identifier('QA')
+        assert key == 'nwcapture-qa'
+
+        key = get_capture_db_cluster_identifier('PROD-EXTERNAL')
+        assert key == 'aqts-capture-db-legacy-production'
+
+        with self.assertRaises(Exception) as context:
+            get_capture_db_cluster_identifier('INVALID')
+
+    def test_get_capture_db_instance_identifier(self):
+        key = get_capture_db_instance_identifier('DEV')
+        assert key == 'nwcapture-dev-instance1'
+
+        key = get_capture_db_instance_identifier('TEST')
+        assert key == 'nwcapture-test-instance1'
+
+        key = get_capture_db_instance_identifier('QA')
+        assert key == 'nwcapture-qa-instance1'
+
+        key = get_capture_db_instance_identifier('PROD-EXTERNAL')
+        assert key == 'aqts-capture-db-legacy-production-primary'
+
+        with self.assertRaises(Exception) as context:
+            get_capture_db_instance_identifier('INVALID')
