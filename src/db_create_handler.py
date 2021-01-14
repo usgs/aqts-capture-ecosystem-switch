@@ -139,7 +139,6 @@ def restore_db_cluster(event, context):
         SecretId=CAPTURE_DB_SECRET_KEY
     )
     secret_string = json.loads(original['SecretString'])
-    kms_key = str(secret_string['KMS_KEY_ID'])
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
     my_snapshot_identifier = get_snapshot_identifier()
@@ -155,7 +154,6 @@ def restore_db_cluster(event, context):
         DBClusterParameterGroupName='aqts-capture',
         DeletionProtection=False,
         CopyTagsToSnapshot=False,
-        KmsKeyId=kms_key,
         VpcSecurityGroupIds=[
             vpc_security_group_id
         ],
