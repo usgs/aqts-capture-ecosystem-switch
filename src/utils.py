@@ -109,3 +109,40 @@ def enable_lambda_trigger(function_names):
                 logger.info(f"Trigger should be enabled.  function name: {function_name} item: {response}")
                 return_value = True
     return return_value
+
+
+def get_capture_db_cluster_identifier(stage):
+    if stage.lower() == 'prod-external':
+        return 'aqts-capture-db-legacy-production'
+    elif stage.lower() == 'qa':
+        return 'nwcapture-qa'
+    elif stage.lower() == 'test':
+        return 'nwcapture-test'
+    elif stage.lower() == 'dev':
+        return 'nwcapture-dev'
+    raise Exception(f"Invalid stage {stage}")
+
+
+def get_capture_db_instance_identifier(stage):
+    if stage.lower() == 'prod-external':
+        return 'aqts-capture-db-legacy-production-primary'
+    elif stage.lower() == 'qa':
+        return 'nwcapture-qa-instance1'
+    elif stage.lower() == 'test':
+        return 'nwcapture-test-instance1'
+    elif stage.lower() == 'dev':
+        return 'nwcapture-dev-instance1'
+    raise Exception(f"Invalid stage {stage}")
+
+
+def get_capture_db_secret_key(stage):
+    if stage.lower() == 'prod-external':
+        # TODO
+        return 'NWCAPTURE-PROD-EXTERNAL'
+    elif stage.lower() == 'qa':
+        return 'NWCAPTURE-QA'
+    elif stage.lower() == 'test':
+        return 'NWCAPTURE-TEST'
+    elif stage.lower() == 'dev':
+        return 'NWCAPTURE-DEV'
+    raise Exception(f"Invalid stage {stage}")

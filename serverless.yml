@@ -39,6 +39,11 @@ custom:
     TEST: test
     QA: qa
     PROD-EXTERNAL: prod-external
+  dbInstanceName:
+    DEV: nwcapture-dev-instance1
+    TEST: nwcapture-test-instance1
+    QA: nwcapture-qa-instance1
+    PROD-EXTERNAL: aqts-capture-db-legacy-production-external-primary
   canDeleteDb:
     DEV: true
     TEST: true
@@ -439,13 +444,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-#    events:
-#      - cloudwatchEvent:
-#          event:
-#            source:
-#              - 'aws.cloudwatch'
-#            detail:
-#              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-obs-low-cpu-alarm" ]
 
   growObsDb:
     handler: src.db_resize_handler.grow_observations_db
@@ -459,14 +457,6 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       LOG_LEVEL: INFO
       STAGE: ${self:provider.stage}
-#    events:
-#      - cloudwatchEvent:
-#          event:
-#            source:
-#              - 'aws.cloudwatch'
-#            detail:
-#              alarmName: [ "aqts-capture-ecosystem-switch-${self:provider.stage}-obs-high-cpu-alarm" ]
-
 
 stepFunctions:
   stateMachines:
@@ -694,7 +684,7 @@ resources:
         Namespace: 'AWS/RDS'
         Dimensions:
           - Name: DBInstanceIdentifier
-            Value: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+            Value: ${self:custom.dbInstanceName.${self:provider.stage}}
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: GreaterThanOrEqualToThreshold
@@ -712,7 +702,7 @@ resources:
         Namespace: 'AWS/RDS'
         Dimensions:
           - Name: DBInstanceIdentifier
-            Value: nwcapture-${self:custom.environments.${self:provider.stage}}-instance1
+            Value: ${self:custom.dbInstanceName.${self:provider.stage}}
         MetricName: CPUUtilization
         Statistic: Average
         ComparisonOperator: LessThanOrEqualToThreshold

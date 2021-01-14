@@ -4,7 +4,8 @@ import os
 
 import boto3
 from src.utils import enable_lambda_trigger, disable_lambda_trigger, DEFAULT_DB_INSTANCE_CLASS, CAPTURE_INSTANCE_TAGS, \
-    OBSERVATION_INSTANCE_TAGS
+    OBSERVATION_INSTANCE_TAGS, get_capture_db_cluster_identifier, get_capture_db_instance_identifier, \
+    get_capture_db_secret_key
 import logging
 
 TRIGGER = {
@@ -15,10 +16,10 @@ TRIGGER = {
 
 STAGE = os.getenv('STAGE', 'TEST')
 
-DEFAULT_DB_CLUSTER_IDENTIFIER = f"nwcapture-{STAGE.lower()}"
-DEFAULT_DB_INSTANCE_IDENTIFIER = f"{DEFAULT_DB_CLUSTER_IDENTIFIER}-instance1"
+DEFAULT_DB_CLUSTER_IDENTIFIER = get_capture_db_cluster_identifier(STAGE)
+DEFAULT_DB_INSTANCE_IDENTIFIER = get_capture_db_instance_identifier(STAGE)
 ENGINE = 'aurora-postgresql'
-NWCAPTURE_REAL = f"NWCAPTURE-DB-{STAGE}"
+CAPTURE_DB_SECRET_KEY = get_capture_db_secret_key(STAGE)
 
 SMALL_DB_SIZE = 'db.r5.xlarge'
 BIG_DB_SIZE = DEFAULT_DB_INSTANCE_CLASS
