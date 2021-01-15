@@ -113,7 +113,7 @@ def enable_lambda_trigger(function_names):
 
 def get_capture_db_cluster_identifier(stage):
     if stage.lower() == 'prod-external':
-        return 'aqts-capture-db-legacy-production'
+        return 'aqts-capture-db-legacy-production-external'
     elif stage.lower() == 'qa':
         return 'nwcapture-qa'
     elif stage.lower() == 'test':
