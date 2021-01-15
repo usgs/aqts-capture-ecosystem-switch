@@ -125,7 +125,7 @@ def get_capture_db_cluster_identifier(stage):
 
 def get_capture_db_instance_identifier(stage):
     if stage.lower() == 'prod-external':
-        return 'aqts-capture-db-legacy-production-primary'
+        return 'aqts-capture-db-legacy-production-external-primary'
     elif stage.lower() == 'qa':
         return 'nwcapture-qa-instance1'
     elif stage.lower() == 'test':

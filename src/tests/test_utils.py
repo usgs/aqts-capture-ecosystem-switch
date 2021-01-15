@@ -186,7 +186,7 @@ class TestUtils(TestCase):
         assert key == 'nwcapture-qa-instance1'
 
         key = get_capture_db_instance_identifier('PROD-EXTERNAL')
-        assert key == 'aqts-capture-db-legacy-production-primary'
+        assert key == 'aqts-capture-db-legacy-production-external-primary'
 
         with self.assertRaises(Exception) as context:
             get_capture_db_instance_identifier('INVALID')
