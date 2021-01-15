@@ -170,7 +170,7 @@ class TestUtils(TestCase):
         assert key == 'nwcapture-qa'
 
         key = get_capture_db_cluster_identifier('PROD-EXTERNAL')
-        assert key == 'aqts-capture-db-legacy-production'
+        assert key == 'aqts-capture-db-legacy-production-external'
 
         with self.assertRaises(Exception) as context:
             get_capture_db_cluster_identifier('INVALID')
