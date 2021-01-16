@@ -50,22 +50,22 @@ custom:
     QA: true
     PROD-EXTERNAL: false
   startObservationSchedules:
-    DEV: cron(59 12 ? * MON *)
+    DEV: cron(59 12 ? * MON-FRI *)
     TEST: cron(59 12 ? * MON-FRI *)
     QA: cron(59 12 ? * MON *)
     PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopObservationSchedules:
-    DEV: cron(59 23 ? * FRI *)
+    DEV: cron(59 23 ? * MON-FRI *)
     TEST: cron(59 23 ? * MON-FRI *)
     QA: cron(59 23 ? * FRI *)
     PROD-EXTERNAL: cron(0 23 ? * FRI *)
   startCaptureSchedules:
-    DEV: cron(59 12 ? * MON *)
+    DEV: cron(59 12 ? * MON-FRI *)
     TEST: cron(59 12 ? * MON-FRI *)
     QA: cron(59 12 ? * MON *)
     PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopCaptureSchedules:
-    DEV: cron(59 23 ? * FRI *)
+    DEV: cron(59 23 ? * MON-FRI *)
     TEST: cron(59 23 ? * MON-FRI *)
     QA: cron(59 23 ? * FRI *)
     PROD-EXTERNAL: cron(59 23 ? * FRI *)
@@ -77,7 +77,7 @@ custom:
     QA: false
     PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
-    DEV: false
+    DEV: true
     TEST: true
     QA: false
     PROD-EXTERNAL: false
@@ -89,7 +89,7 @@ custom:
   stopObservationDbScheduleEnabled:
     DEV: true
     TEST: true
-    QA: true
+    QA: false
     PROD-EXTERNAL: false
 
   exportGitVariables: false

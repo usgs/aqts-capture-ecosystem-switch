@@ -247,7 +247,8 @@ class TestDbCreateHandler(TestCase):
             {
                 "KMS_KEY_ID": "kms",
                 "DB_SUBGROUP_NAME": "subgroup",
-                "VPC_SECURITY_GROUP_ID": "vpc_id"
+                "VPC_SECURITY_GROUP_ID": "vpc_id",
+                "DATABASE_NAME": "dbname"
             }
         )
         mock_secret_payload = {
