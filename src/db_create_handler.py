@@ -236,7 +236,6 @@ def create_observation_db(event, context):
         DBSnapshotIdentifier=my_snapshot_identifier,
         DBInstanceClass='db.r5.2xlarge',
         Port=5432,
-        DBSubnetGroupName=subgroup_name,
         Iops=0,
         MultiAZ=False,
         Engine='postgres',
