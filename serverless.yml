@@ -416,6 +416,9 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
+      LAST_OB_DB_SNAPSHOT: observations-db-legacy-production-external-2021-01-10-08-33
+
+
       LOG_LEVEL: INFO
 
   deleteObservationDb:

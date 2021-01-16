@@ -221,7 +221,9 @@ def create_observation_db(event, context):
     )
     secret_string = json.loads(original['SecretString'])
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
+    logger.info(f"subnet group is {subgroup_name}")
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
+    logger.info(f"vpc security group = {vpc_security_group_id}")
     my_snapshot_identifier = _get_observation_snapshot_identifier()
     logger.info(f"my snapshot identified {my_snapshot_identifier}")
 
@@ -238,8 +240,8 @@ def create_observation_db(event, context):
             vpc_security_group_id,
         ],
         Tags=OBSERVATION_INSTANCE_TAGS
-
     )
+    logger.info(response)
 
 
 def delete_observation_db(event, context):
@@ -317,7 +319,8 @@ def modify_observation_passwords(event, context):
 def _get_observation_snapshot_identifier():
     # In the dev account we don't have a list of automatic backups
     # See README
-    if os.getenv('LAST_OB_DB_SNAPSHOT') is not None:
+    if os.getenv('LAST_OB_DB_SNAPSHOT') is not None and STAGE.lower() == 'dev':
+        logger.info(f"returning devs last snapshot {os.getenv('LAST_OB_DB_SNAPSHOT')}")
         return os.getenv('LAST_OB_DB_SNAPSHOT')
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
     date_str = _get_date_string(two_days_ago)
