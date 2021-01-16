@@ -77,7 +77,7 @@ custom:
     QA: false
     PROD-EXTERNAL: false
   startObservationDbScheduleEnabled:
-    DEV: true
+    DEV: false
     TEST: true
     QA: false
     PROD-EXTERNAL: false
