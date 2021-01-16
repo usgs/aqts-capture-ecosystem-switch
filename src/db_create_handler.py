@@ -221,21 +221,23 @@ def create_observation_db(event, context):
     )
     secret_string = json.loads(original['SecretString'])
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
+    subgroup_name = 'csr-vpc-internal-Subnet-A'
     logger.info(f"subnet group is {subgroup_name}")
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
     logger.info(f"vpc security group = {vpc_security_group_id}")
     my_snapshot_identifier = _get_observation_snapshot_identifier()
     logger.info(f"my snapshot identified {my_snapshot_identifier}")
 
-    client = boto3.client('ec2', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
-    response = client.describe_subnets()
-    logger.info(response)
+    #client = boto3.client('ec2', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+    #response = client.describe_subnets()
+    #logger.info(response)
 
     response = rds_client.restore_db_instance_from_db_snapshot(
         DBInstanceIdentifier=f"observations-{STAGE.lower()}",
         DBSnapshotIdentifier=my_snapshot_identifier,
         DBInstanceClass='db.r5.2xlarge',
         Port=5432,
+        DBSubnetGroupName=subgroup_name,
         Iops=0,
         MultiAZ=False,
         Engine='postgres',
