@@ -227,6 +227,10 @@ def create_observation_db(event, context):
     my_snapshot_identifier = _get_observation_snapshot_identifier()
     logger.info(f"my snapshot identified {my_snapshot_identifier}")
 
+    client = boto3.client('ec2', os.getenv('AWS_DEPLOYMENT_REGION', 'us-west-2'))
+    response = client.describe_subnets()
+    logger.info(response)
+
     response = rds_client.restore_db_instance_from_db_snapshot(
         DBInstanceIdentifier=f"observations-{STAGE.lower()}",
         DBSnapshotIdentifier=my_snapshot_identifier,
