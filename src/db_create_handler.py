@@ -284,8 +284,9 @@ def modify_observation_passwords(event, context):
     secret_string = json.loads(original['SecretString'])
     db_host = secret_string['DATABASE_ADDRESS']
     db_name = secret_string['DATABASE_NAME']
+    logger.info(f"db_host {db_host} db_name {db_name}")
     postgres_password = secret_string['POSTGRES_PASSWORD']
-
+    logger.info(f"postgres password {postgres_password}")
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
     logger.info("got rds ok")
     pwd = secret_string['DB_OWNER_PASSWORD']
