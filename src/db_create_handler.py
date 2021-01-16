@@ -221,7 +221,6 @@ def create_observation_db(event, context):
     )
     secret_string = json.loads(original['SecretString'])
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
-    subgroup_name = 'csr-vpc-internal-Subnet-A'
     logger.info(f"subnet group is {subgroup_name}")
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
     logger.info(f"vpc security group = {vpc_security_group_id}")
