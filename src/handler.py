@@ -297,7 +297,7 @@ def troubleshoot(event, context):
             SourceDBSnapshotIdentifier=shared_arn,
             TargetDBSnapshotIdentifier=new_snapshot_identifier,
         )
-    elif event['action'].lower() == 'delete_db_snapshot':
+    elif event['action'].lower() == 'delete_dev_snapshot':
         snapshot_to_delete = event['snapshot_identifier']
         response = rds_client.delete_db_snapshot(
             DBSnapshotIdentifier=snapshot_to_delete
