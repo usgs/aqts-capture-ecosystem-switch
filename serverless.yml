@@ -88,7 +88,8 @@ custom:
     PROD-EXTERNAL: false
   stopObservationDbScheduleEnabled:
     DEV: true
-    TEST: true
+    # TODO revert
+    TEST: false
     QA: true
     PROD-EXTERNAL: false
 
