@@ -290,6 +290,18 @@ def troubleshoot(event, context):
         # here and specify the access point id.  Don't check into master
         client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
         client.delete_access_point(AccessPointId='fsap-xxxxxxxxxxxxxxxxx')
+    elif event['action'].lower() == 'copy_dev_snapshot':
+        shared_arn = event['shared_arn']
+        new_snapshot_identifier = event['new_snapshot_identifier']
+        response = rds_client.copy_db_snapshot(
+            SourceDBSnapshotIdentifier=shared_arn,
+            TargetDBSnapshotIdentifier=new_snapshot_identifier,
+        )
+    elif event['action'].lower() == 'delete_db_snapshot':
+        snapshot_to_delete = event['snapshot_identifier']
+        response = rds_client.delete_db_snapshot(
+            DBSnapshotIdentifier=snapshot_to_delete
+        )
     else:
         raise Exception(f"invalid action")
 

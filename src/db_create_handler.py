@@ -121,7 +121,7 @@ def delete_capture_db(event, context):
 
 
 def create_db_instance(event, context):
-    _validate()(event)
+    _validate()
     stage = os.environ['STAGE'].lower()
     rds_client.create_db_instance(
         DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
