@@ -89,7 +89,7 @@ custom:
   stopObservationDbScheduleEnabled:
     DEV: true
     TEST: true
-    QA: true
+    QA: false
     PROD-EXTERNAL: false
 
   exportGitVariables: false
