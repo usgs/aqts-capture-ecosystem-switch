@@ -144,6 +144,17 @@ class TestDbCreateHandler(TestCase):
             "SecretString": my_secret_string
         }
         mock_secrets_client.get_secret_value.return_value = mock_secret_payload
+        two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
+        date_str = _get_date_string(two_days_ago)
+        mock_rds.describe_db_snapshots.return_value = {
+            'DBSnapshots': [
+                {
+                    "DBInstanceIdentifier": 'aqts-capture-db-legacy-production-external',
+                    "DBSnapshotIdentifier": f"rds:aqts-capture-db-legacy-production-external-{date_str}"
+
+                }
+            ]
+        }
 
         db_create_handler.restore_db_cluster({}, {})
         mock_rds.restore_db_cluster_from_snapshot.assert_called_once()

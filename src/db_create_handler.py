@@ -207,9 +207,19 @@ def modify_schema_owner_password(event, context):
 
 
 def get_snapshot_identifier():
+    # In the dev account we don't have a list of automatic backups
+    # See README
+    if os.getenv('LAST_CAPTURE_DB_SNAPSHOT') is not None:
+        return os.getenv('LAST_CAPTURE_DB_SNAPSHOT')
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
     date_str = _get_date_string(two_days_ago)
-    return f"rds:nwcapture-prod-external-{date_str}-10-08"
+    response = rds_client.describe_db_snapshots(
+        DBInstanceIdentifier='aqts-capture-db-legacy-production-external')
+    for snapshot in response['DBSnapshots']:
+        if date_str in snapshot['DBSnapshotIdentifier'] \
+                and "aqts-capture-db-legacy-production-external" in snapshot['DBSnapshotIdentifier']:
+            return snapshot['DBSnapshotIdentifier']
+    raise Exception(f"DB Snapshot not found for date_str {date_str} {response['DBSnapshots']}")
 
 
 def create_observation_db(event, context):
