@@ -12,27 +12,31 @@ from src.utils import enable_lambda_trigger, describe_db_clusters, start_db_clus
     get_capture_db_cluster_identifier, get_capture_db_instance_identifier
 import logging
 
-STAGES = ['TEST', 'QA', 'PROD-EXTERNAL']
+STAGES = ['DEV', 'TEST', 'QA', 'PROD-EXTERNAL']
 
 DB = {
+    "DEV": 'nwcapture-dev',
     "TEST": 'nwcapture-test',
     "QA": 'nwcapture-qa',
     "PROD-EXTERNAL": 'aqts-capture-db-legacy-production-external'
 }
 
 OBSERVATIONS_DB = {
+    "DEV": 'observations-dev',
     "TEST": 'observations-test',
     "QA": 'observations-qa',
     "PROD-EXTERNAL": 'observations-db-legacy-production-external'
 }
 
 SQS = {
+    "DEV": ['aqts-capture-trigger-queue-DEV', 'aqts-capture-error-queue-DEV'],
     "TEST": ['aqts-capture-trigger-queue-TEST', 'aqts-capture-error-queue-TEST'],
     "QA": ['aqts-capture-trigger-queue-QA', 'aqts-capture-error-queue-QA'],
     "PROD-EXTERNAL": ['aqts-capture-trigger-queue-PROD-EXTERNAL']
 }
 
 TRIGGER = {
+    "DEV": ['aqts-capture-trigger-DEV-aqtsCaptureTrigger'],
     "TEST": ['aqts-capture-trigger-TEST-aqtsCaptureTrigger'],
     "QA": ['aqts-capture-trigger-QA-aqtsCaptureTrigger'],
     "PROD-EXTERNAL": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
@@ -286,6 +290,18 @@ def troubleshoot(event, context):
         # here and specify the access point id.  Don't check into master
         client = boto3.client('efs', os.getenv('AWS_DEPLOYMENT_REGION'))
         client.delete_access_point(AccessPointId='fsap-xxxxxxxxxxxxxxxxx')
+    elif event['action'].lower() == 'copy_dev_snapshot':
+        shared_arn = event['shared_arn']
+        new_snapshot_identifier = event['new_snapshot_identifier']
+        response = rds_client.copy_db_snapshot(
+            SourceDBSnapshotIdentifier=shared_arn,
+            TargetDBSnapshotIdentifier=new_snapshot_identifier,
+        )
+    elif event['action'].lower() == 'delete_dev_snapshot':
+        snapshot_to_delete = event['snapshot_identifier']
+        response = rds_client.delete_db_snapshot(
+            DBSnapshotIdentifier=snapshot_to_delete
+        )
     else:
         raise Exception(f"invalid action")
 
