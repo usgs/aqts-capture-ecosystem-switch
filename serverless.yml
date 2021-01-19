@@ -50,22 +50,22 @@ custom:
     QA: true
     PROD-EXTERNAL: false
   startObservationSchedules:
-    DEV: cron(59 12 ? * MON *)
+    DEV: cron(59 12 ? * MON-FRI *)
     TEST: cron(59 12 ? * MON-FRI *)
     QA: cron(59 12 ? * MON *)
     PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopObservationSchedules:
-    DEV: cron(59 23 ? * FRI *)
+    DEV: cron(59 23 ? * MON-FRI *)
     TEST: cron(59 23 ? * MON-FRI *)
     QA: cron(59 23 ? * FRI *)
     PROD-EXTERNAL: cron(0 23 ? * FRI *)
   startCaptureSchedules:
-    DEV: cron(59 12 ? * MON *)
+    DEV: cron(59 12 ? * MON-FRI *)
     TEST: cron(59 12 ? * MON-FRI *)
     QA: cron(59 12 ? * MON *)
     PROD-EXTERNAL: cron(0 12 ? * MON *)
   stopCaptureSchedules:
-    DEV: cron(59 23 ? * FRI *)
+    DEV: cron(59 23 ? * MON-FRI *)
     TEST: cron(59 23 ? * MON-FRI *)
     QA: cron(59 23 ? * FRI *)
     PROD-EXTERNAL: cron(59 23 ? * FRI *)
@@ -416,6 +416,9 @@ functions:
       AWS_DEPLOYMENT_REGION: ${self:provider.region}
       CAN_DELETE_DB: ${self:custom.canDeleteDb.${self:provider.stage}}
       STAGE: ${self:provider.stage}
+      LAST_OB_DB_SNAPSHOT: observations-db-legacy-production-external-2021-01-10-08-33
+
+
       LOG_LEVEL: INFO
 
   deleteObservationDb:

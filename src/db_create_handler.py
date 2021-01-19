@@ -11,24 +11,28 @@ import logging
 
 STAGES = ['TEST', 'QA', 'PROD-EXTERNAL']
 DB = {
+    "DEV": 'nwcapture-dev',
     "TEST": 'nwcapture-test',
     "QA": 'nwcapture-qa',
     "PROD-EXTERNAL": 'aqts-capture-db-legacy-production-external'
 }
 
 OBSERVATIONS_DB = {
+    "DEV": 'observations-dev',
     "TEST": 'observations-test',
     "QA": 'observations-qa',
     "PROD-EXTERNAL": 'observations-db-legacy-production-external'
 }
 
 SQS = {
+    "DEV": ['aqts-capture-trigger-queue-DEV', 'aqts-capture-error-queue-DEV'],
     "TEST": ['aqts-capture-trigger-queue-TEST', 'aqts-capture-error-queue-TEST'],
     "QA": ['aqts-capture-trigger-queue-QA', 'aqts-capture-error-queue-QA'],
     "PROD-EXTERNAL": ['aqts-capture-trigger-queue-PROD-EXTERNAL']
 }
 
 TRIGGER = {
+    "DEV": ['aqts-capture-trigger-DEV-aqtsCaptureTrigger'],
     "TEST": ['aqts-capture-trigger-TEST-aqtsCaptureTrigger'],
     "QA": ['aqts-capture-trigger-QA-aqtsCaptureTrigger'],
     "PROD-EXTERNAL": ['aqts-capture-trigger-PROD-EXTERNAL-aqtsCaptureTrigger']
@@ -118,8 +122,6 @@ def delete_capture_db(event, context):
 
 def create_db_instance(event, context):
     _validate()
-    logger.info("enter create db instance")
-    logger.info(event)
     stage = os.environ['STAGE'].lower()
     rds_client.create_db_instance(
         DBInstanceIdentifier=DEFAULT_DB_INSTANCE_IDENTIFIER,
@@ -132,8 +134,6 @@ def create_db_instance(event, context):
 
 def restore_db_cluster(event, context):
     _validate()
-    logger.info("enter restore db cluster")
-    logger.info(event)
 
     original = secrets_client.get_secret_value(
         SecretId=CAPTURE_DB_SECRET_KEY
@@ -177,7 +177,6 @@ def restore_db_cluster(event, context):
 
 def modify_schema_owner_password(event, context):
     _validate()
-    logger.info(event)
     """
     We don't know the password for 'capture_owner' on the production db,
     but we have already changed the postgres password in the modifyDbCluster step.
@@ -214,7 +213,6 @@ def get_snapshot_identifier():
 
 def create_observation_db(event, context):
     _validate()
-    logger.info(f"event {event}")
 
     original = secrets_client.get_secret_value(
         SecretId=OBSERVATION_REAL
@@ -223,14 +221,14 @@ def create_observation_db(event, context):
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
     my_snapshot_identifier = _get_observation_snapshot_identifier()
-    logger.info(f"my snapshot identified {my_snapshot_identifier}")
-
+    database_name = secret_string['DATABASE_NAME']
     response = rds_client.restore_db_instance_from_db_snapshot(
         DBInstanceIdentifier=f"observations-{STAGE.lower()}",
         DBSnapshotIdentifier=my_snapshot_identifier,
         DBInstanceClass='db.r5.2xlarge',
         Port=5432,
         DBSubnetGroupName=subgroup_name,
+        DatabaseName=database_name,
         Iops=0,
         MultiAZ=False,
         Engine='postgres',
@@ -238,7 +236,6 @@ def create_observation_db(event, context):
             vpc_security_group_id,
         ],
         Tags=OBSERVATION_INSTANCE_TAGS
-
     )
 
 
@@ -255,7 +252,6 @@ def delete_observation_db(event, context):
 
 def modify_observation_postgres_password(event, context):
     _validate()
-    logger.info(event)
     original = secrets_client.get_secret_value(
         SecretId=OBSERVATION_REAL,
     )
@@ -271,7 +267,6 @@ def modify_observation_postgres_password(event, context):
 
 def modify_observation_passwords(event, context):
     _validate()
-    logger.info(event)
     original = secrets_client.get_secret_value(
         SecretId=OBSERVATION_REAL,
     )
@@ -279,9 +274,7 @@ def modify_observation_passwords(event, context):
     db_host = secret_string['DATABASE_ADDRESS']
     db_name = secret_string['DATABASE_NAME']
     postgres_password = secret_string['POSTGRES_PASSWORD']
-
     rds = RDS(db_host, 'postgres', db_name, postgres_password)
-    logger.info("got rds ok")
     pwd = secret_string['DB_OWNER_PASSWORD']
     sql = "alter user wqp_core with password %s"
     rds.alter_permissions(sql, (pwd,))
@@ -317,13 +310,12 @@ def modify_observation_passwords(event, context):
 def _get_observation_snapshot_identifier():
     # In the dev account we don't have a list of automatic backups
     # See README
-    if os.getenv('LAST_OB_DB_SNAPSHOT') is not None:
+    if os.getenv('LAST_OB_DB_SNAPSHOT') is not None and STAGE.lower() == 'dev':
         return os.getenv('LAST_OB_DB_SNAPSHOT')
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
     date_str = _get_date_string(two_days_ago)
     response = rds_client.describe_db_snapshots(
-        DBInstanceIdentifier='observations-db-legacy-production-external',
-        SnapshotType='automated')
+        DBInstanceIdentifier='observations-db-legacy-production-external')
     for snapshot in response['DBSnapshots']:
         if date_str in snapshot['DBSnapshotIdentifier'] \
                 and "observations-db-legacy-production-external" in snapshot['DBSnapshotIdentifier']:

@@ -112,10 +112,15 @@ aqts-capture-ecosystem-switch-<STAGE>-executeShrink
 aqts-capture-ecosystem-switch-<STAGE>-executeGrow
 ```
 
-## What if I need to prevent automatic shutdown of nwcapture-test for a long running test?
+## Updating the observations database on DEV
 
-1. AWS Console->Event Bridge->Events->Rules->aqts-capture-ecosystem-switch-sw-stoptest->Disable
-2. Remember to enable again when your test is concluded.
+```
+1.  Take a manual snapshot of the production observations db in the AWS Console
+2.  Use the rundeck job "share_rds_snapshot" to share this production snapshot with the dev account
+3.  Run the troubleshoot lambda in the dev account with the 'copy_dev_snapshot' action, providing the
+    arn of the shared production snapshot and the namee for the new manual snapshot in the dev account
+4.  Update the serverless.yml environment variable LAST_OB_DB_SNAPSHOT with the name of the new manual snapshot
+```
 
 ## Advanced troubleshooting
 
