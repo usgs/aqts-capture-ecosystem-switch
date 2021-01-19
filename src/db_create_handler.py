@@ -142,6 +142,7 @@ def restore_db_cluster(event, context):
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
     my_snapshot_identifier = get_snapshot_identifier()
+    logger.info(f"snapshot identifier: {my_snapshot_identifier}")
     rds_client.restore_db_cluster_from_snapshot(
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SnapshotIdentifier=my_snapshot_identifier,
@@ -213,14 +214,8 @@ def get_snapshot_identifier():
         return os.getenv('LAST_CAPTURE_DB_SNAPSHOT')
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
     date_str = _get_date_string(two_days_ago)
-    response = rds_client.describe_db_snapshots(
-        DBInstanceIdentifier='aqts-capture-db-legacy-production-external')
-    for snapshot in response['DBSnapshots']:
-        if date_str in snapshot['DBSnapshotIdentifier'] \
-                and "aqts-capture-db-legacy-production-external" in snapshot['DBSnapshotIdentifier']:
-            return snapshot['DBSnapshotIdentifier']
-    raise Exception(f"DB Snapshot not found for date_str {date_str} {response['DBSnapshots']}")
-
+    logger.info(f"date_str {date_str}")
+    return f"rds:aqts-capture-db-legacy-production-external-{date_str}-12-28"
 
 def create_observation_db(event, context):
     _validate()
