@@ -134,11 +134,11 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_circuit_breaker_ramp_25_to_15(
+    def test_circuit_breaker_ramp_10_to_5(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
-        # Test where we ramp down from 25
-        mock_get_flow.return_value = 25
+        # Test where we ramp down from 10
+        mock_get_flow.return_value = 10
         my_alarm = {
             "detail": {
                 "state": {
@@ -150,17 +150,17 @@ class TestHandler(TestCase):
         mock_describe_db_clusters.return_value = DB['TEST']
         handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
-        mock_adjust.assert_called_once_with(15)
+        mock_adjust.assert_called_once_with(5)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_circuit_breaker_ramp_15_to_0(
+    def test_circuit_breaker_ramp_5_to_0(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
-        # Test where we ramp down from 15
-        mock_get_flow.return_value = 15
+        # Test where we ramp down from 5
+        mock_get_flow.return_value = 5
         my_alarm = {
             "detail": {
                 "state": {
@@ -200,7 +200,7 @@ class TestHandler(TestCase):
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_circuit_breaker_ramp_0_to_15(
+    def test_circuit_breaker_ramp_0_to_5(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp from zero
@@ -216,17 +216,17 @@ class TestHandler(TestCase):
         mock_describe_db_clusters.return_value = DB['TEST']
         handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
-        mock_adjust.assert_called_once_with(15)
+        mock_adjust.assert_called_once_with(5)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_circuit_breaker_ramp_15_to_25(
+    def test_circuit_breaker_ramp_5_to_10(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp from zero
-        mock_get_flow.return_value = 15
+        mock_get_flow.return_value = 5
         my_alarm = {
             "detail": {
                 "state": {
@@ -238,17 +238,17 @@ class TestHandler(TestCase):
         mock_describe_db_clusters.return_value = DB['TEST']
         handler.circuit_breaker(my_alarm, self.context)
         mock_get_flow.assert_called_once()
-        mock_adjust.assert_called_once_with(25)
+        mock_adjust.assert_called_once_with(10)
 
     @mock.patch.dict('src.utils.os.environ', mock_env_vars)
     @mock.patch('src.handler.describe_db_clusters')
     @mock.patch('src.handler.get_flow_rate')
     @mock.patch('src.handler.adjust_flow_rate')
-    def test_circuit_breaker_ramp_25_to_25(
+    def test_circuit_breaker_ramp_10_to_10(
             self, mock_adjust, mock_get_flow, mock_describe_db_clusters):
 
         # Test where we ramp from zero
-        mock_get_flow.return_value = 25
+        mock_get_flow.return_value = 10
         my_alarm = {
             "detail": {
                 "state": {
@@ -519,15 +519,15 @@ class TestHandler(TestCase):
         mock_client = mock.MagicMock()
         mock_client.put_function_concurrency.return_value = None
         mock_boto.return_value = mock_client
-        handler.adjust_flow_rate(25)
+        handler.adjust_flow_rate(10)
         mock_client.put_function_concurrency.assert_called_once_with(
-            FunctionName='aqts-capture-trigger-TEST-aqtsCaptureTrigger', ReservedConcurrentExecutions=25)
+            FunctionName='aqts-capture-trigger-TEST-aqtsCaptureTrigger', ReservedConcurrentExecutions=10)
 
     @mock.patch('src.utils.boto3.client', autospec=True)
     def test_get_flow_rate(self, mock_boto):
         os.environ['AWS_DEPLOYMENT_REGION'] = 'us-west-2'
         mock_client = mock.MagicMock()
-        mock_client.get_function_concurrency.return_value = {'ReservedConcurrentExecutions': 25}
+        mock_client.get_function_concurrency.return_value = {'ReservedConcurrentExecutions': 10}
         mock_boto.return_value = mock_client
         handler.get_flow_rate()
         mock_client.get_function_concurrency.assert_called_once_with(

@@ -148,10 +148,10 @@ def circuit_breaker(event, context):
     if alarm_state == "ALARM":
         logger.info(f"ALARM!")
         flow_rate = get_flow_rate()
-        if flow_rate == 25:
-            logger.info(f"Adjusting flow rate to 15")
-            adjust_flow_rate(15)
-        elif flow_rate == 15:
+        if flow_rate == 10:
+            logger.info(f"Adjusting flow rate to 5")
+            adjust_flow_rate(5)
+        elif flow_rate == 5:
             logger.info(f"Adjusting flow rate to 0")
             adjust_flow_rate(0)
         elif flow_rate == 0:
@@ -165,20 +165,20 @@ def circuit_breaker(event, context):
         logger.info(f"The error handler notifications have calmed down.  Let's try to ramp things up.")
         flow_rate = get_flow_rate()
         if flow_rate == 0:
-            logger.info(f"Adjusting flow rate up to 15.")
-            adjust_flow_rate(15)
-        elif flow_rate == 15:
-            logger.info(f"Adjusting flow rate up to 25.")
-            adjust_flow_rate(25)
-        elif flow_rate == 25:
+            logger.info(f"Adjusting flow rate up to 5.")
+            adjust_flow_rate(5)
+        elif flow_rate == 5:
+            logger.info(f"Adjusting flow rate up to 10.")
+            adjust_flow_rate(10)
+        elif flow_rate == 10:
             logger.info(f"We already at maximum flow rate, so no change made.")
         else:
             raise Exception(f"Invalid flow rate {flow_rate}")
 
 
 def adjust_flow_rate(new_flow_rate):
-    if new_flow_rate is None or new_flow_rate < 0 or new_flow_rate > 25:
-        raise Exception(f"flow rate must be between 0 and 25")
+    if new_flow_rate is None or new_flow_rate < 0 or new_flow_rate > 10:
+        raise Exception(f"flow rate must be between 0 and 10")
     client = boto3.client('lambda', os.getenv('AWS_DEPLOYMENT_REGION'))
     response = client.put_function_concurrency(
         FunctionName=TRIGGER[STAGE][0],
