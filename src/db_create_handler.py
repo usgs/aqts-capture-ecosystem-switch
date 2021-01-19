@@ -147,6 +147,7 @@ def restore_db_cluster(event, context):
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SnapshotIdentifier=my_snapshot_identifier,
         Engine=ENGINE,
+        EngineVersion='11.9',
         Port=5432,
         DBSubnetGroupName=subgroup_name,
         DatabaseName=DB[os.environ['STAGE']],
