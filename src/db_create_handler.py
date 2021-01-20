@@ -142,10 +142,12 @@ def restore_db_cluster(event, context):
     subgroup_name = str(secret_string['DB_SUBGROUP_NAME'])
     vpc_security_group_id = str(secret_string['VPC_SECURITY_GROUP_ID'])
     my_snapshot_identifier = get_snapshot_identifier()
+    logger.info(f"snapshot identifier: {my_snapshot_identifier}")
     rds_client.restore_db_cluster_from_snapshot(
         DBClusterIdentifier=DEFAULT_DB_CLUSTER_IDENTIFIER,
         SnapshotIdentifier=my_snapshot_identifier,
         Engine=ENGINE,
+        EngineVersion='11.9',
         Port=5432,
         DBSubnetGroupName=subgroup_name,
         DatabaseName=DB[os.environ['STAGE']],
@@ -206,10 +208,14 @@ def modify_schema_owner_password(event, context):
 
 
 def get_snapshot_identifier():
+    # In the dev account we don't have a list of automatic backups
+    # See README
+    if os.getenv('LAST_CAPTURE_DB_SNAPSHOT') is not None:
+        return os.getenv('LAST_CAPTURE_DB_SNAPSHOT')
     two_days_ago = datetime.datetime.now() - datetime.timedelta(2)
     date_str = _get_date_string(two_days_ago)
-    return f"rds:nwcapture-prod-external-{date_str}-10-08"
-
+    logger.info(f"date_str {date_str}")
+    return f"rds:aqts-capture-db-legacy-production-external-{date_str}-12-28"
 
 def create_observation_db(event, context):
     _validate()
