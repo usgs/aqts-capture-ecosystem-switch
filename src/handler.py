@@ -306,6 +306,7 @@ def troubleshoot(event, context):
         client = boto3.client('ecs', os.getenv('AWS_DEPLOYMENT_REGION'))
 
         response = client.update_service(
+            cluster='ecs-iow-frost-cluster-TEST',
             service='iow-frost-service-TEST',
             desiredCount=0
         )
