@@ -304,7 +304,11 @@ def troubleshoot(event, context):
         )
     elif event['action'].lower() == 'delete_frost':
         client = boto3.client('ecs', os.getenv('AWS_DEPLOYMENT_REGION'))
-
+        response = client.stop_task(
+            cluster='ecs-iow-frost-cluster-TEST',
+            task='iow-frost-service-TEST:46'
+        )
+        print(f"stop task {response}")
         response = client.update_service(
             cluster='ecs-iow-frost-cluster-TEST',
             service='iow-frost-service-TEST',
