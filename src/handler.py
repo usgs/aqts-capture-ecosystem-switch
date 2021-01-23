@@ -316,8 +316,7 @@ def troubleshoot(event, context):
         # )
         response = client.delete_service(
             cluster='ecs-iow-frost-cluster-TEST',
-            service='iow-frost-service-TEST',
-            desiredCount=0
+            service='iow-frost-service-TEST'
         )
         response = client.delete_cluster(
             cluster='ecs-iow-frost-cluster-TEST'
