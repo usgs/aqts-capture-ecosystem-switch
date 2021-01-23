@@ -302,6 +302,13 @@ def troubleshoot(event, context):
         response = rds_client.delete_db_snapshot(
             DBSnapshotIdentifier=snapshot_to_delete
         )
+    elif event['action'].lower() == 'delete_frost':
+        client = boto3.client('ecs', os.getenv('AWS_DEPLOYMENT_REGION'))
+
+        response = client.update_service(
+            service='iow-frost-service-TEST',
+            desiredCount=0
+        )
     else:
         raise Exception(f"invalid action")
 
