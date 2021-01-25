@@ -302,6 +302,30 @@ def troubleshoot(event, context):
         response = rds_client.delete_db_snapshot(
             DBSnapshotIdentifier=snapshot_to_delete
         )
+    elif event['action'].lower() == 'make_ecr':
+        repo_name = event['repo_name']
+        client = boto3.client('ecr', os.getenv('AWS_DEPLOYMENT_REGION'))
+        response = client.create_repository(
+            repositoryName=repo_name,
+            tags=[
+                {
+                    'Key': 'wma:organization',
+                    'Value': 'IOW'
+                },
+                {
+                    'Key': 'wma:project_id',
+                    'Value': 'iow'
+                }
+            ],
+            imageTagMutability='MUTABLE',
+            imageScanningConfiguration={
+                'scanOnPush': True
+            },
+            encryptionConfiguration={
+                'encryptionType': 'AES256'
+            }
+        )
+
     else:
         raise Exception(f"invalid action")
 
