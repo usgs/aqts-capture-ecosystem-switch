@@ -325,6 +325,25 @@ def troubleshoot(event, context):
                 'encryptionType': 'AES256'
             }
         )
+    elif event['action'].lower() == 'delete_frost':
+        client = boto3.client('ecs', os.getenv('AWS_DEPLOYMENT_REGION'))
+        response = client.stop_task(
+            cluster='ecs-iow-frost-cluster-TEST',
+            task='d1e3479fa6ab4aeda2f5e395b080ce3f'
+        )
+        print(f"stop task {response}")
+        response = client.update_service(
+            cluster='ecs-iow-frost-cluster-TEST',
+            service='iow-frost-service-TEST',
+            desiredCount=0
+        )
+        response = client.delete_service(
+            cluster='ecs-iow-frost-cluster-TEST',
+            service='iow-frost-service-TEST'
+        )
+        response = client.delete_cluster(
+            cluster='ecs-iow-frost-cluster-TEST'
+        )
 
     else:
         raise Exception(f"invalid action")
@@ -527,4 +546,3 @@ def _make_kms_key(event):
             AliasName=alias,
             TargetKeyId=response['KeyMetadata']['KeyId']
         )
-
